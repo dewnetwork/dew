@@ -30,6 +30,33 @@ func newJournal() *journal {
 
 func (j *journal) append(entry journalEntry) {
 	j.entries = append(j.entries, entry)
+	if addr, ok := entryDirtyAddress(entry); ok {
+		j.dirties[addr]++
+	}
+}
+
+// entryDirtyAddress returns the account dirtied by a journal entry, if any.
+func entryDirtyAddress(entry journalEntry) (crypto.Address, bool) {
+	switch e := entry.(type) {
+	case balanceChange:
+		return e.account, true
+	case nonceChange:
+		return e.account, true
+	case codeChange:
+		return e.account, true
+	case storageChange:
+		return e.account, true
+	case createObjectChange:
+		return e.account, true
+	case suicideChange:
+		return e.account, true
+	case touchChange:
+		return e.account, true
+	case transientStorageChange:
+		return e.account, true
+	default:
+		return crypto.Address{}, false
+	}
 }
 
 func (j *journal) revert(s *StateDB, snapshot int) {

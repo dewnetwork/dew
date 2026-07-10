@@ -308,6 +308,9 @@ func (s *StateDB) Prepare(
 }
 
 // Finalise ends a transaction: process suicides, clear journal revisions.
+// Empty-account deletion (EIP-161 style) only applies to accounts dirtied in
+// this transaction — not the entire cache — so parallel forks stay equivalent
+// to sequential execution when the parent holds many untouched EOAs.
 func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 	for addr := range s.suicides {
 		delete(s.accounts, addr)
@@ -321,8 +324,8 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 		}
 	}
 	if deleteEmptyObjects {
-		for addr, acc := range s.accounts {
-			if s.Empty(addr) && acc != nil {
+		for addr := range s.journal.dirties {
+			if s.Empty(addr) {
 				delete(s.accounts, addr)
 				s.accountDirty[addr] = struct{}{}
 			}

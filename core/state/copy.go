@@ -61,7 +61,7 @@ func (s *StateDB) ApplyOverlay(src *StateDB) {
 		}
 		acc := src.accounts[addr]
 		if acc == nil {
-			// Finalise deleted empty / destroyed account
+			// Touched then emptied / destroyed in this tx (EIP-161).
 			delete(s.accounts, addr)
 			s.accountDirty[addr] = struct{}{}
 			continue

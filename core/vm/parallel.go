@@ -154,6 +154,9 @@ func (p *ParallelExecutor) ApplyParallel(msgs []Message) ([]*Result, error) {
 
 		// Accept speculative result: merge overlay into live state.
 		p.statedb.ApplyOverlay(specs[i].db)
+		// Match sequential ApplyMessage: Finalise purges empty accounts so
+		// IntermediateRoot / cache occupancy stay serial-equivalent.
+		p.statedb.Finalise(true)
 		results[i] = specs[i].res
 		specs[i].as.MergeWrites(earlierWrites)
 		specOK++
