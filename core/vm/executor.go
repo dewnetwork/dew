@@ -63,6 +63,9 @@ type Message struct {
 	GasLimit uint64
 	GasPrice *big.Int // effective gas price paid by sender
 	Data     []byte
+	// NoFinalise skips StateDB.Finalise so the caller can RevertToSnapshot
+	// (used by eth_call / eth_estimateGas).
+	NoFinalise bool
 }
 
 // Result is the outcome of applying a message.
@@ -180,6 +183,7 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 
 	caller := ethvm.AccountRef(toEthAddr(msg.From))
 	if msg.To == nil {
+		// CREATE increments nonce inside the EVM.
 		var ethAddr ethcommon.Address
 		ret, ethAddr, gasLeft, err = evm.Create(caller, msg.Data, gasLeft, msg.Value)
 		if err == nil {
@@ -187,6 +191,8 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 			createdAddr = &a
 		}
 	} else {
+		// CALL: nonce is incremented by the state transition (even on revert).
+		e.statedb.SetNonceJournaled(msg.From, e.statedb.GetNonce(msg.From)+1)
 		ret, gasLeft, err = evm.Call(caller, toEthAddr(*msg.To), msg.Data, gasLeft, msg.Value)
 	}
 
@@ -218,12 +224,8 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 	}
 
 	failed := err != nil
-	if !failed {
-		e.bridge.Finalise(true)
-	} else {
-		// EVM already reverted execution snapshot; still finalise gas/nonce side-effects.
-		// Nonce is incremented inside Create even on failure after Homestead for some cases —
-		// geth Finalise still runs after ApplyMessage. We finalise to clear refund/journal.
+	if !msg.NoFinalise {
+		// Finalise clears the journal; only do this for committed transactions.
 		e.bridge.Finalise(true)
 	}
 

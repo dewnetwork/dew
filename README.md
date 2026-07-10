@@ -34,6 +34,12 @@ go build -o bin/dewcli ./cmd/dewcli
 ./bin/dewcli wallet create              # passphrase prompt; keystore ~/.dew/keystore
 ./bin/dewcli wallet list
 ./bin/dewcli --keystore /tmp/dew-ks wallet create --password=dev-only
+
+# Full node + JSON-RPC (Phase A4)
+go build -o bin/dew ./cmd/dew
+./bin/dew run --genesis genesis.json --http.addr 127.0.0.1 --http.port 8545
+# MetaMask / Foundry: chainId 2026 (0x7ea), RPC http://127.0.0.1:8545
+node scripts/smoke-rpc.mjs              # eth_chainId smoke check
 ```
 
 | Package | Role |
@@ -46,6 +52,9 @@ go build -o bin/dewcli ./cmd/dewcli
 | [`core/state/`](./core/state/) | Flat state DB + journal / access list (EVM-ready) |
 | [`core/vm/`](./core/vm/) | EVM bridge + sequential `Executor` (Cancun) |
 | [`config/`](./config/) | Genesis JSON load + alloc commit |
+| [`node/`](./node/) | In-process backend (genesis, auto-mine, state) |
+| [`rpc/`](./rpc/) | Ethereum JSON-RPC HTTP (`eth_*` / `net_*` / `web3_*`) |
+| [`cmd/dew/`](./cmd/dew/) | Full node entrypoint |
 | [`genesis.json`](./genesis.json) | Dev genesis (chainId 2026, sample alloc) |
 
 ## Documentation
@@ -98,7 +107,7 @@ Layout after merge:
 
 ## Status
 
-Docs site + landing are wired. **Phase A1–A3** done (crypto, types/state, EVM). Next: [Phase A4](./docs/development/phases.md) — JSON-RPC (MetaMask / Foundry).
+Docs site + landing are wired. **Phase A1–A4** done (crypto → EVM → JSON-RPC). Next: [Phase A5](./docs/development/phases.md) — Dew-BFT local consensus.
 
 ## License
 

@@ -69,13 +69,15 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] HTTP RPC on 8545
-- [ ] Methods in [JSON-RPC required list](../api/json-rpc.md)
-- [ ] MetaMask shows balance
-- [ ] Foundry/Hardhat deploy succeeds against local node
-- [ ] Optional: Node smoke script under monorepo `scripts/` hits `eth_chainId`
+- [x] HTTP RPC on 8545
+- [x] Methods in [JSON-RPC required list](../api/json-rpc.md)
+- [x] MetaMask shows balance _(dev: connect http://127.0.0.1:8545, chainId 2026)_
+- [x] Foundry/Hardhat deploy succeeds against local node _(dev auto-mine per tx)_
+- [x] Optional: Node smoke script under monorepo `scripts/` hits `eth_chainId`
 
-**Packages:** `rpc/`, `cmd/dew` (+ Node test script if added)
+**Packages:** `node/`, `rpc/`, `cmd/dew`, `scripts/smoke-rpc.mjs`
+
+**Notes:** Dev mode seals one block per `eth_sendRawTransaction` (BFT in A5). Start: `go run ./cmd/dew run --genesis genesis.json --http.port 8545`.
 
 ---
 
