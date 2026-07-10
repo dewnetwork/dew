@@ -25,7 +25,7 @@ func NewAPI(n *node.Node) *API {
 	return &API{n: n}
 }
 
-// Handlers returns all Phase A required method handlers.
+// Handlers returns all Phase A required method handlers plus Phase B dew_* extensions.
 func (a *API) Handlers() map[string]Handler {
 	return map[string]Handler{
 		// identity
@@ -35,20 +35,20 @@ func (a *API) Handlers() map[string]Handler {
 		"net_peerCount":      a.netPeerCount,
 		"eth_chainId":        a.ethChainId,
 		// chain
-		"eth_blockNumber":                       a.ethBlockNumber,
-		"eth_getBlockByNumber":                  a.ethGetBlockByNumber,
-		"eth_getBlockByHash":                    a.ethGetBlockByHash,
-		"eth_getBlockTransactionCountByNumber":  a.ethGetBlockTransactionCountByNumber,
+		"eth_blockNumber":                      a.ethBlockNumber,
+		"eth_getBlockByNumber":                 a.ethGetBlockByNumber,
+		"eth_getBlockByHash":                   a.ethGetBlockByHash,
+		"eth_getBlockTransactionCountByNumber": a.ethGetBlockTransactionCountByNumber,
 		// state
 		"eth_getBalance":          a.ethGetBalance,
 		"eth_getTransactionCount": a.ethGetTransactionCount,
 		"eth_getCode":             a.ethGetCode,
 		"eth_getStorageAt":        a.ethGetStorageAt,
 		// txs
-		"eth_sendRawTransaction":   a.ethSendRawTransaction,
-		"eth_call":                 a.ethCall,
-		"eth_estimateGas":          a.ethEstimateGas,
-		"eth_getTransactionByHash": a.ethGetTransactionByHash,
+		"eth_sendRawTransaction":    a.ethSendRawTransaction,
+		"eth_call":                  a.ethCall,
+		"eth_estimateGas":           a.ethEstimateGas,
+		"eth_getTransactionByHash":  a.ethGetTransactionByHash,
 		"eth_getTransactionReceipt": a.ethGetTransactionReceipt,
 		// fees
 		"eth_gasPrice":             a.ethGasPrice,
@@ -57,12 +57,15 @@ func (a *API) Handlers() map[string]Handler {
 		// logs
 		"eth_getLogs": a.ethGetLogs,
 		// misc
-		"eth_accounts":   a.ethAccounts,
-		"eth_syncing":    a.ethSyncing,
-		"eth_mining":     a.ethMining,
-		"web3_sha3":      a.web3Sha3,
+		"eth_accounts":                   a.ethAccounts,
+		"eth_syncing":                    a.ethSyncing,
+		"eth_mining":                     a.ethMining,
+		"web3_sha3":                      a.web3Sha3,
 		"eth_getUncleCountByBlockNumber": a.ethUncleZero,
 		"eth_getUncleCountByBlockHash":   a.ethUncleZero,
+		// Phase B dew_* extensions
+		"dew_sendRawTransaction": a.dewSendRawTransaction,
+		"dew_getExecutionStats":  a.dewGetExecutionStats,
 	}
 }
 
@@ -276,6 +279,40 @@ func parseCallMsg(params json.RawMessage) (vm.Message, error) {
 	return msg, nil
 }
 
+func (a *API) dewSendRawTransaction(params json.RawMessage) (interface{}, error) {
+	var p []string
+	if err := json.Unmarshal(params, &p); err != nil || len(p) < 1 {
+		return nil, fmt.Errorf("invalid params")
+	}
+	raw, err := DecodeBytes(p[0])
+	if err != nil {
+		return nil, err
+	}
+	hash, err := a.n.SendDewRawTransaction(raw)
+	if err != nil {
+		return nil, err
+	}
+	return EncodeHash(hash), nil
+}
+
+func (a *API) dewGetExecutionStats(_ json.RawMessage) (interface{}, error) {
+	st := a.n.ExecutionStats()
+	return map[string]interface{}{
+		"current_tps":            st.CurrentTPS,
+		"peak_tps":               st.PeakTPS,
+		"active_workers":         st.ActiveWorkers,
+		"state_db_read_lat_ns":   st.StateDBReadLatNS,
+		"state_db_write_lat_ns":  st.StateDBWriteLatNS,
+		"conflict_rollback_rate": st.ConflictRate,
+		// extras (additive)
+		"tx_count":        st.TxCount,
+		"rollbacks":       st.Rollbacks,
+		"speculative_ok":  st.SpeculativeOK,
+		"total_txs":       st.TotalTxs,
+		"total_rollbacks": st.TotalRollbacks,
+	}, nil
+}
+
 func (a *API) ethGetTransactionByHash(params json.RawMessage) (interface{}, error) {
 	var p []string
 	if err := json.Unmarshal(params, &p); err != nil || len(p) < 1 {
@@ -289,7 +326,32 @@ func (a *API) ethGetTransactionByHash(params json.RawMessage) (interface{}, erro
 	if look == nil {
 		return nil, nil
 	}
+	// Native DewTx path
+	if look.DewTx != nil {
+		dtx := look.DewTx
+		amt := "0x0"
+		if dtx.Amount != nil {
+			amt = EncodeBig(dtx.Amount.ToBig())
+		}
+		return map[string]interface{}{
+			"hash":             EncodeHash(hash),
+			"blockHash":        EncodeHash(look.BlockHash),
+			"blockNumber":      EncodeUint64(look.BlockNumber),
+			"transactionIndex": EncodeUint64(uint64(look.Index)),
+			"from":             EncodeAddress(look.From),
+			"to":               EncodeAddress(dtx.Receiver),
+			"nonce":            EncodeUint64(dtx.Nonce),
+			"value":            amt,
+			"type":             EncodeUint64(uint64(types.DewTxType)),
+			"input":            EncodeBytes(dtx.Payload),
+			"dew":              true,
+			"fee":              EncodeUint64(dtx.Fee),
+		}, nil
+	}
 	tx := look.Tx
+	if tx == nil {
+		return nil, nil
+	}
 	result := map[string]interface{}{
 		"hash":             EncodeHash(hash),
 		"blockHash":        EncodeHash(look.BlockHash),

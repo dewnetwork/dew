@@ -1,5 +1,5 @@
-// Package node is the in-process Dew full-node backend used by JSON-RPC (Phase A4).
-// Dev mode auto-seals one block per accepted transaction (no BFT yet — Phase A5).
+// Package node is the in-process Dew full-node backend used by JSON-RPC (Phase A4+).
+// Dev mode auto-seals one block per accepted transaction.
 package node
 
 import (
@@ -13,11 +13,13 @@ import (
 	"github.com/holiman/uint256"
 
 	"github.com/dewnetwork/dew/config"
+	"github.com/dewnetwork/dew/core/native"
 	"github.com/dewnetwork/dew/core/state"
 	dewtypes "github.com/dewnetwork/dew/core/types"
 	"github.com/dewnetwork/dew/core/vm"
 	dewcrypto "github.com/dewnetwork/dew/crypto"
 	"github.com/dewnetwork/dew/db"
+	"github.com/dewnetwork/dew/params"
 )
 
 // Node holds chain state and applies transactions sequentially.
@@ -40,6 +42,11 @@ type Node struct {
 
 	gasPrice *big.Int
 	baseFee  *big.Int
+
+	// Phase B feature flags / metrics
+	enableNative      bool
+	enablePrecompiles bool
+	peStats           vm.ExecutionStats
 }
 
 // TxLookup links a transaction hash to its block placement.
@@ -47,7 +54,8 @@ type TxLookup struct {
 	BlockHash   dewtypes.Hash
 	BlockNumber uint64
 	Index       uint
-	Tx          *ethtypes.Transaction
+	Tx          *ethtypes.Transaction // EVM tx; nil for DewTx
+	DewTx       *dewtypes.DewTx       // native tx; nil for EVM
 	From        dewcrypto.Address
 	TxHash      dewtypes.Hash
 }
@@ -71,22 +79,66 @@ func NewFromGenesis(g *config.Genesis) (*Node, error) {
 	}
 	h := block.Header()
 	n := &Node{
-		genesis:  g,
-		chainID:  g.ChainID(),
-		db:       mdb,
-		statedb:  statedb,
-		header:   h,
-		blocks:   map[dewtypes.Hash]*dewtypes.Block{block.Hash(): block},
-		blockNum: map[uint64]dewtypes.Hash{0: block.Hash()},
-		txIndex:  make(map[dewtypes.Hash]*TxLookup),
-		receipts: make(map[dewtypes.Hash]*dewtypes.Receipt),
-		gasPrice: big.NewInt(1_000_000_000), // 1 gwei
-		baseFee:  new(big.Int).Set(h.BaseFee),
+		genesis:           g,
+		chainID:           g.ChainID(),
+		db:                mdb,
+		statedb:           statedb,
+		header:            h,
+		blocks:            map[dewtypes.Hash]*dewtypes.Block{block.Hash(): block},
+		blockNum:          map[uint64]dewtypes.Hash{0: block.Hash()},
+		txIndex:           make(map[dewtypes.Hash]*TxLookup),
+		receipts:          make(map[dewtypes.Hash]*dewtypes.Receipt),
+		gasPrice:          big.NewInt(1_000_000_000), // 1 gwei
+		baseFee:           new(big.Int).Set(h.BaseFee),
+		enableNative:      params.DefaultEnableNativePath,
+		enablePrecompiles: params.DefaultEnableDewPrecompiles,
 	}
 	if n.baseFee == nil {
 		n.baseFee = big.NewInt(1_000_000_000)
 	}
 	return n, nil
+}
+
+// SetNativeEnabled toggles dew_sendRawTransaction / DewTx execution.
+func (n *Node) SetNativeEnabled(v bool) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.enableNative = v
+}
+
+// NativeEnabled reports whether the Dew-native path is on.
+func (n *Node) NativeEnabled() bool {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.enableNative
+}
+
+// SetPrecompilesEnabled toggles Dew system precompiles (0x100+).
+func (n *Node) SetPrecompilesEnabled(v bool) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.enablePrecompiles = v
+}
+
+// PrecompilesEnabled reports whether Dew precompiles are active.
+func (n *Node) PrecompilesEnabled() bool {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.enablePrecompiles
+}
+
+// ExecutionStats returns Dew-PE / operational metrics.
+func (n *Node) ExecutionStats() vm.ExecutionStats {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.peStats
+}
+
+// RecordExecutionStats stores the latest PE metrics (for multi-tx block paths).
+func (n *Node) RecordExecutionStats(st vm.ExecutionStats) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.peStats = st
 }
 
 // ChainID returns the network chain id.
@@ -180,6 +232,92 @@ func (n *Node) GetReceipt(hash dewtypes.Hash) *dewtypes.Receipt {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.receipts[hash]
+}
+
+// SendDewRawTransaction decodes a signed DewTx, executes natively, and auto-mines a block.
+func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if !n.enableNative {
+		return dewtypes.Hash{}, fmt.Errorf("native path disabled")
+	}
+	tx := new(dewtypes.DewTx)
+	if err := tx.UnmarshalBinary(raw); err != nil {
+		return dewtypes.Hash{}, fmt.Errorf("invalid DewTx: %w", err)
+	}
+	if tx.ChainID == nil || tx.ChainID.Cmp(n.chainID) != 0 {
+		return dewtypes.Hash{}, fmt.Errorf("wrong chain id: got %v want %s", tx.ChainID, n.chainID)
+	}
+	if _, err := tx.RecoverSender(); err != nil {
+		return dewtypes.Hash{}, fmt.Errorf("invalid signature: %w", err)
+	}
+
+	feeSink := n.header.Proposer
+	exec := native.NewExecutor(n.statedb, feeSink)
+	result, err := exec.ApplyDewTx(tx)
+	if err != nil {
+		return dewtypes.Hash{}, err
+	}
+	if result.Failed {
+		// Fail-closed incomplete access list: do not mine a success block;
+		// surface as RPC error (tx not included).
+		return dewtypes.Hash{}, result.Err
+	}
+
+	parent := n.header.Copy()
+	newHeader := &dewtypes.Header{
+		ParentHash:  parent.Hash(),
+		Number:      parent.Number + 1,
+		Timestamp:   uint64(time.Now().Unix()),
+		GasLimit:    parent.GasLimit,
+		GasUsed:     0, // flat fee path — no EVM gas
+		BaseFee:     new(big.Int).Set(n.baseFee),
+		ExtraData:   parent.ExtraData,
+		Proposer:    parent.Proposer,
+		TxRoot:      dewtypes.EmptyTxRoot,
+		ReceiptRoot: dewtypes.EmptyReceiptRoot,
+	}
+	if newHeader.Timestamp <= parent.Timestamp {
+		newHeader.Timestamp = parent.Timestamp + 1
+	}
+
+	txHash := tx.Hash()
+	root, err := n.statedb.Commit()
+	if err != nil {
+		return dewtypes.Hash{}, err
+	}
+	newHeader.StateRoot = root
+	newHeader.TxRoot = dewtypes.Keccak256Hash(txHash.Bytes())
+
+	block := dewtypes.NewBlock(newHeader, nil)
+	blockHash := block.Hash()
+
+	receipt := &dewtypes.Receipt{
+		Type:              dewtypes.DewTxType,
+		Status:            1,
+		CumulativeGasUsed: 0,
+		GasUsed:           0,
+		EffectiveGasPrice: big.NewInt(0),
+		Logs:              nil,
+		TxHash:            txHash,
+		BlockHash:         blockHash,
+		BlockNumber:       newHeader.Number,
+		TransactionIndex:  0,
+	}
+
+	n.blocks[blockHash] = block
+	n.blockNum[newHeader.Number] = blockHash
+	n.header = newHeader
+	n.txIndex[txHash] = &TxLookup{
+		BlockHash:   blockHash,
+		BlockNumber: newHeader.Number,
+		Index:       0,
+		DewTx:       tx,
+		From:        tx.Sender,
+		TxHash:      txHash,
+	}
+	n.receipts[txHash] = receipt
+	return txHash, nil
 }
 
 // SendRawTransaction decodes, validates, executes, and auto-mines a block with the tx.
