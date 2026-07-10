@@ -22,6 +22,26 @@ Protocol logic lives in Go. Node is for docs web + developer tooling — not a s
 
 Layout details: [docs/development/go-project-layout.md](./docs/development/go-project-layout.md).
 
+## Go (L1 core)
+
+Requires **Go 1.22+** (developed on 1.23).
+
+```bash
+go test ./...
+go build -o bin/dewcli ./cmd/dewcli
+
+# Wallet CLI (Phase A1)
+./bin/dewcli wallet create              # passphrase prompt; keystore ~/.dew/keystore
+./bin/dewcli wallet list
+./bin/dewcli --keystore /tmp/dew-ks wallet create --password=dev-only
+```
+
+| Package | Role |
+| :--- | :--- |
+| [`crypto/`](./crypto/) | secp256k1, Keccak-256, address derivation, sign/verify |
+| [`crypto/wallet/`](./crypto/wallet/) | Encrypted keystore (Web3 Secret Storage) |
+| [`cmd/dewcli/`](./cmd/dewcli/) | Wallet CLI |
+
 ## Documentation
 
 Full protocol and build docs: [`docs/`](./docs/README.md).
@@ -72,7 +92,7 @@ Layout after merge:
 
 ## Status
 
-Monorepo scaffold + documentation stage. **Docs website** (`docs:dev` / `docs:build`) and **landing** (`web:dev` / `web:build`) are wired. Go packages and remaining Node tooling land phase-by-phase per the roadmap.
+Docs site + landing are wired. **Phase A1** (cryptography + `dewcli` wallet) is implemented. Next: [Phase A2](./docs/development/phases.md) — types, DB, flat state.
 
 ## License
 

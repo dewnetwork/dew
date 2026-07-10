@@ -80,7 +80,7 @@ datadir/
 *.db
 *.ldb
 chaindata/
-keystore/
+.dew/
 geth/
 lightchaindata/
 *.wal

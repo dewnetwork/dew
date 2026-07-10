@@ -18,12 +18,14 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] Generate secp256k1 keypair
-- [ ] Derive Ethereum-compatible address
-- [ ] Sign and verify a message / digest
-- [ ] `dewcli` create wallet + list address
+- [x] Generate secp256k1 keypair
+- [x] Derive Ethereum-compatible address
+- [x] Sign and verify a message / digest
+- [x] `dewcli` create wallet + list address
 
-**Packages:** `crypto/`, `cmd/dewcli`
+**Packages:** `crypto/`, `crypto/wallet/`, `cmd/dewcli`
+
+**Notes:** Keys use go-ethereum secp256k1 + Keccak; wallets stored encrypted (Web3 Secret Storage) under `~/.dew/keystore` (override with `--keystore` or `DEW_KEYSTORE`).
 
 ---
 
