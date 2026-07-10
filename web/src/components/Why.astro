@@ -1,0 +1,105 @@
+---
+import {
+  IconArrowsRight,
+  IconCoin,
+  IconDatabase,
+  IconQuote,
+  IconRefreshAlert,
+  IconTriangleMinus,
+} from '@tabler/icons-react';
+import { GlowCard } from './react/GlowCard';
+import { Reveal } from './react/Reveal';
+
+const frictions = [
+  {
+    title: 'Sequential execution',
+    body: 'One transaction path at a time leaves cores idle when blocks get dense.',
+    icon: IconArrowsRight,
+  },
+  {
+    title: 'Heavy state access',
+    body: 'Merkle Patricia Trie cost on every read/write taxes common contract work.',
+    icon: IconDatabase,
+  },
+  {
+    title: 'Probabilistic finality',
+    body: 'Reorg risk until enough confirmations — dapps pay in UX and bridge design.',
+    icon: IconRefreshAlert,
+  },
+  {
+    title: 'Fee pressure',
+    body: 'Scarce block space and expensive storage ops push activity onto bridges.',
+    icon: IconCoin,
+  },
+];
+---
+
+<section class="relative py-20 sm:py-28" id="why">
+  <div class="mx-auto max-w-6xl px-5 sm:px-8">
+    <div class="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+      <Reveal client:load>
+        <div class="group/title">
+          <p class="eyebrow">
+            <IconTriangleMinus size={14} stroke={1.75} />
+            The gap
+          </p>
+          <h2 class="section-title mt-3">
+            Ethereum is the standard.
+            <span class="text-slate"> The base layer is constrained.</span>
+          </h2>
+          <div class="mt-5 h-0.5 w-16 rounded-full dew-edge" aria-hidden="true">
+          </div>
+          <p class="mt-6 max-w-md leading-relaxed text-slate">
+            L2s scale execution, but they add bridges, different security
+            assumptions, and operational surface. Many teams still need a
+            <em class="not-italic text-frost">simple L1</em> that feels like Ethereum
+            for developers — engineered for throughput, cost, and certainty.
+          </p>
+        </div>
+      </Reveal>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        {
+          frictions.map((item, i) => {
+            const Icon = item.icon;
+            return (
+              <Reveal client:load delay={0.05 * i} className="h-full">
+                <GlowCard client:visible className="h-full p-5">
+                  <div class="icon-well" aria-hidden="true">
+                    <Icon size={18} stroke={1.6} />
+                  </div>
+                  <h3 class="mt-4 font-display text-lg font-semibold tracking-tight text-frost">
+                    {item.title}
+                  </h3>
+                  <p class="mt-2 text-sm leading-relaxed text-muted">{item.body}</p>
+                </GlowCard>
+              </Reveal>
+            );
+          })
+        }
+      </div>
+    </div>
+
+    <Reveal client:load delay={0.1}>
+      <blockquote
+        class="group relative mt-14 overflow-hidden rounded-2xl border border-[var(--color-line)] bg-gradient-to-br from-panel/90 to-ink-soft/50 px-6 py-8 transition duration-300 hover:border-cyan/25 sm:px-10"
+      >
+        <IconQuote
+          size={36}
+          stroke={1.25}
+          className="pointer-events-none absolute top-5 right-5 text-cyan/15 transition duration-300 group-hover:text-cyan/25 sm:top-6 sm:right-8"
+          aria-hidden
+        />
+        <p
+          class="relative max-w-3xl font-display text-xl font-semibold leading-snug tracking-tight text-frost text-balance sm:text-2xl"
+        >
+          Every design choice should answer: does this make Dew faster, safer, or
+          cheaper — without breaking the Ethereum developer path?
+        </p>
+        <footer class="relative mt-4 font-mono text-xs tracking-wide text-mist">
+          — Dew vision
+        </footer>
+      </blockquote>
+    </Reveal>
+  </div>
+</section>

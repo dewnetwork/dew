@@ -1,0 +1,108 @@
+---
+import {
+  IconDatabase,
+  IconHexagon,
+  IconLayersLinked,
+  IconRoute,
+  IconShieldLock,
+} from '@tabler/icons-react';
+import { GlowCard } from './react/GlowCard';
+import { Reveal } from './react/Reveal';
+
+const pillars = [
+  {
+    eyebrow: 'Compatibility',
+    title: 'Ethereum path first',
+    body: 'Same accounts, secp256k1 signatures, Solidity contracts, and JSON-RPC surface. Phase A must work with MetaMask and Foundry before Dew-native extras ship.',
+    meta: 'eth_* · EIP-1559 · go-ethereum EVM',
+    span: 'lg:col-span-2',
+    icon: IconHexagon,
+  },
+  {
+    eyebrow: 'Consensus',
+    title: 'Dew-BFT finality',
+    body: 'Stake-weighted BFT. Blocks commit with one-block finality under honesty assumptions. Double-sign is slashable — safety from voting power, not uncle economics.',
+    meta: 'PoSA · >2/3 quorum · ~1s blocks',
+    span: '',
+    icon: IconShieldLock,
+  },
+  {
+    eyebrow: 'Storage',
+    title: 'Flat state for execution',
+    body: 'Key-value state for SLOAD/SSTORE hot paths. Sparse Merkle commitment for StateRoot — not MPT traversal on every opcode.',
+    meta: 'Execute fast · commit verifiably',
+    span: '',
+    icon: IconDatabase,
+  },
+  {
+    eyebrow: 'Roadmap',
+    title: 'Phased sophistication',
+    body: 'Correct and compatible first. Then parallel execution (Block-STM style), native micro-fees, and DewTx — only after the base chain is solid.',
+    meta: 'Phase A → tune → Phase B',
+    span: 'lg:col-span-2',
+    icon: IconRoute,
+  },
+];
+---
+
+<section class="relative py-20 sm:py-28" id="protocol">
+  <div class="mx-auto max-w-6xl px-5 sm:px-8">
+    <Reveal client:load>
+      <div class="group/title max-w-2xl">
+        <p class="eyebrow">
+          <IconLayersLinked size={14} stroke={1.75} />
+          Protocol
+        </p>
+        <h2 class="section-title mt-3">
+          Built for speed without inventing a new mental model.
+        </h2>
+        <div class="mt-5 h-0.5 w-16 rounded-full dew-edge" aria-hidden="true">
+        </div>
+        <p class="mt-4 leading-relaxed text-slate">
+          Dew is written from scratch: protocol in Go, docs and tooling in
+          Node — one product, two runtimes. The surface stays familiar; the
+          internals are free to be fast.
+        </p>
+      </div>
+    </Reveal>
+
+    <div class="mt-12 grid gap-4 lg:grid-cols-3">
+      {
+        pillars.map((p, i) => {
+          const Icon = p.icon;
+          return (
+            <Reveal
+              client:load
+              delay={0.06 * i}
+              className={`h-full ${p.span}`}
+            >
+              <GlowCard client:visible className="flex h-full flex-col p-6 sm:p-7">
+                <div
+                  class="pointer-events-none absolute inset-x-0 top-0 h-px dew-edge opacity-50"
+                  aria-hidden="true"
+                />
+                <div class="flex items-start justify-between gap-3">
+                  <div class="icon-well" aria-hidden="true">
+                    <Icon size={18} stroke={1.6} />
+                  </div>
+                  <p class="font-mono text-[10px] tracking-[0.16em] text-mist uppercase">
+                    {p.eyebrow}
+                  </p>
+                </div>
+                <h3 class="mt-5 font-display text-xl font-bold tracking-tight text-frost sm:text-2xl">
+                  {p.title}
+                </h3>
+                <p class="mt-3 flex-1 text-sm leading-relaxed text-slate">
+                  {p.body}
+                </p>
+                <p class="mt-5 inline-flex items-center gap-2 rounded-lg border border-[var(--color-line)] bg-panel/40 px-2.5 py-1.5 font-mono text-[11px] text-muted transition group-hover:border-cyan/25">
+                  {p.meta}
+                </p>
+              </GlowCard>
+            </Reveal>
+          );
+        })
+      }
+    </div>
+  </div>
+</section>

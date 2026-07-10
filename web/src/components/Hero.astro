@@ -1,0 +1,125 @@
+---
+import {
+  IconArrowRight,
+  IconBolt,
+  IconClockHour4,
+  IconDroplet,
+  IconHexagon,
+  IconStack2,
+} from '@tabler/icons-react';
+import { HeroVisual } from './react/HeroVisual';
+import { Reveal } from './react/Reveal';
+
+const stats = [
+  { label: 'Block time', value: '~1s', icon: IconClockHour4 },
+  { label: 'Finality', value: '1 block', icon: IconBolt },
+  { label: 'Compatibility', value: 'EVM', icon: IconHexagon },
+];
+---
+
+<section class="relative overflow-hidden pt-28 pb-20 sm:pt-36 sm:pb-28">
+  <div
+    class="pointer-events-none absolute inset-0 opacity-50"
+    aria-hidden="true"
+  >
+    <div
+      class="dew-bead absolute top-[18%] left-[8%] h-1.5 w-1.5 rounded-full bg-cyan/50 blur-[0.5px]"
+    >
+    </div>
+    <div
+      class="dew-bead dew-bead-delay-1 absolute top-[32%] left-[22%] h-1 w-1 rounded-full bg-mist/40"
+    >
+    </div>
+    <div
+      class="dew-bead dew-bead-delay-2 absolute top-[14%] right-[28%] h-2 w-2 rounded-full bg-cyan/30 blur-[1px]"
+    >
+    </div>
+    <div
+      class="dew-bead dew-bead-delay-3 absolute right-[12%] bottom-[30%] h-1 w-1 rounded-full bg-mist/50"
+    >
+    </div>
+  </div>
+
+  <div
+    class="relative mx-auto grid max-w-6xl items-center gap-12 px-5 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16"
+  >
+    <div>
+      <Reveal client:load>
+        <p
+          class="mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-panel/50 px-3 py-1.5 font-mono text-[11px] tracking-[0.12em] text-mist uppercase shadow-[inset_0_1px_0_rgb(255_255_255_/_0.04)]"
+        >
+          <IconDroplet size={14} stroke={1.75} className="text-cyan" />
+          EVM L1 · Go + Node
+        </p>
+      </Reveal>
+
+      <Reveal client:load delay={0.06}>
+        <h1
+          class="font-display text-[2.65rem] leading-[1.05] font-extrabold tracking-[-0.03em] text-frost text-balance sm:text-5xl lg:text-[3.35rem]"
+        >
+          Ship Solidity.
+          <span class="mt-1 block">
+            Settle in
+            <span
+              class="bg-gradient-to-r from-frost via-cyan to-mist bg-clip-text text-transparent"
+            >
+              one block.
+            </span>
+          </span>
+        </h1>
+      </Reveal>
+
+      <Reveal client:load delay={0.12}>
+        <div class="mt-6 h-0.5 w-24 rounded-full dew-edge" aria-hidden="true">
+        </div>
+      </Reveal>
+
+      <Reveal client:load delay={0.16}>
+        <p
+          class="mt-6 max-w-xl text-base leading-relaxed text-slate sm:text-lg"
+        >
+          Dew is a high-performance Layer 1 that keeps the Ethereum developer
+          path intact — MetaMask, Foundry, Hardhat, <code
+            class="rounded-md border border-[var(--color-line)] bg-panel px-1.5 py-0.5 font-mono text-[0.9em] text-mist"
+            >eth_*</code
+          > — while Dew-BFT commits blocks with instant finality under BFT assumptions.
+        </p>
+      </Reveal>
+
+      <Reveal client:load delay={0.22}>
+        <div class="mt-9 flex flex-wrap items-center gap-3">
+          <a href="#builders" class="btn-primary px-6 py-3">
+            Open the builder path
+            <IconArrowRight size={17} stroke={2} />
+          </a>
+          <a href="#protocol" class="btn-secondary px-6 py-3">
+            <IconStack2 size={17} stroke={1.75} />
+            How the protocol works
+          </a>
+        </div>
+      </Reveal>
+
+      <Reveal client:load delay={0.28}>
+        <dl
+          class="mt-12 grid grid-cols-3 gap-3 border-t border-[var(--color-line)] pt-8 sm:max-w-lg sm:gap-4"
+        >
+          {
+            stats.map(({ label, value, icon: Icon }) => (
+              <div class="stat-chip">
+                <dt class="flex items-center gap-1.5 font-mono text-[10px] tracking-wider text-muted uppercase">
+                  <Icon size={13} stroke={1.75} className="text-cyan transition-colors duration-200" />
+                  {label}
+                </dt>
+                <dd class="mt-1.5 font-display text-xl font-bold tracking-tight text-frost sm:text-2xl">
+                  {value}
+                </dd>
+              </div>
+            ))
+          }
+        </dl>
+      </Reveal>
+    </div>
+
+    <HeroVisual client:load />
+  </div>
+</section>

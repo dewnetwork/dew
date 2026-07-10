@@ -61,6 +61,10 @@ out/
 .turbo/
 *.tsbuildinfo
 
+# --- Landing site (Astro) ---
+web/dist/
+web/.astro/
+
 # --- Env & secrets ---
 .env
 .env.*

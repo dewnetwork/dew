@@ -37,6 +37,16 @@ pnpm docs:preview  # serve production build
 
 Markdown under `docs/` is the source of truth; Node only builds the site.
 
+## Landing website
+
+Marketing site lives in [`web/`](./web/) (Astro + React + Tailwind + Motion):
+
+```bash
+pnpm web:dev       # http://localhost:4321
+pnpm web:build     # static site → web/dist
+pnpm web:preview
+```
+
 **Start here:**
 
 1. [Vision](./docs/overview/vision.md)
@@ -46,14 +56,14 @@ Markdown under `docs/` is the source of truth; Node only builds the site.
 
 ## Status
 
-Monorepo scaffold + documentation stage. **Docs website** (`docs:dev` / `docs:build`) is wired. Go packages and remaining Node tooling land phase-by-phase per the roadmap.
+Monorepo scaffold + documentation stage. **Docs website** (`docs:dev` / `docs:build`) and **landing** (`web:dev` / `web:build`) are wired. Go packages and remaining Node tooling land phase-by-phase per the roadmap.
 
 ## License
 
 Licensed under the [Apache License, Version 2.0](./LICENSE).
 
 ```
-Copyright 2026 Pham Tan Minh Tien
+Copyright 2026 Dew Network
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

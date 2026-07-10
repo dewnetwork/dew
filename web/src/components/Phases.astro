@@ -1,0 +1,143 @@
+---
+import {
+  IconAdjustments,
+  IconCheckbox,
+  IconCircleCheck,
+  IconCpu,
+  IconGitBranch,
+} from '@tabler/icons-react';
+import { GlowCard } from './react/GlowCard';
+import { Reveal } from './react/Reveal';
+
+const phases = [
+  {
+    id: 'A',
+    title: 'Correct & compatible',
+    status: 'In progress',
+    icon: IconCheckbox,
+    items: [
+      'Sequential EVM execution',
+      'Dew-BFT multi-validator',
+      'eth_* for MetaMask',
+      'Flat state + SMT commitment',
+    ],
+  },
+  {
+    id: 'T',
+    title: 'Tune',
+    status: 'Next',
+    icon: IconAdjustments,
+    items: [
+      'Latency & throughput baselines',
+      'Observability hooks',
+      'Localnet & smoke tests',
+      'Docs as product surface',
+    ],
+  },
+  {
+    id: 'B',
+    title: 'Native & parallel',
+    status: 'Later',
+    icon: IconCpu,
+    items: [
+      'Optimistic parallel exec',
+      'DewTx native format',
+      'Micro-fee path',
+      'System precompiles',
+    ],
+  },
+];
+---
+
+<section class="relative py-20 sm:py-28" id="phases">
+  <div class="mx-auto max-w-6xl px-5 sm:px-8">
+    <Reveal client:load>
+      <div
+        class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <div class="max-w-xl">
+          <p class="eyebrow">
+            <IconGitBranch size={14} stroke={1.75} />
+            Build order
+          </p>
+          <h2 class="section-title mt-3">
+            Complexity only after correctness.
+          </h2>
+        </div>
+        <p class="max-w-sm text-sm text-slate">
+          Consensus correctness is never coupled to parallel scheduler
+          sophistication. Order is intentional.
+        </p>
+      </div>
+    </Reveal>
+
+    <div class="mt-12">
+      <!-- Badge rail: connector above cards only -->
+      <div class="relative mb-5 hidden lg:block" aria-hidden="true">
+        <div
+          class="pointer-events-none absolute top-1/2 right-[calc(16.666%+1.25rem)] left-[calc(16.666%+1.25rem)] h-px -translate-y-1/2 bg-gradient-to-r from-cyan/40 via-cyan/20 to-cyan/10"
+        >
+        </div>
+        <div class="relative z-10 grid grid-cols-3 gap-4">
+          {
+            phases.map((phase) => {
+              const Icon = phase.icon;
+              return (
+                <div class="flex justify-center">
+                  <span class="flex h-11 w-11 items-center justify-center rounded-full border border-cyan/30 bg-ink text-cyan shadow-[0_0_24px_-8px_rgb(94_234_212_/_0.5)] ring-4 ring-ink">
+                    <Icon size={18} stroke={1.7} />
+                  </span>
+                </div>
+              );
+            })
+          }
+        </div>
+      </div>
+
+      <ol
+        class="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {
+          phases.map((phase, i) => {
+            const Icon = phase.icon;
+            return (
+              <li class="m-0 min-w-0 list-none p-0 sm:last:col-span-2 lg:last:col-span-1">
+                <Reveal client:load delay={0.06 * i} className="h-full">
+                  <GlowCard client:visible className="flex h-full flex-col p-6">
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="icon-well lg:hidden">
+                        <Icon size={18} stroke={1.6} />
+                      </span>
+                      <span class="hidden items-center gap-2 font-mono text-[10px] tracking-[0.14em] text-muted uppercase lg:inline-flex">
+                        Phase {phase.id}
+                      </span>
+                      <span class="rounded-full border border-[var(--color-line)] bg-panel px-2.5 py-1 font-mono text-[10px] tracking-wide text-mist uppercase">
+                        {phase.status}
+                      </span>
+                    </div>
+                    <h3 class="mt-5 font-display text-xl font-bold text-frost">
+                      {phase.title}
+                    </h3>
+                    <ul class="m-0 mt-4 list-none space-y-2.5 p-0">
+                      {phase.items.map((item) => (
+                        <li class="m-0 flex list-none items-start gap-2.5 p-0 text-sm text-slate">
+                          <IconCircleCheck
+                            size={15}
+                            stroke={1.75}
+                            className="mt-0.5 shrink-0 text-teal"
+                            aria-hidden
+                          />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </GlowCard>
+                </Reveal>
+              </li>
+            );
+          })
+        }
+      </ol>
+    </div>
+  </div>
+</section>

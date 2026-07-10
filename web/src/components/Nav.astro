@@ -1,0 +1,94 @@
+---
+import {
+  IconArrowRight,
+  IconBook2,
+  IconBrandGithub,
+  IconGitBranch,
+  IconLayersLinked,
+  IconTool,
+} from '@tabler/icons-react';
+
+const links = [
+  {
+    href: '#protocol',
+    label: 'Protocol',
+    icon: IconLayersLinked,
+  },
+  {
+    href: '#builders',
+    label: 'Builders',
+    icon: IconTool,
+  },
+  {
+    href: '#phases',
+    label: 'Phases',
+    icon: IconGitBranch,
+  },
+  {
+    href: '/docs',
+    label: 'Docs',
+    icon: IconBook2,
+    external: true,
+  },
+];
+---
+
+<header
+  class="site-nav fixed inset-x-0 top-0 z-40 border-b border-[var(--color-line)] bg-ink/80 backdrop-blur-xl"
+>
+  <div
+    class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-5 sm:px-8"
+  >
+    <a href="/" class="group flex items-center gap-2.5" aria-label="Dew home">
+      <img
+        src="/logo.svg"
+        alt=""
+        width="28"
+        height="28"
+        class="rounded-lg ring-1 ring-[var(--color-line)] transition group-hover:ring-cyan/40"
+      />
+      <span
+        class="font-display text-[1.05rem] font-bold tracking-tight text-frost"
+      >
+        Dew
+      </span>
+    </a>
+
+    <nav class="hidden items-center gap-0.5 md:flex" aria-label="Primary">
+      {
+        links.map((link) => {
+          const Icon = link.icon;
+          return (
+            <a
+              href={link.href}
+              class="nav-link"
+              {...(link.external
+                ? { target: '_blank', rel: 'noopener noreferrer' }
+                : {})}
+            >
+              <Icon size={15} stroke={1.75} aria-hidden="true" />
+              {link.label}
+            </a>
+          );
+        })
+      }
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <a
+        href="https://github.com/dewnetwork/dew"
+        class="hidden items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-xs text-muted transition-colors hover:bg-panel/50 hover:text-frost sm:inline-flex"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="GitHub repository"
+      >
+        <IconBrandGithub size={16} stroke={1.75} />
+        <span>GitHub</span>
+      </a>
+      <a href="#builders" class="btn-primary !px-4 !py-2">
+        Start building
+        <IconArrowRight size={16} stroke={2} />
+      </a>
+    </div>
+  </div>
+</header>
