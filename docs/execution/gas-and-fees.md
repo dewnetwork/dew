@@ -61,10 +61,17 @@ Burning base fee still creates deflationary pressure under high load.
 
 | Parameter | Value | Notes |
 | :-------- | ----: | :---- |
-| `DefaultDewTxFeeWei` | `2_100_000_000_000` (2100 gwei) | ~10% of a 21_000 gas transfer at 1 gwei base fee |
+| `DefaultDewTxFeeWei` | `2_100_000_000_000` (2100 gwei) | 10% of a 21_000 gas transfer at 1 gwei base fee |
+| `MinDewTxFeeWei` | same as default | Spam floor; `Fee=0` on wire still charges default |
 | Domain tag | `DewTx:v1` | Mixed into signing hash (see [Transactions](../protocol/transactions.md)) |
 
-Defined in Go as `params.DefaultDewTxFeeWei`. Fee is paid to the block proposer (fee sink).
+Formula (normative for quoting; constant is what nodes charge today):
+
+$$
+\text{DefaultDewTxFeeWei} = \Big\lfloor 21\,000 \times 10^{9} \times \frac{1}{10} \Big\rfloor
+$$
+
+Defined in Go: `params.DefaultDewTxFeeWei`, `params.TargetDewTxFeeWei(baseFee)`. Fee is paid to the block proposer (fee sink).
 
 ## Dew system precompile gas (Phase B)
 
@@ -73,7 +80,20 @@ Defined in Go as `params.DefaultDewTxFeeWei`. Fee is paid to the block proposer 
 | `0x100` | Native transfer | `3_000` |
 | `0x102` | Staking stub | `2_000` (reverts until enabled) |
 
-See [Precompiles](./precompiles.md).
+Rationale: `0x100` is a fixed-cost native balance move (no interpreter loop). It must stay well below 21_000 so contracts prefer it over spinning EVM transfers when bridging value. See [Precompiles](./precompiles.md).
+
+## B4 fee tuning notes
+
+Load tests (`go test ./tests/load/`) and benches (`go test -bench=. ./core/vm/ ./core/native/`) inform the following freezes:
+
+| Observation | Decision |
+| :---------- | :------- |
+| Native DewTx throughput ≫ EVM transfer for pure payments | Keep flat fee at **10%** of simple transfer reference, not lower — anti-spam |
+| PE fork overhead can dominate for 21k gas transfers | PE is for **block capacity**, not micro-tx latency; do not raise gas to “force” PE wins |
+| `0x100` gas 3_000 | Unchanged; still ≪ ERC-20 transfer |
+| Block gas limit 120M | Unchanged; PE increases effective fill rate when non-conflicting |
+
+Re-tune only via an explicit hardfork / genesis parameter change — do not drift constants silently.
 
 ## Header fields
 
