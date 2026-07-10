@@ -8,4 +8,4 @@ status: draft
 
 # Development
 
-How to build Dewchain from scratch in the **Go + Node monorepo** (Node owns docs site build).
+How to build Dew from scratch in the **Go + Node monorepo** (Node owns docs site build).

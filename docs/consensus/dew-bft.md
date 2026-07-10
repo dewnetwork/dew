@@ -1,6 +1,6 @@
 ---
 title: Dew-BFT
-description: Byzantine fault tolerant consensus protocol for Dewchain.
+description: Byzantine fault tolerant consensus protocol for Dew.
 category: consensus
 order: 10
 status: draft
@@ -33,10 +33,16 @@ Dew-BFT is a **Proof-of-Staked Authority (PoSA)** BFT engine: bonded validators 
 
 For each height \(H\), rounds \(R = 0, 1, \ldots\):
 
-```
-NewRound → Propose → Prevote → Precommit → Commit
-                ▲                  │
-                └──── timeout ─────┘
+```mermaid
+stateDiagram-v2
+  [*] --> NewRound
+  NewRound --> Propose
+  Propose --> Prevote
+  Prevote --> Precommit: >2/3 prevotes for B
+  Prevote --> NewRound: timeout / nil polka
+  Precommit --> Commit: >2/3 precommits for B
+  Precommit --> NewRound: timeout / nil
+  Commit --> [*]: height H+1, round 0
 ```
 
 ### Propose

@@ -1,6 +1,6 @@
 ---
 title: Blocks
-description: Block header and body structure for Dewchain.
+description: Block header and body structure for Dew.
 category: protocol
 order: 40
 status: draft

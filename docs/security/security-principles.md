@@ -1,6 +1,6 @@
 ---
 title: Security Principles
-description: Engineering practices that make Dewchain safer than a rushed chain fork.
+description: Engineering practices that make Dew safer than a rushed chain fork.
 category: security
 order: 20
 status: draft

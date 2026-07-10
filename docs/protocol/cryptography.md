@@ -1,6 +1,6 @@
 ---
 title: Cryptography
-description: Key pairs, hashing, and signature standards for Dewchain.
+description: Key pairs, hashing, and signature standards for Dew.
 category: protocol
 order: 10
 status: draft
@@ -8,7 +8,7 @@ status: draft
 
 # Cryptography
 
-Dewchain uses the same core primitives as Ethereum so wallets and libraries interoperate without custom crypto stacks.
+Dew uses the same core primitives as Ethereum so wallets and libraries interoperate without custom crypto stacks.
 
 ## Hash function
 

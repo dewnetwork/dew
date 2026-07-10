@@ -18,6 +18,17 @@ Bandwidth-efficient propagation:
 4. Respond with `TxPayload` or `BlockPayload`
 5. Recipients re-announce to their peers
 
+```mermaid
+sequenceDiagram
+  participant A as Node A
+  participant B as Node B
+  A->>A: Validate locally
+  A->>B: Inventory hash
+  B->>A: GetData hash
+  A->>B: TxPayload / BlockPayload
+  B->>B: Validate + re-announce
+```
+
 ### Transactions
 
 Mempool admission before gossip. Do not relay invalid signatures or wrong chain ID.
@@ -31,12 +42,14 @@ Mempool admission before gossip. Do not relay invalid signatures or wrong chain 
 
 When `peer.Height > self.Height + threshold`:
 
-```
-Handshake heights
-    → request blocks in chunks (e.g. 100)
-    → verify headers (and commit certs when available)
-    → execute sequentially
-    → advance until live
+```mermaid
+flowchart TD
+  H[Handshake heights] --> R[Request blocks in chunks e.g. 100]
+  R --> V[Verify headers + commit certs]
+  V --> E[Execute sequentially]
+  E --> L{Caught up?}
+  L -->|no| R
+  L -->|yes| Live[Follow live gossip]
 ```
 
 ### Rules

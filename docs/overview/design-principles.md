@@ -21,7 +21,7 @@ Dew-specific features must not break the default Ethereum path.
 
 ## 2. One monorepo, two runtimes (Go + Node)
 
-Dewchain is a **monorepo**:
+Dew is a **monorepo**:
 
 - **Go** — canonical L1 (node, consensus, P2P, state, EVM, RPC server, CLI)
 - **Node.js** — **build the documentation website** from `docs/`; also scripts, localnet, RPC tests, later SDK
@@ -30,7 +30,7 @@ Do not split node / docs / SDK into separate product repos without a strong reas
 
 ## 3. Build from scratch, reuse battle-tested pieces
 
-The **node, consensus, p2p, and state pipeline** are Dewchain-owned Go code.  
+The **node, consensus, p2p, and state pipeline** are Dew-owned Go code.  
 Libraries that are hard to get right (EVM interpreter, secp256k1, RLP) may be reused from mature implementations (e.g. go-ethereum packages) behind clean interfaces.
 
 ## 4. Separate execution from commitment
@@ -68,7 +68,7 @@ Fees, inflation, staking minimums, and slash percentages must live in **normativ
 
 ## 9. Operational model (Go node + Node docs/tooling)
 
-- Single Go binary node (`dewchain`) + CLI (`dewcli`)
+- Single Go binary node (`dew`) + CLI (`dewcli`)
 - Node.js to **build/preview web docs** (VitePress: `docs:dev` / `docs:build`) and later localnet, smoke tests, SDK
 - Config via files + flags
 - Observability hooks from day one (logs, basic metrics)

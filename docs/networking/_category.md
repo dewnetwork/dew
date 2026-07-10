@@ -8,4 +8,4 @@ status: draft
 
 # Networking
 
-Peer-to-peer layer for Dewchain nodes.
+Peer-to-peer layer for Dew nodes.

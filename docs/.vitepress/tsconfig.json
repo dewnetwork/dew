@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "baseUrl": ".",
+    "paths": {
+      "@theme/*": ["./theme/*"]
+    }
+  },
+  "include": ["./**/*.ts", "./**/*.mts", "./**/*.vue", "./**/*.d.ts"],
+  "exclude": ["./dist", "./cache"]
+}

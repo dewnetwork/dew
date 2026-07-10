@@ -10,7 +10,7 @@ status: draft
 
 ## Intent
 
-Dewchain should feel like a **custom EVM chain** to developers: same keys, same contracts, same RPC habits. Differences appear in consensus, finality, fees level, and (later) optional native APIs.
+Dew should feel like a **custom EVM chain** to developers: same keys, same contracts, same RPC habits. Differences appear in consensus, finality, fees level, and (later) optional native APIs.
 
 ## Compatible in Phase A
 
@@ -27,7 +27,7 @@ Dewchain should feel like a **custom EVM chain** to developers: same keys, same 
 
 ## Deliberately different (still “EVM compatible”)
 
-| Area          | Ethereum         | Dewchain                                 |
+| Area          | Ethereum         | Dew                                 |
 | :------------ | :--------------- | :--------------------------------------- |
 | Consensus     | Gasper (PoS)     | Dew-BFT (PoSA / bonded validators)       |
 | Finality      | Epoch-based      | Instant on commit                        |

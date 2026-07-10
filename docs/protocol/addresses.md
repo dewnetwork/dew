@@ -32,7 +32,7 @@ $$
 
 ## Address namespaces
 
-Dewchain reserves ranges so dual execution can grow without colliding with user contracts.
+Dew reserves ranges so dual execution can grow without colliding with user contracts.
 
 | Namespace            | Range                 | Phase | VM / engine                                  |
 | :------------------- | :-------------------- | :---- | :------------------------------------------- |

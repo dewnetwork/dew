@@ -8,4 +8,4 @@ status: draft
 
 # Security
 
-Assumptions, threats, and engineering controls for Dewchain.
+Assumptions, threats, and engineering controls for Dew.

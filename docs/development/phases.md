@@ -69,7 +69,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 - [ ] Foundry/Hardhat deploy succeeds against local node
 - [ ] Optional: Node smoke script under monorepo `scripts/` hits `eth_chainId`
 
-**Packages:** `rpc/`, `cmd/dewchain` (+ Node test script if added)
+**Packages:** `rpc/`, `cmd/dew` (+ Node test script if added)
 
 ---
 

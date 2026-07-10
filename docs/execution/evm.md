@@ -1,6 +1,6 @@
 ---
 title: EVM Integration
-description: Embedding the Ethereum Virtual Machine in the Dewchain node.
+description: Embedding the Ethereum Virtual Machine in the Dew node.
 category: execution
 order: 20
 status: draft
@@ -10,11 +10,11 @@ status: draft
 
 ## Approach
 
-Dewchain embeds a standard EVM interpreter (typically via `go-ethereum` `core/vm`) behind a thin adapter. Opcode semantics follow the **Cancun-era** rules enabled from genesis (see [Genesis](../economics/genesis.md)).
+Dew embeds a standard EVM interpreter (typically via `go-ethereum` `core/vm`) behind a thin adapter. Opcode semantics follow the **Cancun-era** rules enabled from genesis (see [Genesis](../economics/genesis.md)).
 
 ```
 ┌─────────────────────────────────────┐
-│         Dewchain Executor           │
+│         Dew Executor           │
 └─────────────────┬───────────────────┘
                   │
                   ▼

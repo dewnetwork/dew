@@ -23,7 +23,7 @@ Ethereum’s `storageRoot` may be retained for compatibility hashes or replaced 
 
 ## Flat database model
 
-Ethereum’s bottleneck is often MPT on the hot path. Dewchain uses:
+Ethereum’s bottleneck is often MPT on the hot path. Dew uses:
 
 | DB           | Mapping                                |
 | :----------- | :------------------------------------- |
@@ -32,6 +32,21 @@ Ethereum’s bottleneck is often MPT on the hot path. Dewchain uses:
 | `code_db`    | `codeHash → bytecode` (optional split) |
 
 Execution reads/writes these KV stores (plus memory cache). No trie walk per opcode.
+
+```mermaid
+flowchart LR
+  subgraph Hot["Hot path: flat KV"]
+    EX[EVM / Executor] --> Cache[Memory cache]
+    Cache --> SDB[(state_db)]
+    Cache --> STDB[(storage_db)]
+    Cache --> CDB[(code_db)]
+  end
+  subgraph Commit["Commit: SMT"]
+    Dirty[Dirty accounts + slots] --> SMT[Sparse Merkle Tree]
+    SMT --> Root[header.StateRoot]
+  end
+  Cache --> Dirty
+```
 
 ## State root commitment
 

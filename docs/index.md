@@ -1,9 +1,9 @@
 ---
 layout: home
-title: Dewchain Docs
+title: Dew Docs
 description: High-performance, EVM-compatible Layer 1 — protocol and engineering documentation.
 hero:
-  name: Dewchain
+  name: Dew
   text: EVM L1 built from scratch
   tagline: Faster finality, flatter state, ETH-first DX — documented for builders of the Go + Node monorepo.
   actions:

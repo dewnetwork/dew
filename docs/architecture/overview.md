@@ -1,6 +1,6 @@
 ---
 title: Architecture Overview
-description: High-level node architecture and data flow for Dewchain.
+description: High-level node architecture and data flow for Dew.
 category: architecture
 order: 10
 status: draft
@@ -8,11 +8,11 @@ status: draft
 
 # Architecture Overview
 
-Dewchain is developed as a **monorepo**: the **Go** process is the chain node; **Node.js** builds the **docs website** (and later tooling) and does **not** run consensus. See [Monorepo layout](../development/go-project-layout.md).
+Dew is developed as a **monorepo**: the **Go** process is the chain node; **Node.js** builds the **docs website** (and later tooling) and does **not** run consensus. See [Monorepo layout](../development/go-project-layout.md).
 
 ## Node at a glance
 
-A full Dewchain node is a single Go process that:
+A full Dew node is a single Go process that:
 
 1. Accepts transactions (RPC / P2P)
 2. Holds them in a mempool
@@ -21,25 +21,24 @@ A full Dewchain node is a single Go process that:
 5. Persists blocks and state
 6. Serves JSON-RPC to wallets and dapps
 
-```
-                    ┌─────────────────────────────────────────┐
-                    │              dewchain node              │
-                    │                                         │
-  Wallets/Tools ───▶│  JSON-RPC  ──▶ Mempool ──▶ Consensus    │
-                    │     │                       │           │
-  Peers ◀──────────▶│    P2P  ◀───────────────────┤           │
-                    │     │                       ▼           │
-                    │     │              Execution (EVM)      │
-                    │     │                       │           │
-                    │     └──────────▶  State DB / Block DB   │
-                    └─────────────────────────────────────────┘
+```mermaid
+flowchart LR
+  W[Wallets / tools] --> RPC[JSON-RPC]
+  Peers[Peers] <--> P2P[P2P]
+  RPC --> MP[Mempool]
+  P2P --> MP
+  MP --> C[Consensus Dew-BFT]
+  C --> EX[Execution EVM]
+  EX --> DB[(State + Block DB)]
+  P2P <--> C
+  RPC -.-> DB
 ```
 
 ## Component map
 
 | Component        | Package (target)             | Responsibility                      |
 | :--------------- | :--------------------------- | :---------------------------------- |
-| CLI / node entry | `cmd/dewchain`, `cmd/dewcli` | Process bootstrap, wallet utilities |
+| CLI / node entry | `cmd/dew`, `cmd/dewcli` | Process bootstrap, wallet utilities |
 | Types            | `core/types`                 | Block, header, tx, receipt          |
 | State            | `core/state`                 | Accounts, storage, commit, roots    |
 | VM               | `core/vm`                    | EVM wrapper + StateDB bridge        |
@@ -54,16 +53,26 @@ A full Dewchain node is a single Go process that:
 
 ### A. User transaction (Phase A)
 
-```
-Client → eth_sendRawTransaction
-      → decode RLP + verify ECDSA + chain ID
-      → mempool (nonce/balance checks)
-      → gossip Inventory/Tx to peers
-      → proposer includes in block
-      → all validators execute sequentially
-      → StateRoot + ReceiptRoot match
-      → BFT Prevote / Precommit / Commit
-      → persist block + apply state
+```mermaid
+sequenceDiagram
+  participant Client
+  participant RPC as JSON-RPC
+  participant MP as Mempool
+  participant P2P
+  participant Prop as Proposer
+  participant Vals as Validators
+  participant DB as State/Block DB
+
+  Client->>RPC: eth_sendRawTransaction
+  RPC->>RPC: decode RLP + verify ECDSA + chainId
+  RPC->>MP: admit (nonce / balance)
+  MP->>P2P: gossip Inventory / Tx
+  Prop->>MP: pull txs into block
+  Prop->>Vals: Proposal (header + body)
+  Vals->>Vals: execute sequentially
+  Vals->>Vals: StateRoot + ReceiptRoot match
+  Vals->>Vals: Prevote → Precommit → Commit
+  Vals->>DB: persist block + apply state
 ```
 
 ### B. State commitment (normative)
@@ -78,11 +87,14 @@ Background SMT construction is an **implementation optimization** only if it doe
 
 ### C. Phase B extension (not on critical path for v0)
 
-```
-Mempool → (optional) access-list hints
-       → Dew-PE workers + MVCC
-       → validate / re-execute conflicts
-       → same deterministic post-state as sequential
+```mermaid
+flowchart TD
+  MP[Mempool] --> Hints[Optional access-list hints]
+  Hints --> PE[Dew-PE workers + MVCC]
+  PE --> Val{Validate read sets}
+  Val -->|conflict| Re[Re-execute Ti + dependents]
+  Re --> Val
+  Val -->|ok| Root[Same StateRoot as sequential]
 ```
 
 Parallel execution is a **performance layer**. Consensus still verifies the same post-state root.
@@ -94,6 +106,21 @@ Parallel execution is a **performance layer**. Consensus still verifies the same
 | Validator         | optional |   yes   | when selected  |         yes          |
 | Full node         |   yes    |   yes   |       no       | no (follows commits) |
 | RPC-only (future) |   yes    | limited |       no       |          no          |
+
+```mermaid
+flowchart TB
+  subgraph Validators
+    V1[Validator A]
+    V2[Validator B]
+    V3[Validator C]
+  end
+  FN[Full node] --> V1
+  FN --> V2
+  FN --> V3
+  RPC[RPC-only future] -.-> FN
+  Apps[Wallets / dapps] --> RPC
+  Apps --> FN
+```
 
 ## Design boundaries
 

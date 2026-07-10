@@ -79,7 +79,7 @@ Minimum **3** validators recommended for local BFT testing.
 ## Init command (target UX)
 
 ```bash
-dewchain init --genesis ./genesis.json --datadir ./data
+dew init --genesis ./genesis.json --datadir ./data
 ```
 
 Effects:
@@ -87,4 +87,4 @@ Effects:
 1. Write genesis block (height 0)
 2. Apply `alloc` to state DB
 3. Persist initial validator set
-4. Ready for `dewchain start`
+4. Ready for `dew start`

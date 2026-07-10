@@ -70,7 +70,7 @@ out/
 id_ed25519
 id_rsa
 
-# --- Node / chain local data (when running dewchain) ---
+# --- Node / chain local data (when running dew) ---
 data/
 datadir/
 *.db

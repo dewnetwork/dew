@@ -1,6 +1,6 @@
 ---
 title: Vision
-description: Why Dewchain exists and what success looks like.
+description: Why Dew exists and what success looks like.
 category: overview
 order: 10
 status: draft
@@ -19,9 +19,9 @@ Ethereum is the smart-contract standard, but the base layer is constrained by:
 
 L2s help scale execution, but they introduce bridges, different security assumptions, and extra operational complexity. Many teams still need a **simple L1** that feels like Ethereum for developers, yet is engineered for higher throughput and lower cost.
 
-## What Dewchain is
+## What Dew is
 
-**Dewchain** is a Layer 1 blockchain written **from scratch** in a **Go + Node monorepo** (protocol in Go; **Node builds the docs website** and later tooling):
+**Dew** is a Layer 1 blockchain written **from scratch** in a **Go + Node monorepo** (protocol in Go; **Node builds the docs website** and later tooling):
 
 1. **EVM-compatible** — same accounts, signatures, Solidity contracts, and JSON-RPC surface for standard tooling.
 2. **BFT finality** — Dew-BFT commits blocks with instant finality under the protocol’s honesty assumptions.
@@ -46,9 +46,24 @@ L2s help scale execution, but they introduce bridges, different security assumpt
 
 ## Build philosophy
 
-```
-Correct & compatible  →  Fast enough  →  Native & parallel
-     (Phase A)              (tune)           (Phase B)
+```mermaid
+flowchart LR
+  A[Phase A<br/>Correct & compatible] --> T[Tune<br/>Fast enough]
+  T --> B[Phase B<br/>Native & parallel]
 ```
 
-Every design choice should answer: _Does this make Dewchain faster, safer, or cheaper without breaking the Ethereum developer path?_
+Every design choice should answer: _Does this make Dew faster, safer, or cheaper without breaking the Ethereum developer path?_
+
+```mermaid
+quadrantChart
+  title Directional product goals
+  x-axis Low cost --> High cost
+  y-axis Slow / probabilistic --> Fast / final
+  quadrant-1 Ideal zone
+  quadrant-2 Expensive speed
+  quadrant-3 Stuck base
+  quadrant-4 Cheap but slow
+  Ethereum L1 today: [0.72, 0.35]
+  Typical L2 path: [0.35, 0.65]
+  Dew target: [0.28, 0.82]
+```

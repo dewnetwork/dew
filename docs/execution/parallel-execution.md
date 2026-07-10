@@ -17,29 +17,22 @@ Sequential EVM leaves CPU cores idle. Dew-PE runs non-conflicting transactions c
 
 ## Model: optimistic Block-STM style
 
-Dewchain does **not** require users to declare access lists for normal EVM txs (lists are often wrong for dynamic contracts). Instead:
+Dew does **not** require users to declare access lists for normal EVM txs (lists are often wrong for dynamic contracts). Instead:
 
 1. Execute optimistically in parallel
 2. Record read/write sets in an MVCC cache
 3. Validate; re-execute on conflict
 4. Commit a final state identical to serial order \(T_0, T_1, \ldots\)
 
-```
-Block txs [T0..Tn]
-        │
-        ▼
-  Worker pool (goroutines)
-        │
-        ▼
-  MVCC read/write sets
-        │
-        ▼
-  Validate by increasing index
-        │
-   conflict? ──yes──▶ abort write set, re-execute Ti (+ dependents)
-        │ no
-        ▼
-  Merge → StateRoot
+```mermaid
+flowchart TD
+  T[Block txs T0..Tn] --> W[Worker pool goroutines]
+  W --> MVCC[MVCC read/write sets]
+  MVCC --> V[Validate by increasing index]
+  V -->|conflict| A[Abort write set]
+  A --> R[Re-execute Ti + dependents]
+  R --> V
+  V -->|ok| M[Merge → StateRoot]
 ```
 
 ## MVCC cache

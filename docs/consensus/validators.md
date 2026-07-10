@@ -36,6 +36,16 @@ Quorum and proposer weight use \(VP_i\).
 3. Top \(K\) become active set for next epoch
 4. In-epoch stake changes apply at next boundary (unless emergency jail)
 
+```mermaid
+flowchart TD
+  Cand[Candidates: self-stake ≥ min] --> Rank[Rank by voting power]
+  Del[Delegators bond DEW] --> Rank
+  Rank --> Top[Top K active set]
+  Top --> Epoch[Serve epoch ~86,400 blocks]
+  Epoch --> Bound[Next epoch boundary]
+  Bound --> Rank
+```
+
 ## Proposer selection
 
 **Stake-weighted round-robin**: higher \(VP\) proposes proportionally more often, but selection is deterministic from `(height, round, valset)`.

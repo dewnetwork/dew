@@ -1,6 +1,6 @@
 ---
 title: Monorepo Layout
-description: Dewchain monorepo — Go L1 core plus Node.js for docs website and tooling.
+description: Dew monorepo — Go L1 core plus Node.js for docs website and tooling.
 category: development
 order: 10
 status: draft
@@ -8,7 +8,7 @@ status: draft
 
 # Monorepo Layout
 
-Dewchain is developed as a **single monorepo**: one git repository, one product surface, shared docs and CI.
+Dew is developed as a **single monorepo**: one git repository, one product surface, shared docs and CI.
 
 ## Stack split
 
@@ -33,9 +33,9 @@ Dewchain is developed as a **single monorepo**: one git repository, one product 
 ## Target tree
 
 ```
-dewchain/                          # monorepo root
+dew/                          # monorepo root
 ├── cmd/
-│   ├── dewchain/                  # Go: full node entrypoint
+│   ├── dew/                       # Go: full node entrypoint
 │   └── dewcli/                    # Go: wallet / util CLI
 ├── core/
 │   ├── types/                     # Header, block, tx, receipt
@@ -93,15 +93,15 @@ Node is the **docs website + tooling lane** of the monorepo:
 
 ### Docs web flow
 
-```
-docs/**/*.md  (+ frontmatter, sidebar.yaml)
-        │
-        ▼
-  VitePress (docs/.vitepress/)
-        │
-        ├── pnpm docs:dev     → local preview (:5173)
-        ├── pnpm docs:build   → docs/.vitepress/dist
-        └── pnpm docs:preview → serve production build
+```mermaid
+flowchart TD
+  MD["docs/**/*.md + frontmatter"] --> SB[sidebar.yaml]
+  MD --> VP[VitePress docs/.vitepress]
+  SB --> VP
+  VP --> Dev["pnpm docs:dev :5173"]
+  VP --> Build["pnpm docs:build"]
+  Build --> Dist[docs/.vitepress/dist]
+  Dist --> Preview["pnpm docs:preview"]
 ```
 
 - Authors edit markdown only under `docs/`.
@@ -126,7 +126,7 @@ Root scripts (wired):
 
 Typical pipeline lanes:
 
-1. **Go**: `go test ./...`, lint, build `dewchain` / `dewcli`
+1. **Go**: `go test ./...`, lint, build `dew` / `dewcli`
 2. **Node / docs**: install deps, `docs:build` (markdown site still compiles)
 3. **Integration** (later): start Go node → run Node RPC smoke tests
 

@@ -1,6 +1,6 @@
 ---
 title: Threat Model
-description: Assets, adversaries, and trust assumptions for Dewchain.
+description: Assets, adversaries, and trust assumptions for Dew.
 category: security
 order: 10
 status: draft
@@ -18,6 +18,20 @@ status: draft
 | RPC availability  | App outage                         |
 | P2P bandwidth/CPU | Network DoS                        |
 
+```mermaid
+mindmap
+  root((Dew assets))
+    Keys
+      User wallets
+      Validator signing
+    Ledger
+      Balances
+      State roots
+    Availability
+      RPC
+      P2P bandwidth
+```
+
 ## Trust assumptions (Dew-BFT)
 
 - Safety holds if **&lt; 1/3** of voting power is Byzantine
@@ -33,6 +47,15 @@ status: draft
 | Network attacker    | Drop/delay/partition                | Timeouts, peer scoring, multi-peer sync         |
 | RPC attacker        | Crafted JSON, heavy `eth_call`      | Auth (optional), rate limits, gas caps on calls |
 | Supply chain        | Malicious deps                      | Pin modules, audit crypto deps                  |
+
+```mermaid
+flowchart LR
+  U[Malicious user] -->|invalid / spam| MP[Mempool + gas]
+  V[Malicious validator] -->|bad block / double-sign| C[Root checks + slash]
+  N[Network attacker] -->|drop / partition| P[Timeouts + multi-peer]
+  R[RPC attacker] -->|heavy call| L[Rate limit + gas cap]
+  S[Supply chain] -->|bad dep| Pin[Pin + audit]
+```
 
 ## Explicit non-goals (early testnet)
 

@@ -36,6 +36,14 @@ $$
 | **Base fee**           | Protocol-adjusted each block; **burned** (removed from supply)                           |
 | **Priority fee (tip)** | User-selected; paid to **block proposer** (or validator reward pool — freeze one policy) |
 
+```mermaid
+flowchart LR
+  User[User pays gasUsed × maxFee] --> Split{Split}
+  Split -->|baseFee × gasUsed| Burn[Burned]
+  Split -->|priorityFee × gasUsed| Prop[Proposer / validators]
+  Split -->|overpay maxFee - effective| Refund[Refund to sender]
+```
+
 Base fee update rule: follow Ethereum’s elasticity / denominator constants unless a Dew-specific config is set in genesis.
 
 ## Why cheaper than ETH (mechanism, not marketing)

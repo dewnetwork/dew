@@ -33,6 +33,13 @@ Block reward \(R\) is derived from the annual target and actual blocks produced.
 | 90%   | Proposer + voting validators (define exact split at freeze) |
 | 10%   | Community treasury                                          |
 
+```mermaid
+pie showData
+  title Block reward split (tentative)
+  "Proposer + voting validators" : 90
+  "Community treasury" : 10
+```
+
 ## Fee market
 
 EIP-1559 style — see [Gas and fees](../execution/gas-and-fees.md):
@@ -41,6 +48,16 @@ EIP-1559 style — see [Gas and fees](../execution/gas-and-fees.md):
 - **Priority fee**: to proposer / validators
 
 Net supply = genesis + issuance − burned base fees.
+
+```mermaid
+flowchart LR
+  Genesis[Genesis 1B DEW] --> Supply[Circulating supply]
+  Issuance[Block rewards] --> Supply
+  Supply --> Burn[Base fee burn]
+  Burn --> Supply
+  Tips[Priority fees] --> Vals[Validators]
+  Issuance --> Split[90% validators / 10% treasury]
+```
 
 ## Staking
 

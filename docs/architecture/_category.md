@@ -8,4 +8,4 @@ status: draft
 
 # Architecture
 
-How a Dewchain node is structured and how major packages interact.
+How a Dew node is structured and how major packages interact.

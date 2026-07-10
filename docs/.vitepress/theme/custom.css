@@ -1,5 +1,5 @@
 /**
- * Dewchain docs theme
+ * Dew docs theme
  * Signature: cool “morning dew” cyan on deep maritime ink —
  * clarity and condensation, not neon-crypto green.
  * Fonts loaded via themeConfig head (Figtree, Syne, IBM Plex Mono).
@@ -214,4 +214,28 @@
   .VPHomeFeatures .VPFeature:hover {
     transform: none;
   }
+}
+
+/* Mermaid diagrams — breathing room + readable in both themes */
+.vp-doc .mermaid,
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+  padding: 1.25rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-border);
+  background: var(--vp-c-bg-soft);
+  overflow-x: auto;
+}
+
+.vp-doc .mermaid svg,
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.dark .vp-doc .mermaid,
+.dark .mermaid {
+  background: var(--vp-c-bg-elv);
 }

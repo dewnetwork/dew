@@ -8,4 +8,4 @@ status: draft
 
 # Protocol
 
-Normative data structures and cryptographic rules for the Dewchain ledger.
+Normative data structures and cryptographic rules for the Dew ledger.

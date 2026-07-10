@@ -1,4 +1,5 @@
-import { defineConfig, type DefaultTheme } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
+import type { DefaultTheme } from 'vitepress'
 import { readFileSync, existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -55,8 +56,8 @@ function titleFromSlug(slug: string): string {
 
 const sidebar = loadSidebar()
 
-export default defineConfig({
-  title: 'Dewchain',
+export default withMermaid({
+  title: 'Dew',
   description:
     'High-performance, EVM-compatible Layer 1 — protocol docs for the Go + Node monorepo.',
   lang: 'en-US',
@@ -75,20 +76,20 @@ export default defineConfig({
     ],
     ['meta', { name: 'theme-color', content: '#0a1628' }],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'Dewchain Docs' }],
+    ['meta', { property: 'og:title', content: 'Dew Docs' }],
     [
       'meta',
       {
         property: 'og:description',
         content:
-          'Protocol, architecture, and development documentation for Dewchain L1.',
+          'Protocol, architecture, and development documentation for Dew L1.',
       },
     ],
   ],
 
   themeConfig: {
-    logo: { src: '/logo.svg', alt: 'Dewchain' },
-    siteTitle: 'Dewchain',
+    logo: { src: '/logo.svg', alt: 'Dew' },
+    siteTitle: 'Dew',
 
     nav: [
       { text: 'Vision', link: '/overview/vision' },
@@ -125,7 +126,7 @@ export default defineConfig({
     },
 
     footer: {
-      message: 'Dewchain monorepo — Go L1 core · Node docs site',
+      message: 'Dew monorepo — Go L1 core · Node docs site',
       copyright: 'Documentation status: draft until public testnet freeze',
     },
 
@@ -142,10 +143,71 @@ export default defineConfig({
     lineNumbers: false,
   },
 
+  mermaid: {
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#3db8a8',
+      primaryTextColor: '#0f1c2e',
+      primaryBorderColor: '#1a8f82',
+      lineColor: '#3d4f63',
+      secondaryColor: '#e8f0ed',
+      tertiaryColor: '#f7faf9',
+      fontFamily: 'Figtree, system-ui, sans-serif',
+    },
+    flowchart: {
+      curve: 'basis',
+      htmlLabels: true,
+      padding: 12,
+    },
+    sequence: {
+      actorMargin: 40,
+      messageMargin: 30,
+    },
+  },
+
   vite: {
     server: {
       port: 5173,
       strictPort: false,
     },
+    // Mermaid imports dayjs as ESM default; CJS dayjs.min.js breaks in the browser.
+    // Use exact /^dayjs$/ only — a string alias prefixes subpaths like dayjs/plugin/* incorrectly.
+    resolve: {
+      alias: [
+        { find: /^dayjs$/, replacement: 'dayjs/esm/index.js' },
+        {
+          find: 'dayjs/plugin/duration.js',
+          replacement: 'dayjs/esm/plugin/duration',
+        },
+        {
+          find: 'dayjs/plugin/advancedFormat.js',
+          replacement: 'dayjs/esm/plugin/advancedFormat',
+        },
+        {
+          find: 'dayjs/plugin/customParseFormat.js',
+          replacement: 'dayjs/esm/plugin/customParseFormat',
+        },
+        {
+          find: 'dayjs/plugin/isoWeek.js',
+          replacement: 'dayjs/esm/plugin/isoWeek',
+        },
+      ],
+    },
+    optimizeDeps: {
+      include: [
+        'dayjs',
+        'dayjs/esm/index.js',
+        'dayjs/esm/plugin/advancedFormat',
+        'dayjs/esm/plugin/customParseFormat',
+        'dayjs/esm/plugin/isoWeek',
+        'dayjs/esm/plugin/duration',
+        'mermaid',
+      ],
+    },
+    ssr: {
+      noExternal: ['mermaid', 'dayjs', 'vitepress-plugin-mermaid'],
+    },
   },
 })
+
+

@@ -23,7 +23,7 @@ Content-Type: `application/json`. JSON-RPC 2.0.
 
 | Method | Notes |
 | :--- | :--- |
-| `web3_clientVersion` | e.g. `Dewchain/v0.1.0/go1.22` |
+| `web3_clientVersion` | e.g. `Dew/v0.1.0/go1.22` |
 | `net_version` | Decimal network id string, e.g. `"2026"` |
 | `eth_chainId` | Hex chain id, e.g. `"0x7ea"` (2026) |
 | `net_listening` | Boolean |

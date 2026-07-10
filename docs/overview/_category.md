@@ -8,4 +8,4 @@ status: draft
 
 # Overview
 
-High-level product intent for Dewchain: why it exists, design constraints, and what “Ethereum compatible” means in Phase A.
+High-level product intent for Dew: why it exists, design constraints, and what “Ethereum compatible” means in Phase A.

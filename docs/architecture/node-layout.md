@@ -1,6 +1,6 @@
 ---
 title: Node Internals
-description: Internal subsystems, interfaces, and lifecycle of a Dewchain node.
+description: Internal subsystems, interfaces, and lifecycle of a Dew node.
 category: architecture
 order: 20
 status: draft
@@ -10,14 +10,17 @@ status: draft
 
 ## Process lifecycle
 
-```
-1. Load config + genesis
-2. Open databases (block, state, peer store)
-3. Init genesis if empty chain
-4. Start P2P host
-5. Start consensus reactor (validator or observer)
-6. Start RPC servers (HTTP 8545, WS 8546 by default)
-7. Signal ready; handle SIGINT/SIGTERM gracefully
+```mermaid
+flowchart TD
+  A[Load config + genesis] --> B[Open DBs: block, state, peers]
+  B --> C{Empty chain?}
+  C -->|yes| D[Init genesis]
+  C -->|no| E[Start P2P host]
+  D --> E
+  E --> F[Start consensus: validator or observer]
+  F --> G[Start RPC HTTP 8545 / WS 8546]
+  G --> H[Ready]
+  H --> I[SIGINT / SIGTERM → graceful shutdown]
 ```
 
 ## Core interfaces (conceptual Go)
