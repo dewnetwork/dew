@@ -59,6 +59,9 @@ func (e *Executor) ApplyDewTx(tx *types.DewTx) (*Result, error) {
 	if fee == 0 {
 		fee = params.DefaultDewTxFeeWei
 	}
+	if fee < params.MinDewTxFeeWei {
+		return nil, fmt.Errorf("native: fee %d below minimum %d", fee, params.MinDewTxFeeWei)
+	}
 
 	allowed := map[crypto.Address]struct{}{
 		tx.Sender:   {},

@@ -171,3 +171,17 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 **Packages:** `core/vm` (`precompiles.go`)
 
 **Notes:** `0x100` native transfer (fixed 3_000 gas) forwards CALLVALUE to a 20-byte recipient; `0x102` staking reserved stub. Flag: `Executor.EnableDewPrecompiles`. Gas table in [Gas and Fees](../execution/gas-and-fees.md).
+
+---
+
+## B4 — Load tests, fee tuning, security audit
+
+**Acceptance:**
+
+- [x] Load / stress tests for PE vs sequential and native path
+- [x] Fee policy frozen with documented tuning rationale
+- [x] Internal Phase B security checklist + adversarial tests
+
+**Packages:** `tests/load`, `tests/security`, `params`, `docs/security/phase-b-audit.md`
+
+**Notes:** `go test ./tests/load/` and `./tests/security/`; benches under `core/vm` and `core/native`. Fee helpers in `params/fee.go`. Residual mainnet items tracked in `agents/debt.md` (external audit, mempool limits, encrypted P2P).

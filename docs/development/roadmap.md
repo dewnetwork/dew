@@ -61,6 +61,7 @@ flowchart TD
 | A7    | [Genesis](../economics/genesis.md), [Ethereum compatibility](../overview/ethereum-compatibility.md)         |
 | B1    | [Parallel execution](../execution/parallel-execution.md)                                                    |
 | B2–B3 | [Dew-native](../execution/dew-native.md), [Dew RPC](../api/dew-extensions.md)                               |
+| B4    | [Gas and fees](../execution/gas-and-fees.md), [Phase B audit](../security/phase-b-audit.md)                 |
 
 ## Milestone definition of done
 
