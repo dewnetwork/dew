@@ -40,15 +40,17 @@ dew_sendRawTransaction
 
 `AccessList` is **mandatory** for `DewTx`. The scheduler assigns txs with disjoint address sets to different workers without optimistic abort (if lists are complete). Incomplete lists that touch undeclared accounts **must fail** the tx (fail closed), not silently escalate privileges.
 
-## Native modules (examples, not commitments)
+## Native modules
 
-| Module                | Address space       | Notes                        |
-| :-------------------- | :------------------ | :--------------------------- |
-| System token transfer | built-in            | Balance move without EVM     |
-| Staking               | precompile / native | Align with consensus staking |
-| DEX / orderbook       | precompile `0x101`  | Later product surface        |
+| Module                | Address space              | Status |
+| :-------------------- | :------------------------- | :----- |
+| System token transfer | DewTx empty payload        | Active (`core/native`) |
+| Secondary credit      | DewTx payload `0x01`       | Active — requires AccessList |
+| Native transfer (EVM) | precompile `0x100`         | Active — CALLVALUE forward |
+| Staking               | precompile `0x102`         | Reserved stub |
+| DEX / orderbook       | precompile `0x101`         | Reserved |
 
-Each module needs: input encoding, auth model, fee, and state keys documented before enablement.
+Each new module needs: input encoding, auth model, fee, and state keys documented before enablement.
 
 ## Compatibility promise
 

@@ -136,9 +136,13 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] Same fixtures as sequential (roots + receipts)
-- [ ] Speedup on non-conflicting workloads
-- [ ] Metrics for rollback rate
+- [x] Same fixtures as sequential (roots + receipts)
+- [x] Speedup on non-conflicting workloads
+- [x] Metrics for rollback rate
+
+**Packages:** `core/vm` (`parallel.go`), `core/state` (Copy / access tracking / overlay)
+
+**Notes:** Optimistic Block-STM style: speculative execute on `StateDB.Copy()`, validate read/write sets in index order, re-exec on conflict, `ApplyOverlay` for non-conflicting. Metrics via `ExecutionStats` / `dew_getExecutionStats`. Free-gas fixtures avoid coinbase tip conflicts for speedup demos.
 
 ---
 
@@ -146,9 +150,13 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] Codec + signature domain frozen
-- [ ] `dew_sendRawTransaction` works
-- [ ] Fail closed on incomplete access lists
+- [x] Codec + signature domain frozen
+- [x] `dew_sendRawTransaction` works
+- [x] Fail closed on incomplete access lists
+
+**Packages:** `core/types` (`dewtx.go`), `core/native`, `node`, `rpc`, `params`
+
+**Notes:** Wire `0xdf \|\| RLP(signed)`; signing hash = `Keccak256(Keccak256("DewTx:v1") \|\| RLP(unsigned))`. Flat fee `params.DefaultDewTxFeeWei`. Native executor fail-closes on undeclared credit targets. Feature flag `Node.SetNativeEnabled`.
 
 ---
 
@@ -156,6 +164,10 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] At least one useful precompile behind feature flag
-- [ ] Gas/fee schedule documented
-- [ ] EVM contracts can call it safely
+- [x] At least one useful precompile behind feature flag
+- [x] Gas/fee schedule documented
+- [x] EVM contracts can call it safely
+
+**Packages:** `core/vm` (`precompiles.go`)
+
+**Notes:** `0x100` native transfer (fixed 3_000 gas) forwards CALLVALUE to a 20-byte recipient; `0x102` staking reserved stub. Flag: `Executor.EnableDewPrecompiles`. Gas table in [Gas and Fees](../execution/gas-and-fees.md).

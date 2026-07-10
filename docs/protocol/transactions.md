@@ -69,15 +69,15 @@ type DewTx struct {
 }
 ```
 
-### Encoding (_tentative_)
+### Encoding (frozen Phase B)
 
-- Prefer **Protobuf** or a single versioned binary codec — **one** must be frozen before testnet.
+- Versioned binary: `0xdf || RLP([version, chainId, nonce, sender, receiver, amount, fee, payload, accessList, yParity, r, s])`.
 - RPC submit via `dew_sendRawTransaction` (hex of signed bytes).
-- Signing hash = Keccak-256 of domain separator + canonical unsigned bytes (domain ≠ EVM tx hash).
+- Signing hash = `Keccak-256(Keccak-256("DewTx:v1") || RLP(unsigned fields))` — domain ≠ EVM tx hash.
 
-### Fee rule (_tentative_)
+### Fee rule (frozen Phase B)
 
-Flat fee equivalent to **~10% of a simple EVM transfer cost** at current base fee, or a protocol constant in wei defined at genesis. Exact formula must be one line in economics before freeze — not both “gas” and “flat” ambiguously.
+Flat fee in wei: `params.DefaultDewTxFeeWei = 2_100_000_000_000` (~10% of 21_000 gas × 1 gwei). Paid to block proposer. Not EVM gas.
 
 ## Receipts
 

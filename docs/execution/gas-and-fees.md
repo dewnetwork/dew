@@ -57,7 +57,23 @@ Burning base fee still creates deflationary pressure under high load.
 
 ## Dew-native fees (Phase B)
 
-`DewTx` uses a **flat fee in wei** (not EVM gas), defined in protocol/genesis. Directionally ~10% of a simple transfer’s effective cost — exact constant TBD before freeze.
+`DewTx` uses a **flat fee in wei** (not EVM gas). Frozen Phase B constant:
+
+| Parameter | Value | Notes |
+| :-------- | ----: | :---- |
+| `DefaultDewTxFeeWei` | `2_100_000_000_000` (2100 gwei) | ~10% of a 21_000 gas transfer at 1 gwei base fee |
+| Domain tag | `DewTx:v1` | Mixed into signing hash (see [Transactions](../protocol/transactions.md)) |
+
+Defined in Go as `params.DefaultDewTxFeeWei`. Fee is paid to the block proposer (fee sink).
+
+## Dew system precompile gas (Phase B)
+
+| Address | Name | Gas |
+| :------ | :--- | ---: |
+| `0x100` | Native transfer | `3_000` |
+| `0x102` | Staking stub | `2_000` (reverts until enabled) |
+
+See [Precompiles](./precompiles.md).
 
 ## Header fields
 

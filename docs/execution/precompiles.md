@@ -27,16 +27,34 @@ Precompiles are native implementations exposed at fixed addresses, callable like
 
 Gas costs: match Cancun unless a documented exception exists.
 
-## Phase B — Dew system precompiles (_planned_)
+## Phase B — Dew system precompiles
 
-Reserved starting at `0x100`:
+Reserved starting at `0x100`. Enabled when the executor feature flag is on
+(`Executor.EnableDewPrecompiles(true)`, default on; matches `params.DefaultEnableDewPrecompiles`).
 
-| Address | Name                    | Purpose                        |
-| :------ | :---------------------- | :----------------------------- |
-| `0x101` | Native swap / orderbook | High-performance market ops    |
-| `0x102` | Staking entrypoint      | Stake / delegate from Solidity |
+| Address | Name               | Gas (fixed) | Status                                      |
+| :------ | :----------------- | ----------: | :------------------------------------------ |
+| `0x100` | Native transfer    |       3_000 | **Active** — forward CALLVALUE to recipient |
+| `0x101` | Native swap / book |         TBD | Reserved                                    |
+| `0x102` | Staking entrypoint |       2_000 | Reserved stub (reverts until staking lands) |
 
-These call into native modules; they are **not** required for Phase A ERC-20 workflows.
+### `0x100` — Native transfer
+
+Useful bridge from Solidity into native DEW movement without an ERC-20 hop.
+
+**Call convention**
+
+- `to` = `0x0000…0100`
+- `value` = amount of native DEW to forward
+- `data` = 20-byte recipient address (exactly 20 bytes)
+
+**Semantics**
+
+1. EVM transfers `value` from caller to `0x100` (standard CALL value rules).
+2. Precompile moves the full balance of `0x100` to `recipient`.
+3. Returns `uint256` amount forwarded (ABI left-padded 32 bytes).
+
+**Rules:** fixed gas; deterministic; reverts on malformed input (not 20 bytes). Feature flag off → address is a normal empty account (value sits at `0x100`, not forwarded).
 
 ### Design rules for custom precompiles
 
@@ -47,4 +65,4 @@ These call into native modules; they are **not** required for Phase A ERC-20 wor
 
 ## Implementation
 
-Register precompiles in the EVM config used by the executor. Keep custom addresses out of the active map until Phase B feature flags enable them.
+`core/vm/precompiles.go` clones Cancun precompiles and registers Dew addresses via `evm.SetPrecompiles` when the flag is enabled. Keep inactive addresses out of the map when the flag is off.
