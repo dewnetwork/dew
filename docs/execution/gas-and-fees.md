@@ -82,6 +82,20 @@ Defined in Go: `params.DefaultDewTxFeeWei`, `params.TargetDewTxFeeWei(baseFee)`.
 
 Rationale: `0x100` is a fixed-cost native balance move (no interpreter loop). It must stay well below 21_000 so contracts prefer it over spinning EVM transfers when bridging value. See [Precompiles](./precompiles.md).
 
+## C1 mempool admission floors
+
+Before inclusion, `mempool.Pool` rejects spam without stalling execution:
+
+| Check | EVM | DewTx |
+| :---- | :-- | :---- |
+| Min gas price / fee cap | ≥ `MinGasPriceWei` (default 1 gwei) | — |
+| Min tip (EIP-1559) | ≥ `MinTipWei` (default 1 wei) | — |
+| Min flat fee | — | ≥ `params.MinDewTxFeeWei` |
+| Max wire size | `MaxTxBytes` (default 128 KiB) | same |
+| Global / per-sender caps | configurable | same pool |
+
+Replace-by-fee: same sender+nonce requires ≥ `PriceBumpPercent` higher comparable price (default 10%). Set bump to 0 to disable RBF.
+
 ## B4 fee tuning notes
 
 Load tests (`go test ./tests/load/`) and benches (`go test -bench=. ./core/vm/ ./core/native/`) inform the following freezes:

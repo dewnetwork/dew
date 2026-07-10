@@ -14,7 +14,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | :--- | :----- | :---- |
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
-| **C1–C6** | Planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
+| **C1–C6** | C1 done; C2–C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
 
 High-level order: [Roadmap](./roadmap.md).
 
@@ -202,15 +202,15 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Acceptance:**
 
-- [ ] Per-sender and global mempool size limits (configurable)
-- [ ] Minimum fee / tip checks aligned with [Gas and fees](../execution/gas-and-fees.md) and `params` helpers
-- [ ] Reject or drop underpriced / oversized payloads without stalling block production
-- [ ] Unit tests for eviction / replace-by-fee (or documented no-RBF rule)
-- [ ] DewTx path uses the same admission surface as EVM txs (or explicitly documented dual pools)
+- [x] Per-sender and global mempool size limits (configurable)
+- [x] Minimum fee / tip checks aligned with [Gas and fees](../execution/gas-and-fees.md) and `params` helpers
+- [x] Reject or drop underpriced / oversized payloads without stalling block production
+- [x] Unit tests for eviction / replace-by-fee (or documented no-RBF rule)
+- [x] DewTx path uses the same admission surface as EVM txs (or explicitly documented dual pools)
 
-**Packages:** `node/`, `rpc/`, new `mempool/` (preferred) or equivalent under `node/`
+**Packages:** `mempool/`, `node/` (`SendRawTransaction` / `SendDewRawTransaction` admit then auto-mine)
 
-**Notes:** Phase B ships flat DewTx fees without auction. C1 adds **admission limits** first; a full fee auction can be a follow-up if spam metrics require it. Threat model expects mempool limits against malicious users.
+**Notes:** Unified pool (`mempool.Pool`) for EVM + DewTx. Defaults: global 4096, per-sender 16, max tx 128 KiB, min gas 1 gwei, min tip 1 wei, min Dew fee = `params.MinDewTxFeeWei`, RBF +10% price bump (`PriceBumpPercent=0` disables RBF). Under global pressure, a strictly cheaper pending tx may be evicted for a higher-priced newcomer. Full fee auction still deferred.
 
 ---
 

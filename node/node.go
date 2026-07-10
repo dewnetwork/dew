@@ -19,6 +19,7 @@ import (
 	"github.com/dewnetwork/dew/core/vm"
 	dewcrypto "github.com/dewnetwork/dew/crypto"
 	"github.com/dewnetwork/dew/db"
+	"github.com/dewnetwork/dew/mempool"
 	"github.com/dewnetwork/dew/params"
 )
 
@@ -47,6 +48,9 @@ type Node struct {
 	enableNative      bool
 	enablePrecompiles bool
 	peStats           vm.ExecutionStats
+
+	// Phase C1: unified mempool admission (EVM + DewTx)
+	pool *mempool.Pool
 }
 
 // TxLookup links a transaction hash to its block placement.
@@ -92,11 +96,39 @@ func NewFromGenesis(g *config.Genesis) (*Node, error) {
 		baseFee:           new(big.Int).Set(h.BaseFee),
 		enableNative:      params.DefaultEnableNativePath,
 		enablePrecompiles: params.DefaultEnableDewPrecompiles,
+		pool:              mempool.New(mempool.DefaultConfig()),
 	}
 	if n.baseFee == nil {
 		n.baseFee = big.NewInt(1_000_000_000)
 	}
+	// Align pool gas floor with node gas price suggestion when higher than default.
+	if n.gasPrice != nil && n.gasPrice.Cmp(n.pool.Config().MinGasPriceWei) > 0 {
+		cfg := mempool.DefaultConfig()
+		cfg.MinGasPriceWei = new(big.Int).Set(n.gasPrice)
+		n.pool = mempool.New(cfg)
+	}
 	return n, nil
+}
+
+// SetMempoolConfig replaces the admission pool (e.g. tests / operator tuning).
+func (n *Node) SetMempoolConfig(cfg mempool.Config) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.pool = mempool.New(cfg)
+}
+
+// Mempool returns the shared admission pool (EVM + DewTx).
+func (n *Node) Mempool() *mempool.Pool {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.pool
+}
+
+// MempoolStats returns (pending count, unique senders).
+func (n *Node) MempoolStats() (global, senders int) {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.pool.Stats()
 }
 
 // SetNativeEnabled toggles dew_sendRawTransaction / DewTx execution.
@@ -234,7 +266,7 @@ func (n *Node) GetReceipt(hash dewtypes.Hash) *dewtypes.Receipt {
 	return n.receipts[hash]
 }
 
-// SendDewRawTransaction decodes a signed DewTx, executes natively, and auto-mines a block.
+// SendDewRawTransaction decodes a signed DewTx, admits via mempool, executes, and auto-mines.
 func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -251,6 +283,14 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	if _, err := tx.RecoverSender(); err != nil {
 		return dewtypes.Hash{}, fmt.Errorf("invalid signature: %w", err)
 	}
+
+	// C1 admission (shared surface with EVM): size / fee / pool limits.
+	hash, err := n.pool.AddDew(tx, raw, n.chainID)
+	if err != nil {
+		return dewtypes.Hash{}, err
+	}
+	// Dev auto-mine path: drop from pool once we attempt inclusion.
+	defer n.pool.Remove(hash)
 
 	feeSink := n.header.Proposer
 	exec := native.NewExecutor(n.statedb, feeSink)
@@ -320,7 +360,7 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	return txHash, nil
 }
 
-// SendRawTransaction decodes, validates, executes, and auto-mines a block with the tx.
+// SendRawTransaction decodes, admits via mempool, validates, executes, and auto-mines.
 func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	tx := new(ethtypes.Transaction)
 	if err := tx.UnmarshalBinary(raw); err != nil {
@@ -344,6 +384,13 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	if tx.Nonce() != nonce {
 		return dewtypes.Hash{}, fmt.Errorf("nonce too low/high: got %d want %d", tx.Nonce(), nonce)
 	}
+
+	// C1 admission (shared surface with DewTx): size / fee / pool limits / RBF.
+	if _, err := n.pool.AddEVM(tx, from, raw, n.chainID); err != nil {
+		return dewtypes.Hash{}, err
+	}
+	txHash := dewtypes.BytesToHash(tx.Hash().Bytes())
+	defer n.pool.Remove(txHash)
 
 	gasPrice := effectiveGasPrice(tx, n.baseFee)
 	if gasPrice == nil {
@@ -394,9 +441,6 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	if newHeader.Timestamp <= parent.Timestamp {
 		newHeader.Timestamp = parent.Timestamp + 1
 	}
-
-	// Encode our tx wrapper for body hash (use eth hash as tx id)
-	txHash := dewtypes.BytesToHash(tx.Hash().Bytes())
 
 	// State root after execution
 	root, err := n.statedb.Commit()

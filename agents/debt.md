@@ -6,10 +6,15 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 
 ## Phase C (in scope — see phases.md)
 
-- [ ] DewTx / EVM mempool admission limits & fee checks — **C1**
+- [x] DewTx / EVM mempool admission limits & fee checks — **C1** (done: `mempool/`)
 - [ ] Cleartext P2P transport is dev-only — encrypted transport **C2**
 - [ ] Flat state root is provisional sorted-leaf commitment — replace with SMT **C3**
 - [ ] Staking precompile `0x102` is a revert stub — implement module **C4**
+
+## C1 residuals
+
+- [ ] Full fee auction / priority ordering for multi-tx block builders (admission-only today; auto-mine path includes immediately)
+- [ ] Pending nonce-gap queue without immediate execute (dev node still auto-mines on admit)
 
 ## Deferred / mainnet
 
