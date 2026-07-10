@@ -32,15 +32,19 @@ type StateDB struct {
 	suicides     map[crypto.Address]struct{}
 
 	// EVM execution support
-	journal         *journal
-	validRevisions  []revision
-	nextRevisionID  int
-	refund          uint64
-	logs            []*types.Log
-	accessList      *accessList
-	transient       transientStorage
-	newContracts    map[crypto.Address]struct{}
-	storageOrigin   map[storageID]types.Hash // committed value before first dirty write in tx
+	journal        *journal
+	validRevisions []revision
+	nextRevisionID int
+	refund         uint64
+	logs           []*types.Log
+	accessList     *accessList
+	transient      transientStorage
+	newContracts   map[crypto.Address]struct{}
+	storageOrigin  map[storageID]types.Hash // committed value before first dirty write in tx
+
+	// Dew-PE access tracking (optional; not concurrent-safe with other writers)
+	trackAccess bool
+	accessSet   *AccessSet
 }
 
 type storageID struct {
@@ -68,6 +72,7 @@ func New(database db.Database) *StateDB {
 
 // Exist reports whether the account is present (including empty accounts created in-cache).
 func (s *StateDB) Exist(addr crypto.Address) bool {
+	s.noteRead(AccountKey(addr))
 	if _, ok := s.suicides[addr]; ok {
 		return false
 	}
@@ -110,6 +115,7 @@ func (s *StateDB) getAccount(addr crypto.Address) *types.Account {
 
 // GetBalance returns the account balance (zero if missing).
 func (s *StateDB) GetBalance(addr crypto.Address) *uint256.Int {
+	s.noteRead(AccountKey(addr))
 	acc := s.getAccount(addr)
 	if acc == nil {
 		return uint256.NewInt(0)
@@ -119,6 +125,7 @@ func (s *StateDB) GetBalance(addr crypto.Address) *uint256.Int {
 
 // SetBalance sets the balance, creating the account if needed.
 func (s *StateDB) SetBalance(addr crypto.Address, bal *uint256.Int) {
+	s.noteWrite(AccountKey(addr))
 	acc := s.GetOrNewAccount(addr)
 	if bal == nil {
 		acc.Balance = uint256.NewInt(0)
@@ -148,6 +155,7 @@ func (s *StateDB) SetBalanceRaw(addr crypto.Address, bal *uint256.Int) {
 
 // GetNonce returns the account nonce (0 if missing).
 func (s *StateDB) GetNonce(addr crypto.Address) uint64 {
+	s.noteRead(AccountKey(addr))
 	acc := s.getAccount(addr)
 	if acc == nil {
 		return 0
@@ -157,6 +165,7 @@ func (s *StateDB) GetNonce(addr crypto.Address) uint64 {
 
 // SetNonce sets the nonce.
 func (s *StateDB) SetNonce(addr crypto.Address, nonce uint64) {
+	s.noteWrite(AccountKey(addr))
 	acc := s.GetOrNewAccount(addr)
 	acc.Nonce = nonce
 	s.accountDirty[addr] = struct{}{}
@@ -164,6 +173,7 @@ func (s *StateDB) SetNonce(addr crypto.Address, nonce uint64) {
 
 // GetCodeHash returns the code hash (EmptyCodeHash if missing).
 func (s *StateDB) GetCodeHash(addr crypto.Address) types.Hash {
+	s.noteRead(AccountKey(addr))
 	acc := s.getAccount(addr)
 	if acc == nil {
 		return types.EmptyCodeHash
@@ -173,6 +183,7 @@ func (s *StateDB) GetCodeHash(addr crypto.Address) types.Hash {
 
 // GetCode returns contract bytecode.
 func (s *StateDB) GetCode(addr crypto.Address) []byte {
+	s.noteRead(AccountKey(addr))
 	hash := s.GetCodeHash(addr)
 	if hash == types.EmptyCodeHash {
 		return nil
@@ -190,6 +201,7 @@ func (s *StateDB) GetCode(addr crypto.Address) []byte {
 
 // SetCode sets contract code and updates CodeHash.
 func (s *StateDB) SetCode(addr crypto.Address, code []byte) {
+	s.noteWrite(AccountKey(addr))
 	acc := s.GetOrNewAccount(addr)
 	if len(code) == 0 {
 		acc.CodeHash = types.EmptyCodeHash
@@ -204,6 +216,7 @@ func (s *StateDB) SetCode(addr crypto.Address, code []byte) {
 
 // GetState returns a storage slot value.
 func (s *StateDB) GetState(addr crypto.Address, slot types.Hash) types.Hash {
+	s.noteRead(StorageKeyAccess(addr, slot))
 	id := storageID{addr: addr, slot: slot}
 	if v, ok := s.storage[id]; ok {
 		return v
@@ -219,6 +232,7 @@ func (s *StateDB) GetState(addr crypto.Address, slot types.Hash) types.Hash {
 
 // SetState sets a storage slot.
 func (s *StateDB) SetState(addr crypto.Address, slot, value types.Hash) {
+	s.noteWrite(StorageKeyAccess(addr, slot))
 	_ = s.GetOrNewAccount(addr) // ensure account exists
 	id := storageID{addr: addr, slot: slot}
 	s.storage[id] = value

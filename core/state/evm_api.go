@@ -9,6 +9,7 @@ import (
 
 // CreateAccount creates a new account or resets an existing one (EVM CreateAccount).
 func (s *StateDB) CreateAccount(addr crypto.Address) {
+	s.noteWrite(AccountKey(addr))
 	prev := s.getAccount(addr)
 	s.journal.append(createObjectChange{account: addr})
 	acc := types.NewAccount()
@@ -27,6 +28,7 @@ func (s *StateDB) CreateContract(addr crypto.Address) {
 
 // SubBalance subtracts amount from the balance. Returns the previous balance.
 func (s *StateDB) SubBalance(addr crypto.Address, amount *uint256.Int) uint256.Int {
+	s.noteWrite(AccountKey(addr))
 	acc := s.GetOrNewAccount(addr)
 	prev := new(uint256.Int).Set(acc.GetBalance())
 	s.journal.append(balanceChange{account: addr, prev: prev})
@@ -39,6 +41,7 @@ func (s *StateDB) SubBalance(addr crypto.Address, amount *uint256.Int) uint256.I
 
 // AddBalance journaled variant returning previous balance (EVM interface).
 func (s *StateDB) AddBalancePrev(addr crypto.Address, amount *uint256.Int) uint256.Int {
+	s.noteWrite(AccountKey(addr))
 	acc := s.GetOrNewAccount(addr)
 	prev := new(uint256.Int).Set(acc.GetBalance())
 	s.journal.append(balanceChange{account: addr, prev: prev})
@@ -51,6 +54,7 @@ func (s *StateDB) AddBalancePrev(addr crypto.Address, amount *uint256.Int) uint2
 
 // SetBalanceJournaled sets balance with journal.
 func (s *StateDB) SetBalanceJournaled(addr crypto.Address, bal *uint256.Int) {
+	s.noteWrite(AccountKey(addr))
 	acc := s.GetOrNewAccount(addr)
 	prev := new(uint256.Int).Set(acc.GetBalance())
 	s.journal.append(balanceChange{account: addr, prev: prev})
@@ -64,6 +68,7 @@ func (s *StateDB) SetBalanceJournaled(addr crypto.Address, bal *uint256.Int) {
 
 // SetNonceJournaled sets nonce with journal.
 func (s *StateDB) SetNonceJournaled(addr crypto.Address, nonce uint64) {
+	s.noteWrite(AccountKey(addr))
 	acc := s.GetOrNewAccount(addr)
 	s.journal.append(nonceChange{account: addr, prev: acc.Nonce})
 	acc.Nonce = nonce
@@ -72,6 +77,7 @@ func (s *StateDB) SetNonceJournaled(addr crypto.Address, nonce uint64) {
 
 // SetCodeJournaled sets code with journal.
 func (s *StateDB) SetCodeJournaled(addr crypto.Address, code []byte) {
+	s.noteWrite(AccountKey(addr))
 	acc := s.GetOrNewAccount(addr)
 	prevHash := acc.CodeHash
 	var prevCode []byte
@@ -95,6 +101,7 @@ func (s *StateDB) SetStateJournaled(addr crypto.Address, key, value types.Hash) 
 	if prev == value {
 		return prev
 	}
+	s.noteWrite(StorageKeyAccess(addr, key))
 	// record original for GetCommittedState if first write
 	id := storageID{addr: addr, slot: key}
 	if _, ok := s.storageOrigin[id]; !ok {
