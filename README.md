@@ -43,7 +43,8 @@ go build -o bin/dewcli ./cmd/dewcli
 | [`cmd/dewcli/`](./cmd/dewcli/) | Wallet CLI |
 | [`db/`](./db/) | KV store interface + in-memory backend |
 | [`core/types/`](./core/types/) | Account, Header, Block, EVM tx / receipt |
-| [`core/state/`](./core/state/) | Flat state DB (account / storage / code) |
+| [`core/state/`](./core/state/) | Flat state DB + journal / access list (EVM-ready) |
+| [`core/vm/`](./core/vm/) | EVM bridge + sequential `Executor` (Cancun) |
 | [`config/`](./config/) | Genesis JSON load + alloc commit |
 | [`genesis.json`](./genesis.json) | Dev genesis (chainId 2026, sample alloc) |
 
@@ -97,7 +98,7 @@ Layout after merge:
 
 ## Status
 
-Docs site + landing are wired. **Phase A1–A2** done (crypto/wallet, types, flat state, genesis). Next: [Phase A3](./docs/development/phases.md) — EVM bridge & sequential execution.
+Docs site + landing are wired. **Phase A1–A3** done (crypto, types/state, EVM). Next: [Phase A4](./docs/development/phases.md) — JSON-RPC (MetaMask / Foundry).
 
 ## License
 

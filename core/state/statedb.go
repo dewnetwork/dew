@@ -30,6 +30,17 @@ type StateDB struct {
 	accountDirty map[crypto.Address]struct{}
 	storageDirty map[storageID]struct{}
 	suicides     map[crypto.Address]struct{}
+
+	// EVM execution support
+	journal         *journal
+	validRevisions  []revision
+	nextRevisionID  int
+	refund          uint64
+	logs            []*types.Log
+	accessList      *accessList
+	transient       transientStorage
+	newContracts    map[crypto.Address]struct{}
+	storageOrigin   map[storageID]types.Hash // committed value before first dirty write in tx
 }
 
 type storageID struct {
@@ -40,13 +51,18 @@ type storageID struct {
 // New creates a StateDB backed by db.
 func New(database db.Database) *StateDB {
 	return &StateDB{
-		db:           database,
-		accounts:     make(map[crypto.Address]*types.Account),
-		storage:      make(map[storageID]types.Hash),
-		code:         make(map[types.Hash][]byte),
-		accountDirty: make(map[crypto.Address]struct{}),
-		storageDirty: make(map[storageID]struct{}),
-		suicides:     make(map[crypto.Address]struct{}),
+		db:            database,
+		accounts:      make(map[crypto.Address]*types.Account),
+		storage:       make(map[storageID]types.Hash),
+		code:          make(map[types.Hash][]byte),
+		accountDirty:  make(map[crypto.Address]struct{}),
+		storageDirty:  make(map[storageID]struct{}),
+		suicides:      make(map[crypto.Address]struct{}),
+		journal:       newJournal(),
+		accessList:    newAccessList(),
+		transient:     newTransientStorage(),
+		newContracts:  make(map[crypto.Address]struct{}),
+		storageOrigin: make(map[storageID]types.Hash),
 	}
 }
 
@@ -112,10 +128,22 @@ func (s *StateDB) SetBalance(addr crypto.Address, bal *uint256.Int) {
 	s.accountDirty[addr] = struct{}{}
 }
 
-// AddBalance adds amount to the balance.
+// AddBalance adds amount to the balance (unjournaled helper for genesis/tests).
+// Prefer AddBalancePrev during EVM execution so Snapshot/Revert works.
 func (s *StateDB) AddBalance(addr crypto.Address, amount *uint256.Int) {
-	cur := s.GetBalance(addr)
-	s.SetBalance(addr, new(uint256.Int).Add(cur, amount))
+	s.AddBalancePrev(addr, amount)
+}
+
+// SetBalance sets the balance, creating the account if needed (unjournaled for genesis).
+// During EVM execution use SetBalanceJournaled.
+func (s *StateDB) SetBalanceRaw(addr crypto.Address, bal *uint256.Int) {
+	acc := s.GetOrNewAccount(addr)
+	if bal == nil {
+		acc.Balance = uint256.NewInt(0)
+	} else {
+		acc.Balance = new(uint256.Int).Set(bal)
+	}
+	s.accountDirty[addr] = struct{}{}
 }
 
 // GetNonce returns the account nonce (0 if missing).

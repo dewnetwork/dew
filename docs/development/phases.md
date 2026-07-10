@@ -52,12 +52,14 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] StateDB bridge implements required interface
-- [ ] Deploy ERC-20 in-process
-- [ ] Transfer updates balances; events in receipt
-- [ ] Failed tx reverts state correctly
+- [x] StateDB bridge implements required interface
+- [x] Deploy ERC-20 in-process
+- [x] Transfer updates balances; events in receipt
+- [x] Failed tx reverts state correctly
 
 **Packages:** `core/vm`, `core/state`
+
+**Notes:** Cancun-era rules via go-ethereum `core/vm`; Dew `StateDB` journal + access list + EIP-6780; `Executor.ApplyMessage` for create/call. ERC-20 fixture: solc 0.8.24 optimized `Token` in `core/vm/token_bytecode.go`.
 
 ---
 
