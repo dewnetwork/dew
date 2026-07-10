@@ -9,10 +9,20 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/dewnetwork/dew/params"
 )
 
 // Handler dispatches a single JSON-RPC method.
 type Handler func(params json.RawMessage) (interface{}, error)
+
+// Abuse / resource limits (Phase C6 public testnet freeze).
+const (
+	// MaxRequestBodyBytes caps a single HTTP request body (1 MiB).
+	MaxRequestBodyBytes = params.PublicTestnetMaxRPCBodyBytes
+	// MaxBatchItems caps JSON-RPC batch array length.
+	MaxBatchItems = params.PublicTestnetMaxRPCBatch
+)
 
 // Server is a JSON-RPC 2.0 HTTP server.
 type Server struct {
@@ -74,9 +84,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	// Cap body; if the client sent more than MaxRequestBodyBytes, LimitReader
+	// truncates and JSON parse fails closed (no OOM from multi-MB spam).
+	limited := io.LimitReader(r.Body, int64(MaxRequestBodyBytes)+1)
+	body, err := io.ReadAll(limited)
 	if err != nil {
 		writeJSON(w, rpcResponse{JSONRPC: "2.0", Error: &rpcError{Code: -32700, Message: "parse error"}})
+		return
+	}
+	if len(body) > MaxRequestBodyBytes {
+		writeJSON(w, rpcResponse{JSONRPC: "2.0", Error: &rpcError{
+			Code:    -32600,
+			Message: fmt.Sprintf("request body too large (max %d bytes)", MaxRequestBodyBytes),
+		}})
 		return
 	}
 	// Batch or single
@@ -85,6 +105,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		var reqs []rpcRequest
 		if err := json.Unmarshal(body, &reqs); err != nil {
 			writeJSON(w, rpcResponse{JSONRPC: "2.0", Error: &rpcError{Code: -32700, Message: "parse error"}})
+			return
+		}
+		if len(reqs) > MaxBatchItems {
+			writeJSON(w, rpcResponse{JSONRPC: "2.0", Error: &rpcError{
+				Code:    -32600,
+				Message: fmt.Sprintf("batch too large (max %d items)", MaxBatchItems),
+			}})
 			return
 		}
 		resps := make([]rpcResponse, len(reqs))

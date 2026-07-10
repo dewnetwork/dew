@@ -73,7 +73,7 @@ Enabled when Dew precompiles are on **and** `Executor.EnableStaking(true)` / `No
 | `0x06` jail | `[0x06 \|\| addr20 \|\| evidenceHash32]` | 0 | 30_000 | Jail (non-zero evidence required) |
 | `0x07` isJailed | `[0x07 \|\| addr20]` | 0 | 2_000 | 0/1 |
 
-**Rules:** min self-stake `100_000 * 10^18` wei (_tentative_); active set = top `K` by voting power among candidates ≥ min and not jailed. Unbonding period is **not** fully enforced yet (immediate return — residual). Bond credits **tx sender** (EOA path); nested contract staking deferred.
+**Rules:** min self-stake `100_000 * 10^18` wei (**public-testnet-v1**); active set = top `K` (default 100) by voting power among candidates ≥ min and not jailed. Unbonding period is **not** fully enforced yet (immediate return — residual). Bond credits **tx sender** (EOA path); nested contract staking deferred. See [Public testnet freeze](../development/public-testnet.md).
 
 Module state: `core/native/staking.go` storage under address `0x102`.
 

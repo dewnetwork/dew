@@ -1,0 +1,48 @@
+package params
+
+// Public testnet freeze (Phase C6).
+//
+// After this freeze, prefer genesis/config parameter changes over wire-format
+// or address churn. Mainnet still requires an external audit of consensus +
+// VM bridge + crypto (see agents/debt.md).
+
+const (
+	// PublicTestnetFreezeTag labels the freeze surface for docs and release notes.
+	PublicTestnetFreezeTag = "public-testnet-v1"
+
+	// PublicTestnetChainID is the chain ID for the first public testnet.
+	// Matches sample genesis.json and eth_chainId 0x7ea.
+	PublicTestnetChainID uint64 = 2026
+
+	// PublicTestnetBaseFeeWei is the genesis base fee (1 gwei).
+	PublicTestnetBaseFeeWei uint64 = ReferenceBaseFeeWei
+
+	// PublicTestnetBlockGasLimit matches DefaultBlockGasLimit / genesis gasLimit.
+	PublicTestnetBlockGasLimit uint64 = DefaultBlockGasLimit
+
+	// Mempool floors frozen with C1 defaults (see mempool.DefaultConfig).
+	PublicTestnetMinGasPriceWei = ReferenceBaseFeeWei // 1 gwei
+	PublicTestnetMinTipWei      = 1                   // 1 wei
+	PublicTestnetMaxTxBytes     = 128 << 10           // 128 KiB
+	PublicTestnetMempoolGlobal  = 4096
+	PublicTestnetMempoolSender  = 16
+
+	// RPC abuse limits (see rpc package).
+	PublicTestnetMaxRPCBodyBytes = 1 << 20 // 1 MiB
+	PublicTestnetMaxRPCBatch     = 100
+
+	// Precompile addresses (20-byte, low addresses).
+	// 0x100 = native transfer; 0x102 = staking entrypoint.
+	PrecompileNativeTransferAddr = 0x100
+	PrecompileStakingAddr        = 0x102
+)
+
+// Feature flags expected on public-testnet-v1 operators (documented defaults).
+const (
+	// PublicTestnetNativePathOn — dew_sendRawTransaction enabled.
+	PublicTestnetNativePathOn = DefaultEnableNativePath
+	// PublicTestnetPrecompilesOn — 0x100+ registered when executor flag on.
+	PublicTestnetPrecompilesOn = DefaultEnableDewPrecompiles
+	// PublicTestnetStakingOn — staking methods remain opt-in (default off).
+	PublicTestnetStakingOn = DefaultEnableStaking
+)

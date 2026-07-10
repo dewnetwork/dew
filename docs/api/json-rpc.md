@@ -17,6 +17,15 @@ status: draft
 
 Content-Type: `application/json`. JSON-RPC 2.0.
 
+### Public testnet resource limits (C6)
+
+| Limit | Value |
+| :--- | :--- |
+| Max HTTP body | 1 MiB (`rpc.MaxRequestBodyBytes`) |
+| Max batch items | 100 (`rpc.MaxBatchItems`) |
+
+Oversized body/batch → JSON-RPC error `-32600`. Tx admission also enforces mempool fee floors and size caps (C1). See [Public testnet freeze](../development/public-testnet.md).
+
 ## Phase A — required methods
 
 ### Node identity

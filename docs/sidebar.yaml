@@ -67,6 +67,7 @@
     - phases.md
     - devnet.md
     - private-testnet.md
+    - public-testnet.md
 
 - category: Security
   path: security

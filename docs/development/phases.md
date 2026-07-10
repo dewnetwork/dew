@@ -14,7 +14,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | :--- | :----- | :---- |
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
-| **C1–C6** | C1–C5 done; C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
+| **C1–C6** | **Done** (C6 = public-testnet-v1 freeze) | Mempool, encrypted P2P, SMT, staking, private → public freeze |
 
 High-level order: [Roadmap](./roadmap.md).
 
@@ -256,7 +256,7 @@ High-level order: [Roadmap](./roadmap.md).
 **Acceptance:**
 
 - [x] Precompile `0x102` implements documented ABI (bond / unbond / at least self-stake register)
-- [x] State updates respect min self-stake and epoch rules in [Validators](../consensus/validators.md) (_tentative_ numbers OK until C6 freeze)
+- [x] State updates respect min self-stake and epoch rules in [Validators](../consensus/validators.md) (public-testnet-v1 freeze in C6)
 - [x] Active set / voting power readable for consensus selection (or clear bridge from module state → BFT validator set)
 - [x] Fail closed on malformed input; gas schedule documented in [Gas and fees](../execution/gas-and-fees.md)
 - [x] Feature flag remains until private testnet operators opt in
@@ -291,12 +291,12 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Acceptance:**
 
-- [ ] Genesis + chain ID + fee floors + precompile addresses documented as freeze candidates (update `_tentative_` where ready)
-- [ ] RPC abuse tests: oversized batches, invalid hex, spam sendRawTransaction under C1 limits
-- [ ] Optional external fuzzing pass on codec / RPC entrypoints (or scheduled with owners)
-- [ ] Docs: relevant pages move from pure draft toward “testnet freeze” notes; residual mainnet-only debt listed in `agents/debt.md`
-- [ ] Public testnet runbook: faucet policy, bootnodes, expected features on/off
+- [x] Genesis + chain ID + fee floors + precompile addresses documented as freeze candidates (`params/freeze.go`, [public-testnet](./public-testnet.md))
+- [x] RPC abuse tests: oversized batches/body, invalid hex, underpriced/oversized spam under C1 limits (`tests/security/c6_rpc_abuse_test.go`)
+- [x] Optional fuzz on codec / RPC decode entrypoints (`core/types/dewtx_fuzz_test.go`, `rpc/hexutil_fuzz_test.go`; run with `-fuzz`)
+- [x] Docs: freeze table + runbook; residual mainnet-only debt in `agents/debt.md`
+- [x] Public testnet runbook: faucet policy, bootnodes process, features on/off
 
-**Packages:** `config/`, `params/`, `tests/security/`, `docs/` (genesis, economics, API)
+**Packages:** `params/`, `rpc/`, `tests/security/`, `docs/development/public-testnet.md`
 
-**Notes:** C6 is a **release gate**, not a large feature dump. Mainnet still requires external audit of consensus + VM bridge + crypto (not C6 acceptance). After C6, prefer config/parameter changes over wire-format churn.
+**Notes:** Freeze tag **`public-testnet-v1`**. C6 is a **release gate**, not a large feature dump. Mainnet still requires external audit of consensus + VM bridge + crypto (not C6 acceptance). After C6, prefer config/parameter changes over wire-format churn. RPC limits: 1 MiB body, 100 batch items.

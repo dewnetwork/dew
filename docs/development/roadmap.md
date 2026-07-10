@@ -24,7 +24,7 @@ flowchart TB
   end
   subgraph C["Phase C — testnet readiness"]
     direction LR
-    C1[Mempool] --> C2[Encrypt P2P] --> C3[SMT] --> C4[Staking] --> C5[Private net] --> C6[Public freeze]
+    C1[Mempool] --> C2[Encrypt P2P] --> C3[SMT] --> C4[Staking] --> C5[Private net] --> C6[Public freeze done]
   end
   A --> B --> C
 ```
@@ -96,7 +96,7 @@ Out of Phase C (tracked as mainnet debt): full multi-version Block-STM upgrade, 
 | C2    | [P2P](../networking/p2p.md), [Security principles](../security/security-principles.md)                      |
 | C3    | [State](../protocol/state.md), [Blocks](../protocol/blocks.md)                                              |
 | C4    | [Validators](../consensus/validators.md), [Slashing](../consensus/slashing.md), [Precompiles](../execution/precompiles.md) |
-| C5–C6 | [Devnet](./devnet.md), [Genesis](../economics/genesis.md), [Phase B audit](../security/phase-b-audit.md)    |
+| C5–C6 | [Devnet](./devnet.md), [Private testnet](./private-testnet.md), [Public testnet freeze](./public-testnet.md), [Genesis](../economics/genesis.md) |
 
 ## Milestone definition of done
 

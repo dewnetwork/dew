@@ -111,7 +111,7 @@ Category folders also include `_category.md` for sidebar labels and ordering. Na
 
 ## Spec status
 
-All documents are **`status: draft`** until the first public testnet freezes wire formats and genesis parameters. Numbers marked _tentative_ may change before freeze.
+Phase **C6** freezes **public-testnet-v1** wire and fee surfaces (see [Public testnet freeze](./development/public-testnet.md) and `params/freeze.go`). Many pages remain `status: draft` for prose polish; numbers in the freeze table should not churn without a documented re-genesis / hardfork note. Residual `_tentative_` (e.g. tokenomics issuance) is mainnet- or economics-review scope.
 
 ## Repository layout
 

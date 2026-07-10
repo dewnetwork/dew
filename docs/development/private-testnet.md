@@ -90,11 +90,12 @@ node scripts/devnet-erc20.mjs http://127.0.0.1:8545
 3. Do **not** share validator keys across restarted processes without key hygiene.
 4. Re-genesis is acceptable on private nets if state root / wire format drifts (e.g. pre-C3 flat root).
 
-Full public faucet / incentive policy is **C6**, not C5.
+Full public faucet / incentive policy is in [Public testnet freeze](./public-testnet.md) (C6).
 
 ## Related
 
 - [Local devnet](./devnet.md)
+- [Public testnet freeze](./public-testnet.md)
 - [P2P encrypted transport](../networking/p2p.md)
 - [Security principles](../security/security-principles.md) — private testnet bar
 - [Phases C5](./phases.md)

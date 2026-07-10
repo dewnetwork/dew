@@ -4,12 +4,7 @@ Below is a list of technical debt, refactoring tasks, or optimization items in t
 
 Phase mapping: items owned by an active phase live in [docs/development/phases.md](../docs/development/phases.md); this file tracks **residuals** and cross-cutting debt.
 
-## Phase C (in scope — see phases.md)
-
-- [x] DewTx / EVM mempool admission limits & fee checks — **C1** (done: `mempool/`)
-- [x] Cleartext P2P transport is dev-only — encrypted transport **C2** (X25519 + AES-GCM)
-- [x] Flat state root is provisional sorted-leaf commitment — replace with SMT **C3**
-- [x] Staking precompile `0x102` is a revert stub — implement module **C4**
+**Phase C (C1–C6) complete** — freeze tag `public-testnet-v1`. See [public-testnet.md](../docs/development/public-testnet.md).
 
 ## C1 residuals
 
@@ -29,7 +24,14 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 - [ ] Multi-process binary packaging (systemd/docker compose samples) for true multi-host without in-process stand-in
 - [ ] Persistent peer store / auto-redial after restart (manual RedialMesh in chaos test today)
 
+## C6 residuals (ops, not freeze blockers)
+
+- [ ] Publish real public bootnode hostnames / multiaddrs at launch (process documented; values not in-repo)
+- [ ] Production faucet service (rate limits, captcha) outside monorepo core
+- [ ] Longer continuous fuzz in CI (`-fuzztime` schedules)
+
 ## Deferred / mainnet
 
 - [ ] PE uses fork+overlay, not full multi-version Block-STM — higher memory and re-exec cost under heavy conflicts (`core/vm/parallel.go`). Not required for first public testnet.
 - [ ] External security audit of consensus + VM bridge + crypto — required before mainnet (see `docs/security/phase-b-audit.md` and security principles stage table).
+- [ ] Tokenomics issuance / inflation numbers still draft (not part of wire freeze).

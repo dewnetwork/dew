@@ -26,12 +26,12 @@ Quorum and proposer weight use \(VP_i\).
 
 ## Minimum self-stake
 
-- **100,000 DEW** (_tentative_, also in genesis `minValidatorStake`)
+- **100,000 DEW** (public-testnet-v1 freeze; also genesis `minValidatorStake`)
 - Denominated in wei in config: `100000 * 10^18`
 
 ## Epoch rotation
 
-1. Epoch length: **86,400 blocks** (_tentative_)
+1. Epoch length: **86,400 blocks** (public-testnet-v1)
 2. At epoch boundary, rank candidates by \(VP\)
 3. Top \(K\) become active set for next epoch
 4. In-epoch stake changes apply at next boundary (unless emergency jail)

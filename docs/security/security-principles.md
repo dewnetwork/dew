@@ -50,7 +50,7 @@ Bonded identities + evidence of equivocation beat pseudonymous longest-chain gri
 | :-------------- | :--------------------------------------------------- |
 | Local dev       | Happy path tests                                     |
 | Private testnet | Multi-validator, chaos restart                       |
-| Public testnet  | External fuzzing, RPC abuse tests                    |
+| Public testnet  | External fuzzing, RPC abuse tests (C6: `public-testnet-v1`) |
 | Mainnet         | Spec freeze, audit of consensus + VM bridge + crypto |
 
 ## 9. Cheaper ≠ weaker fee security

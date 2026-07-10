@@ -112,6 +112,20 @@ Load tests (`go test ./tests/load/`) and benches (`go test -bench=. ./core/vm/ .
 
 Re-tune only via an explicit hardfork / genesis parameter change — do not drift constants silently.
 
+## Public testnet freeze (C6)
+
+| Item | Frozen value |
+| :--- | :----------- |
+| Reference base fee | 1 gwei |
+| Block gas limit | 120M |
+| DewTx fee / min | `2.1e12` wei (10% of simple transfer @ 1 gwei) |
+| Mempool min gas price | 1 gwei |
+| Mempool min tip | 1 wei |
+| Max tx bytes | 128 KiB |
+| `0x100` gas | 3_000 |
+
+Canonical table: [Public testnet freeze](../development/public-testnet.md).
+
 ## Header fields
 
 `BaseFee`, `GasLimit`, `GasUsed` are first-class header fields. See [Blocks](../protocol/blocks.md).
