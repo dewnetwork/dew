@@ -1,0 +1,94 @@
+# --- OS ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# --- Editors / IDEs ---
+.idea/
+.vscode/
+*.code-workspace
+.history/
+
+# --- Go ---
+bin/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+coverage.html
+vendor/
+# go.work is optional local workspace; uncomment if you never commit it
+# go.work
+# go.work.sum
+
+# --- Node ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# --- Docs site build output (VitePress / Nextra / Docusaurus / etc.) ---
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+.vitepress/dist/
+.vitepress/cache/
+.docssaurus/
+.docusaurus/
+docs-dist/
+docs/dist/
+out/
+.next/
+.nuxt/
+.cache/
+.turbo/
+*.tsbuildinfo
+
+# --- Env & secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_ed25519
+id_rsa
+
+# --- Node / chain local data (when running dewchain) ---
+data/
+datadir/
+*.db
+*.ldb
+chaindata/
+keystore/
+geth/
+lightchaindata/
+*.wal
+*.log
+logs/
+
+# --- Test / fuzz artifacts ---
+testdata/generated/
+__debug_bin*
+debug.test
+
+# --- Misc ---
+tmp/
+temp/
+*.tmp
+*.bak
+.parcel-cache/

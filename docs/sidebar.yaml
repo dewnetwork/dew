@@ -1,0 +1,73 @@
+# Sidebar map for the Node-built docs website (Docusaurus / Nextra / VitePress / Mintlify).
+# Markdown under docs/ is the source; Node only builds/serves the site.
+# Pages also carry YAML frontmatter: title, description, category, order, status.
+
+- category: Overview
+  path: overview
+  items:
+    - vision.md
+    - design-principles.md
+    - ethereum-compatibility.md
+
+- category: Architecture
+  path: architecture
+  items:
+    - overview.md
+    - node-layout.md
+
+- category: Protocol
+  path: protocol
+  items:
+    - cryptography.md
+    - addresses.md
+    - transactions.md
+    - blocks.md
+    - state.md
+
+- category: Execution
+  path: execution
+  items:
+    - overview.md
+    - evm.md
+    - gas-and-fees.md
+    - precompiles.md
+    - parallel-execution.md
+    - dew-native.md
+
+- category: Consensus
+  path: consensus
+  items:
+    - dew-bft.md
+    - validators.md
+    - slashing.md
+
+- category: Networking
+  path: networking
+  items:
+    - p2p.md
+    - gossip-and-sync.md
+
+- category: API
+  path: api
+  items:
+    - json-rpc.md
+    - dew-extensions.md
+
+- category: Economics
+  path: economics
+  items:
+    - tokenomics.md
+    - genesis.md
+
+- category: Development
+  path: development
+  items:
+    - go-project-layout.md   # monorepo layout (Go + Node)
+    - roadmap.md
+    - phases.md
+
+- category: Security
+  path: security
+  items:
+    - threat-model.md
+    - security-principles.md
