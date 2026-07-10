@@ -21,8 +21,9 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 
 ## C5 residuals
 
-- [ ] Multi-process binary packaging (systemd/docker compose samples) for true multi-host without in-process stand-in
-- [ ] Persistent peer store / auto-redial after restart (manual RedialMesh in chaos test today)
+- [x] Multi-process binary packaging (systemd/docker compose samples) — `deploy/` (Dockerfile, compose default + `--profile multi`, systemd unit); `dew run --p2p.*` for encrypted mesh packaging
+- [ ] Multi-process Dew-BFT shared block production (compose `multi` still auto-mines per process; use `dew devnet` for in-process BFT)
+- [ ] Persistent peer store / auto-redial after restart (manual RedialMesh in chaos test today; `dew run` has dial retry only at start)
 
 ## C6 residuals (ops, not freeze blockers)
 

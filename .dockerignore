@@ -1,0 +1,21 @@
+# Keep Docker build context small (Go binary only needs source + modules).
+.git
+.github
+**/.DS_Store
+
+# Node / docs web artifacts
+node_modules
+web/node_modules
+web/dist
+docs/.vitepress/dist
+dist
+
+# Local binaries and IDE
+bin
+*.exe
+.idea
+.vscode
+*.swp
+
+# Deploy runtime noise
+deploy/**/*.log

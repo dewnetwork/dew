@@ -109,6 +109,8 @@ go test ./rpc/ -fuzz=FuzzDecodeBytes -fuzztime=5s
 
 ## Operator launch checklist
 
+Full one-page checklist (ports, env, compose, publish template): [Launch checklist](./launch-checklist.md). Packaging samples: [deploy/](../../deploy/).
+
 1. Generate dedicated keys (validators, bootnodes, faucet) — no Anvil reuse  
 2. Distribute frozen genesis (chain ID 2026, alloc, initialValidators)  
 3. Start ≥ 3 validators + optional RPC with encrypted P2P  
@@ -130,8 +132,10 @@ Tracked in `agents/debt.md`: fee auction, nonce-gap queue, full unbonding, doubl
 
 ## Related
 
+- [Launch checklist](./launch-checklist.md)  
 - [Phases](./phases.md) — C6 acceptance  
 - [Genesis](../economics/genesis.md)  
 - [Gas and fees](../execution/gas-and-fees.md)  
 - [Security principles](../security/security-principles.md) — public testnet bar  
 - [Private testnet](./private-testnet.md)  
+- [deploy packaging](../../deploy/README.md)  

@@ -1,0 +1,40 @@
+# Sample systemd unit for a single Dew JSON-RPC host (private or public ops).
+# Install:
+#   sudo install -m 755 bin/dew /usr/local/bin/dew
+#   sudo install -m 644 genesis.json /etc/dew/genesis.json
+#   sudo install -m 644 deploy/systemd/dew.service /etc/systemd/system/dew.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now dew
+#
+# Override keys/ports: drop a file in /etc/systemd/system/dew.service.d/override.conf
+
+[Unit]
+Description=Dew full node (JSON-RPC)
+Documentation=https://github.com/dewnetwork/dew
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dew
+Group=dew
+WorkingDirectory=/var/lib/dew
+ExecStart=/usr/local/bin/dew run \
+  --genesis /etc/dew/genesis.json \
+  --http.addr 0.0.0.0 \
+  --http.port 8545
+# Optional multi-host P2P (uncomment; --p2p.key is 32-byte hex, not a file path):
+#  --p2p.listen 0.0.0.0:30303 \
+#  --p2p.key REPLACE_WITH_DEDICATED_HEX_KEY \
+#  --p2p.bootnodes boot0.example:30303,boot1.example:30303
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+# Hardening (adjust for your distro)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dew
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

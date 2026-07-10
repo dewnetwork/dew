@@ -39,12 +39,35 @@ go run ./cmd/dew devnet --http.port 8545
 # 3 BFT validators + encrypted loopback P2P mesh + JSON-RPC
 ```
 
-### Multi-process / multi-host sketch
+### Multi-process / multi-host packaging
 
-1. `dew init --out genesis.json` once; distribute the same genesis.
-2. On each validator host, run a node with that genesis, distinct P2P listen port, and bootnode list of the other validators (see `dew run` flags).
-3. Point wallets at the RPC host (`http://<rpc-host>:8545`).
-4. Feature flags (native path, precompiles, staking) must match across validators.
+Samples live under [deploy/](../../deploy/) (Docker Compose + systemd). One-page ops path: [Launch checklist](./launch-checklist.md).
+
+```bash
+# Fast private soak (in-process 3-validator + RPC)
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build
+
+# Multi-process layout: encrypted P2P mesh + per-node JSON-RPC (not with devnet)
+docker compose -f deploy/docker-compose.yml --profile multi up --build
+```
+
+Manual multi-process sketch (same genesis on every host):
+
+1. `dew init --out genesis.json` once; distribute the same file.
+2. On each host:
+
+```bash
+dew run --genesis genesis.json \
+  --http.addr 0.0.0.0 --http.port 8545 \
+  --p2p.listen 0.0.0.0:30303 \
+  --p2p.key <32-byte-hex> \
+  --p2p.bootnodes host1:30303,host2:30303
+```
+
+3. Point wallets at one RPC (`http://<rpc-host>:8545`).
+4. Feature flags (native path, precompiles, staking) must match operator policy across hosts.
+
+**Note:** `dew run` multi-process currently shares genesis + encrypted P2P; each process **auto-mines** its own execution chain. Full multi-process Dew-BFT shared production remains residual (`agents/debt.md`). For consensus + ERC-20 smoke, use `dew devnet` or the default Compose service.
 
 Minimum private bar (security principles): multi-validator + chaos restart — covered by `go test ./devnet/ -run Chaos`.
 
@@ -94,8 +117,10 @@ Full public faucet / incentive policy is in [Public testnet freeze](./public-tes
 
 ## Related
 
+- [Launch checklist](./launch-checklist.md)
 - [Local devnet](./devnet.md)
 - [Public testnet freeze](./public-testnet.md)
+- [deploy packaging](../../deploy/README.md)
 - [P2P encrypted transport](../networking/p2p.md)
 - [Security principles](../security/security-principles.md) — private testnet bar
 - [Phases C5](./phases.md)

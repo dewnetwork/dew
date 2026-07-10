@@ -68,6 +68,7 @@
     - devnet.md
     - private-testnet.md
     - public-testnet.md
+    - launch-checklist.md
 
 - category: Security
   path: security

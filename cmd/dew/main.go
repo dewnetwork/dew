@@ -1,19 +1,24 @@
 // Command dew is the Dew full node entrypoint.
 //
-// Phases A4–A7: JSON-RPC node, Dew-BFT, P2P, and local multi-validator devnet.
+// Phases A4–A7 + C: JSON-RPC node, Dew-BFT, P2P, local multi-validator devnet,
+// and optional multi-process P2P mesh for packaging.
 package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/dewnetwork/dew/config"
+	dewcrypto "github.com/dewnetwork/dew/crypto"
 	"github.com/dewnetwork/dew/devnet"
 	"github.com/dewnetwork/dew/node"
+	"github.com/dewnetwork/dew/p2p"
 	"github.com/dewnetwork/dew/rpc"
 )
 
@@ -31,7 +36,7 @@ func run(args []string) error {
 	}
 	switch args[0] {
 	case "version":
-		fmt.Println("dew 0.1.0 (phase C5)")
+		fmt.Println("dew 0.1.0 (public-testnet-v1)")
 		return nil
 	case "help", "-h", "--help":
 		printUsage()
@@ -55,6 +60,11 @@ func cmdRun(args []string) error {
 	httpPort := fs.Int("http.port", 8545, "JSON-RPC HTTP port")
 	httpEnabled := fs.Bool("http", true, "enable JSON-RPC HTTP")
 	staking := fs.Bool("staking", false, "enable live 0x102 staking methods (C4)")
+	p2pListen := fs.String("p2p.listen", "", "if set, start P2P host (e.g. 0.0.0.0:30303)")
+	p2pKeyHex := fs.String("p2p.key", "", "32-byte hex private key for P2P identity (required with --p2p.listen)")
+	p2pBoot := fs.String("p2p.bootnodes", "", "comma-separated host:port peers to dial")
+	p2pEncrypt := fs.Bool("p2p.encrypt", true, "encrypted P2P sessions (C2 default)")
+	p2pCleartext := fs.Bool("p2p.allow-cleartext", false, "permit cleartext when --p2p.encrypt=false")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -71,8 +81,22 @@ func cmdRun(args []string) error {
 		n.SetStakingEnabled(true)
 	}
 
+	var p2pHost *p2p.Host
+	if *p2pListen != "" {
+		h, err := startP2PHost(n, *p2pListen, *p2pKeyHex, *p2pBoot, *p2pEncrypt, *p2pCleartext)
+		if err != nil {
+			return err
+		}
+		p2pHost = h
+		defer func() { _ = p2pHost.Close() }()
+	}
+
 	fmt.Printf("Dew node started chainId=%s head=%d staking=%v\n", n.ChainID().String(), n.BlockNumber(), n.StakingEnabled())
-	fmt.Println("hint: multi-host private net ops — docs/development/private-testnet.md")
+	if p2pHost != nil {
+		fmt.Printf("  p2p:         listen=%s encrypt=%v peers=%d\n", p2pHost.ListenAddr(), p2pHost.EncryptEnabled(), len(p2pHost.Store().Active()))
+	}
+	fmt.Println("hint: launch checklist — docs/development/launch-checklist.md")
+	fmt.Println("hint: packaging — deploy/README.md")
 
 	if !*httpEnabled {
 		waitSignal()
@@ -99,6 +123,74 @@ func cmdRun(args []string) error {
 	case err := <-errCh:
 		return err
 	}
+}
+
+// startP2PHost binds an encrypted (default) P2P listener and dials bootnodes.
+// Uses a MemoryChain snapshot of genesis tip — multi-process BFT production is residual.
+func startP2PHost(n *node.Node, listen, keyHex, bootCSV string, encrypt, allowCleartext bool) (*p2p.Host, error) {
+	keyHex = strings.TrimPrefix(strings.TrimSpace(keyHex), "0x")
+	if keyHex == "" {
+		return nil, fmt.Errorf("p2p: --p2p.key required when --p2p.listen is set")
+	}
+	raw, err := hex.DecodeString(keyHex)
+	if err != nil {
+		return nil, fmt.Errorf("p2p: key hex: %w", err)
+	}
+	priv, err := dewcrypto.ToECDSA(raw)
+	if err != nil {
+		return nil, fmt.Errorf("p2p: key: %w", err)
+	}
+
+	h := n.CurrentHeader()
+	if h == nil {
+		return nil, fmt.Errorf("p2p: missing genesis header")
+	}
+	mc := p2p.NewMemoryChain(h.Hash(), []byte("genesis"))
+	cfg := p2p.Config{
+		PrivateKey:     priv,
+		ChainID:        n.ChainID(),
+		ListenAddr:     listen,
+		MaxPeers:       25,
+		Encrypt:        encrypt,
+		AllowCleartext: allowCleartext,
+	}
+	host, err := p2p.NewHost(cfg, mc, mc, p2p.AppHandlers{})
+	if err != nil {
+		return nil, err
+	}
+	if err := host.Start(); err != nil {
+		return nil, err
+	}
+
+	// Dial bootnodes with short retries (containers may start out of order).
+	for _, addr := range splitCSV(bootCSV) {
+		addr := strings.TrimSpace(addr)
+		if addr == "" {
+			continue
+		}
+		go dialWithRetry(host, addr, 15, time.Second)
+	}
+	// Brief settle so Active() is non-empty when peers are already up.
+	time.Sleep(100 * time.Millisecond)
+	return host, nil
+}
+
+func dialWithRetry(h *p2p.Host, addr string, attempts int, gap time.Duration) {
+	for i := 0; i < attempts; i++ {
+		if _, err := h.Dial(addr); err == nil {
+			fmt.Printf("  p2p:         dialed %s\n", addr)
+			return
+		}
+		time.Sleep(gap)
+	}
+	fmt.Fprintf(os.Stderr, "dew: p2p dial %s failed after %d attempts\n", addr, attempts)
+}
+
+func splitCSV(s string) []string {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	return strings.Split(s, ",")
 }
 
 func cmdInit(args []string) error {
@@ -190,8 +282,11 @@ Usage:
   dew init [--out genesis.json]
   dew devnet [--http.addr 127.0.0.1] [--http.port 8545] [--no-p2p] [--bft.heights 1]
   dew run [--genesis genesis.json] [--http.addr 127.0.0.1] [--http.port 8545] [--staking]
+          [--p2p.listen host:port] [--p2p.key HEX] [--p2p.bootnodes a:port,b:port]
+          [--p2p.encrypt] [--p2p.allow-cleartext]
   dew version
 
-Private multi-host ops: docs/development/private-testnet.md
+Launch checklist: docs/development/launch-checklist.md
+Packaging:        deploy/README.md
 `)
 }
