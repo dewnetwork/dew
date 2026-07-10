@@ -41,6 +41,11 @@ go build -o bin/dewcli ./cmd/dewcli
 | [`crypto/`](./crypto/) | secp256k1, Keccak-256, address derivation, sign/verify |
 | [`crypto/wallet/`](./crypto/wallet/) | Encrypted keystore (Web3 Secret Storage) |
 | [`cmd/dewcli/`](./cmd/dewcli/) | Wallet CLI |
+| [`db/`](./db/) | KV store interface + in-memory backend |
+| [`core/types/`](./core/types/) | Account, Header, Block, EVM tx / receipt |
+| [`core/state/`](./core/state/) | Flat state DB (account / storage / code) |
+| [`config/`](./config/) | Genesis JSON load + alloc commit |
+| [`genesis.json`](./genesis.json) | Dev genesis (chainId 2026, sample alloc) |
 
 ## Documentation
 
@@ -92,7 +97,7 @@ Layout after merge:
 
 ## Status
 
-Docs site + landing are wired. **Phase A1** (cryptography + `dewcli` wallet) is implemented. Next: [Phase A2](./docs/development/phases.md) — types, DB, flat state.
+Docs site + landing are wired. **Phase A1–A2** done (crypto/wallet, types, flat state, genesis). Next: [Phase A3](./docs/development/phases.md) — EVM bridge & sequential execution.
 
 ## License
 

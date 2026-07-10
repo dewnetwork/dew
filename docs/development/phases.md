@@ -35,12 +35,14 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] `Account`, `Header`, `Block`, EVM tx types
-- [ ] KV put/get round-trip
-- [ ] Apply genesis `alloc` to state
-- [ ] Canonical header hash stable in tests
+- [x] `Account`, `Header`, `Block`, EVM tx types
+- [x] KV put/get round-trip
+- [x] Apply genesis `alloc` to state
+- [x] Canonical header hash stable in tests
 
 **Packages:** `core/types`, `core/state`, `db`, `config`
+
+**Notes:** Header hash = `Keccak-256(RLP(header fields))`. Flat state root is a provisional sorted-leaf commitment (SMT lands later). Sample `genesis.json` at repo root; load via `config.LoadGenesisFile`.
 
 ---
 

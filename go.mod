@@ -4,6 +4,7 @@ go 1.23.2
 
 require (
 	github.com/ethereum/go-ethereum v1.14.12
+	github.com/holiman/uint256 v1.3.1
 	golang.org/x/term v0.22.0
 )
 
@@ -19,7 +20,6 @@ require (
 	github.com/ethereum/go-verkle v0.1.1-0.20240829091221-dffa7562dbe9 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/holiman/uint256 v1.3.1 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/supranational/blst v0.3.13 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
