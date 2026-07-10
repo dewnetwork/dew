@@ -1,0 +1,217 @@
+/**
+ * Dewchain docs theme
+ * Signature: cool “morning dew” cyan on deep maritime ink —
+ * clarity and condensation, not neon-crypto green.
+ * Fonts loaded via themeConfig head (Figtree, Syne, IBM Plex Mono).
+ */
+
+:root {
+  /* Brand */
+  --dew-ink: #0a1628;
+  --dew-ink-soft: #122033;
+  --dew-mist: #8fd4c8;
+  --dew-cyan: #3db8a8;
+  --dew-cyan-bright: #5eead4;
+  --dew-frost: #e8f4f1;
+  --dew-slate: #94a3b8;
+  --dew-warn: #e8b86d;
+
+  /* VitePress tokens — light */
+  --vp-c-brand-1: #1a8f82;
+  --vp-c-brand-2: #3db8a8;
+  --vp-c-brand-3: #2a9d8f;
+  --vp-c-brand-soft: rgba(61, 184, 168, 0.12);
+
+  --vp-c-bg: #f7faf9;
+  --vp-c-bg-alt: #eef5f3;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-bg-soft: #e8f0ed;
+
+  --vp-c-text-1: #0f1c2e;
+  --vp-c-text-2: #3d4f63;
+  --vp-c-text-3: #6b7c8f;
+
+  --vp-c-divider: rgba(15, 28, 46, 0.08);
+  --vp-c-gutter: rgba(15, 28, 46, 0.06);
+
+  --vp-c-border: rgba(15, 28, 46, 0.1);
+  --vp-c-border-hover: rgba(26, 143, 130, 0.45);
+
+  --vp-font-family-base: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --vp-font-family-mono: 'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    120deg,
+    #0a1628 0%,
+    #1a8f82 45%,
+    #3db8a8 100%
+  );
+  --vp-home-hero-image-background-image: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    rgba(61, 184, 168, 0.28),
+    transparent 70%
+  );
+  --vp-home-hero-image-filter: blur(44px);
+
+  --vp-button-brand-bg: #1a8f82;
+  --vp-button-brand-hover-bg: #157a6f;
+  --vp-button-brand-active-bg: #11665d;
+  --vp-button-brand-text: #fff;
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-hover-border: transparent;
+
+  --vp-sidebar-bg-color: var(--vp-c-bg-alt);
+  --vp-nav-bg-color: rgba(247, 250, 249, 0.86);
+}
+
+.dark {
+  --vp-c-brand-1: #5eead4;
+  --vp-c-brand-2: #3db8a8;
+  --vp-c-brand-3: #2a9d8f;
+  --vp-c-brand-soft: rgba(94, 234, 212, 0.12);
+
+  --vp-c-bg: #0a1628;
+  --vp-c-bg-alt: #0d1b30;
+  --vp-c-bg-elv: #122033;
+  --vp-c-bg-soft: #15263d;
+
+  --vp-c-text-1: #e8f4f1;
+  --vp-c-text-2: #a8b8c8;
+  --vp-c-text-3: #6b7c8f;
+
+  --vp-c-divider: rgba(232, 244, 241, 0.08);
+  --vp-c-gutter: rgba(232, 244, 241, 0.05);
+  --vp-c-border: rgba(232, 244, 241, 0.1);
+  --vp-c-border-hover: rgba(94, 234, 212, 0.4);
+
+  --vp-home-hero-name-background: linear-gradient(
+    120deg,
+    #e8f4f1 0%,
+    #5eead4 50%,
+    #38bdf8 100%
+  );
+  --vp-home-hero-image-background-image: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    rgba(94, 234, 212, 0.22),
+    transparent 70%
+  );
+
+  --vp-button-brand-bg: #2a9d8f;
+  --vp-button-brand-hover-bg: #3db8a8;
+  --vp-button-brand-active-bg: #5eead4;
+  --vp-button-brand-text: #0a1628;
+
+  --vp-nav-bg-color: rgba(10, 22, 40, 0.88);
+  --vp-sidebar-bg-color: var(--vp-c-bg-alt);
+}
+
+/* Display type for hero + doc titles */
+.VPHomeHero .name,
+.VPHomeHero .text {
+  font-family: 'Syne', var(--vp-font-family-base);
+  letter-spacing: -0.02em;
+}
+
+.VPDoc h1 {
+  font-family: 'Syne', var(--vp-font-family-base);
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+.VPDoc h2 {
+  font-family: 'Syne', var(--vp-font-family-base);
+  letter-spacing: -0.015em;
+  border-top: none;
+  padding-top: 1.5rem;
+  margin-top: 2rem;
+  position: relative;
+}
+
+/* Signature: dew condensation line under section headings */
+.VPDoc h2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2.5rem;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--vp-c-brand-1),
+    transparent
+  );
+}
+
+/* Active sidebar: use VitePress native .indicator (left rail), not a ::before on text */
+.VPSidebarItem.level-1.is-active > .item .link > .text {
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
+/* Default theme only paints indicator for depth ≥ 2; our nav pages are level-1 */
+.VPSidebarItem.level-1.is-active > .item > .indicator {
+  background-color: var(--vp-c-brand-1);
+}
+
+.VPSidebarItem .item > .indicator {
+  width: 2px;
+  border-radius: 2px;
+  left: -17px; /* sits on the group rail, clear of link text */
+}
+
+/* Status badges in content (optional `status: draft` callouts stay plain) */
+.vp-doc table {
+  font-size: 0.92em;
+}
+
+.vp-doc code {
+  font-size: 0.9em;
+}
+
+/* Nav bar: hairline dew edge */
+.VPNavBar {
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.dark .VPNavBar {
+  box-shadow: 0 1px 0 0 rgba(94, 234, 212, 0.06);
+}
+
+/* Home features: slightly more structured cards */
+.VPHomeFeatures .VPFeature {
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-border);
+  background: var(--vp-c-bg-elv);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.VPHomeFeatures .VPFeature:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-1px);
+}
+
+.VPFeature .title {
+  font-family: 'Syne', var(--vp-font-family-base);
+}
+
+/* Footer quieter */
+.VPFooter {
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+/* Local search polish */
+.VPLocalSearchBox .result {
+  border-radius: 8px;
+}
+
+/* Prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .VPHomeFeatures .VPFeature {
+    transition: none;
+  }
+  .VPHomeFeatures .VPFeature:hover {
+    transform: none;
+  }
+}

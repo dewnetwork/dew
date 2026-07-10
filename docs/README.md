@@ -24,7 +24,7 @@ status: draft
 | **Go** | Chain node, CLI, consensus, P2P, state, EVM, JSON-RPC server |
 | **Node.js** | **Docs website** (build/preview static site from this `docs/` tree); scripts, localnet, RPC smoke tests, later SDK |
 
-Markdown under `docs/` is the source of truth. **Node is required to build the web docs** (e.g. VitePress / Nextra / Docusaurus — tool TBD). Frontmatter on every page is ready for that site. See [Monorepo layout](./development/go-project-layout.md).
+Markdown under `docs/` is the source of truth. **Node builds the web docs with VitePress** (`pnpm docs:dev` / `pnpm docs:build` from the monorepo root). Frontmatter on every page drives titles, SEO, and navigation. See [Monorepo layout](./development/go-project-layout.md).
 
 ## Product strategy
 
@@ -81,9 +81,10 @@ Category folders also include `_category.md` for sidebar labels and ordering. Na
 | Concern | Where |
 | :--- | :--- |
 | Source markdown | `docs/**/*.md` |
-| Sidebar order | frontmatter `order` + `sidebar.yaml` |
-| Build / preview site | **Node.js** (`package.json` scripts such as `docs:dev`, `docs:build` — when wired) |
-| Hosting output | static `dist` / `.vitepress/dist` / equivalent (tool-specific) |
+| Sidebar order | frontmatter `order` + `sidebar.yaml` (VitePress loads `sidebar.yaml`) |
+| Site config / theme | `docs/.vitepress/` |
+| Build / preview site | **Node.js (pnpm)** — `pnpm docs:dev` · `docs:build` · `docs:preview` |
+| Hosting output | `docs/.vitepress/dist` |
 
 ## Spec status
 

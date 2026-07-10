@@ -1,4 +1,4 @@
-# Sidebar map for the Node-built docs website (Docusaurus / Nextra / VitePress / Mintlify).
+# Sidebar map for the VitePress docs website (loaded by docs/.vitepress/config.ts).
 # Markdown under docs/ is the source; Node only builds/serves the site.
 # Pages also carry YAML frontmatter: title, description, category, order, status.
 

@@ -15,7 +15,7 @@ Dewchain is developed as a **single monorepo**: one git repository, one product 
 | Language | Responsibility | Package manager |
 | :--- | :--- | :--- |
 | **Go** | L1 node, consensus, P2P, state, EVM, RPC server, `dewcli` | `go.mod` / `go.sum` at repo root |
-| **Node.js** | **Documentation website** (build & preview from `docs/`); scripts, localnet, SDK/RPC tests, deploy helpers | `package.json` / lockfile at repo root |
+| **Node.js** | **Documentation website** (build & preview from `docs/`); scripts, localnet, SDK/RPC tests, deploy helpers | `package.json` + `pnpm-lock.yaml` at repo root |
 
 ### Why Node is in the monorepo
 
@@ -58,8 +58,8 @@ dewchain/                          # monorepo root
 │   └── sidebar.yaml               # Sidebar map for the site generator
 ├── go.mod                         # Go module root
 ├── go.sum
-├── package.json                   # Node root — docs site build + tooling
-├── package-lock.json              # or pnpm-lock.yaml / yarn.lock
+├── package.json                   # Node root — docs site build + tooling (pnpm)
+├── pnpm-lock.yaml                 # pnpm lockfile
 └── README.md
 ```
 
@@ -86,7 +86,7 @@ Node is the **docs website + tooling lane** of the monorepo:
 
 | Use | Priority | Examples |
 | :--- | :--- | :--- |
-| **Docs website** | **Primary Node role** | Dev server + production build from `docs/**/*.md` (VitePress / Nextra / Docusaurus / etc.) |
+| **Docs website** | **Primary Node role** | VitePress dev server + production build from `docs/**/*.md` |
 | Scripts | As needed | `localnet`, genesis helpers, faucet |
 | Tests | As needed | RPC smoke tests against a running Go node |
 | SDK | Later | TypeScript client for `eth_*` / `dew_*` |
@@ -97,25 +97,27 @@ Node is the **docs website + tooling lane** of the monorepo:
 docs/**/*.md  (+ frontmatter, sidebar.yaml)
         │
         ▼
-  Node docs site generator
+  VitePress (docs/.vitepress/)
         │
-        ├── docs:dev   → local preview
-        └── docs:build → static site for hosting
+        ├── pnpm docs:dev     → local preview (:5173)
+        ├── pnpm docs:build   → docs/.vitepress/dist
+        └── pnpm docs:preview → serve production build
 ```
 
 - Authors edit markdown only under `docs/`.
-- Site theme/config will live with the Node app when added; **do not fork content** into a second copy.
-- Generator choice is not frozen; frontmatter (`title`, `description`, `category`, `order`, `status`) stays portable.
+- Site theme/config lives under `docs/.vitepress/`; **do not fork content** into a second copy.
+- Navigation: `sidebar.yaml` is loaded by VitePress config; page titles come from frontmatter `title`.
+- Frontmatter (`title`, `description`, `category`, `order`, `status`) remains portable if the generator ever changes.
+- **Package manager: pnpm** (`packageManager` in `package.json`). Prefer `pnpm install` over npm/yarn.
 
-Suggested root script names (wire when the site is set up — docs only for now):
+Root scripts (wired):
 
 ```json
 {
   "scripts": {
-    "docs:dev": "/* preview docs website */",
-    "docs:build": "/* production static build */",
-    "test:rpc": "/* optional RPC smoke */",
-    "localnet": "/* optional orchestrate Go binaries */"
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   }
 }
 ```
@@ -141,4 +143,4 @@ Failing either stack fails the monorepo build for that PR when that stack is in 
 
 ## Current status
 
-Monorepo established: markdown docs organized for a future **Node-built docs website**, plus root `package.json`. Go module and packages land with Phase A. Wire `docs:dev` / `docs:build` when choosing a site generator — no requirement to implement that in the same change as content edits.
+Monorepo established: markdown under `docs/`, **VitePress docs website** (`package.json` + `docs:dev` / `docs:build` / `docs:preview`), theme under `docs/.vitepress/`. Go module and packages land with Phase A.

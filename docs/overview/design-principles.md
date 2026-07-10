@@ -69,7 +69,7 @@ Fees, inflation, staking minimums, and slash percentages must live in **normativ
 ## 9. Operational model (Go node + Node docs/tooling)
 
 - Single Go binary node (`dewchain`) + CLI (`dewcli`)
-- Node.js to **build/preview web docs** (`docs:dev` / `docs:build`) and later localnet, smoke tests, SDK
+- Node.js to **build/preview web docs** (VitePress: `docs:dev` / `docs:build`) and later localnet, smoke tests, SDK
 - Config via files + flags
 - Observability hooks from day one (logs, basic metrics)
 - Tests as acceptance for each roadmap phase (Go unit/integration + docs build + optional Node RPC checks)

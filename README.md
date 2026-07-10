@@ -26,6 +26,17 @@ Layout details: [docs/development/go-project-layout.md](./docs/development/go-pr
 
 Full protocol and build docs: [`docs/`](./docs/README.md).
 
+**Docs website (VitePress):**
+
+```bash
+pnpm install
+pnpm docs:dev      # local preview (default http://localhost:5173)
+pnpm docs:build    # static site → docs/.vitepress/dist
+pnpm docs:preview  # serve production build
+```
+
+Markdown under `docs/` is the source of truth; Node only builds the site.
+
 **Start here:**
 
 1. [Vision](./docs/overview/vision.md)
@@ -35,7 +46,7 @@ Full protocol and build docs: [`docs/`](./docs/README.md).
 
 ## Status
 
-Monorepo scaffold + documentation stage. Go packages and Node tooling land phase-by-phase per the roadmap.
+Monorepo scaffold + documentation stage. **Docs website** (`docs:dev` / `docs:build`) is wired. Go packages and remaining Node tooling land phase-by-phase per the roadmap.
 
 ## License
 
