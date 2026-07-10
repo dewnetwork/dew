@@ -156,10 +156,10 @@ func TestGenesisHeader_HashFixture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Locked fixtures for sampleGenesis in this package (update on intentional codec/alloc change).
+	// Locked fixtures for sampleGenesis (updated for C3 SMT StateRoot).
 	const (
-		wantBlockHash = "0x7be0ab1934a87f74a586b1821645819f027abeb3d77e5fd431cfd4e3287bcd49"
-		wantStateRoot = "0x34a66ca4d781a7c3292d9df27493a40983106515d9a49e8306e930f801151bd5"
+		wantBlockHash = "0xa7fb91c47db4a0516fabf168f0015e402db22e52120b8970e72ae542b3bea06b"
+		wantStateRoot = "0x423a426af8ad371a115388ac7704c6cbdcab52f310b6ebf5901654bac3e8e381"
 	)
 	if got := block.Hash().Hex(); got != wantBlockHash {
 		t.Fatalf("genesis block hash = %s, want %s", got, wantBlockHash)

@@ -31,7 +31,7 @@ func run(args []string) error {
 	}
 	switch args[0] {
 	case "version":
-		fmt.Println("dew 0.1.0 (phase A7)")
+		fmt.Println("dew 0.1.0 (phase C5)")
 		return nil
 	case "help", "-h", "--help":
 		printUsage()
@@ -54,6 +54,7 @@ func cmdRun(args []string) error {
 	httpAddr := fs.String("http.addr", "127.0.0.1", "JSON-RPC HTTP bind address")
 	httpPort := fs.Int("http.port", 8545, "JSON-RPC HTTP port")
 	httpEnabled := fs.Bool("http", true, "enable JSON-RPC HTTP")
+	staking := fs.Bool("staking", false, "enable live 0x102 staking methods (C4)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -66,8 +67,12 @@ func cmdRun(args []string) error {
 	if err != nil {
 		return err
 	}
+	if *staking {
+		n.SetStakingEnabled(true)
+	}
 
-	fmt.Printf("Dew node started chainId=%s head=%d\n", n.ChainID().String(), n.BlockNumber())
+	fmt.Printf("Dew node started chainId=%s head=%d staking=%v\n", n.ChainID().String(), n.BlockNumber(), n.StakingEnabled())
+	fmt.Println("hint: multi-host private net ops — docs/development/private-testnet.md")
 
 	if !*httpEnabled {
 		waitSignal()
@@ -184,8 +189,9 @@ func printUsage() {
 Usage:
   dew init [--out genesis.json]
   dew devnet [--http.addr 127.0.0.1] [--http.port 8545] [--no-p2p] [--bft.heights 1]
-  dew run [--genesis genesis.json] [--http.addr 127.0.0.1] [--http.port 8545]
+  dew run [--genesis genesis.json] [--http.addr 127.0.0.1] [--http.port 8545] [--staking]
   dew version
 
+Private multi-host ops: docs/development/private-testnet.md
 `)
 }

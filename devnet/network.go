@@ -39,6 +39,11 @@ type Network struct {
 	Cluster *consensus.LocalCluster
 	Hosts   []*p2p.Host // len = validators (+ optional rpc host)
 
+	// Chains backs each P2P host (same order as Hosts) for chaos restart/sync tests.
+	Chains []*p2p.MemoryChain
+
+	encryptP2P *bool
+
 	mu      sync.Mutex
 	httpSrv *http.Server
 	ln      net.Listener
@@ -52,6 +57,9 @@ type NetworkConfig struct {
 	Genesis *config.Genesis
 	// EnableP2P dials validator hosts in a mesh (default true).
 	EnableP2P bool
+	// EncryptP2P enables C2 transport (default true). Cleartext only if false.
+	// When false, AllowCleartext is set on hosts (dev only).
+	EncryptP2P *bool
 }
 
 // Start boots validators, optional P2P mesh, and the RPC HTTP server.
@@ -104,9 +112,10 @@ func Start(cfg NetworkConfig) (*Network, error) {
 		Faucet:     faucet,
 		User1:      user1,
 		Cluster:    cluster,
+		encryptP2P: cfg.EncryptP2P,
 	}
 
-	// P2P: one host per validator with shared memory chain tip from genesis.
+	// P2P: one host per validator (encrypted by default — C2/C5).
 	if cfg.EnableP2P {
 		if err := netw.startP2P(); err != nil {
 			return nil, err
@@ -152,14 +161,28 @@ func (n *Network) startP2P() error {
 	raw := []byte("genesis")
 	n.Hosts = make([]*p2p.Host, 0, len(n.Validators))
 
-	for i, v := range n.Validators {
+	encrypt := true
+	// EncryptP2P defaults true (C2/C5 private net).
+	// NetworkConfig does not store a separate flag copy here — callers pass via
+	// startP2P encrypt param from Start. We read from a field set in Start.
+	if n.encryptP2P != nil {
+		encrypt = *n.encryptP2P
+	}
+
+	n.Chains = make([]*p2p.MemoryChain, 0, len(n.Validators))
+	for _, v := range n.Validators {
 		mc := p2p.NewMemoryChain(genesisHash, raw)
-		h, err := p2p.NewHost(p2p.Config{
+		cfg := p2p.Config{
 			PrivateKey: v.PrivateKey,
 			ChainID:    chainID,
 			ListenAddr: "127.0.0.1:0",
 			MaxPeers:   10,
-		}, mc, mc, p2p.AppHandlers{})
+			Encrypt:    encrypt,
+		}
+		if !encrypt {
+			cfg.AllowCleartext = true
+		}
+		h, err := p2p.NewHost(cfg, mc, mc, p2p.AppHandlers{})
 		if err != nil {
 			return err
 		}
@@ -167,7 +190,7 @@ func (n *Network) startP2P() error {
 			return err
 		}
 		n.Hosts = append(n.Hosts, h)
-		_ = i
+		n.Chains = append(n.Chains, mc)
 	}
 	// Mesh: each dials the previous
 	for i := 1; i < len(n.Hosts); i++ {
@@ -221,12 +244,16 @@ func (n *Network) P2PPeerCount() int {
 
 // Info is a human-readable summary for CLI.
 func (n *Network) Info() string {
+	enc := "on (C2 default)"
+	if n.encryptP2P != nil && !*n.encryptP2P {
+		enc = "off (cleartext dev)"
+	}
 	return fmt.Sprintf(
-		`Dew local devnet (Phase A7)
+		`Dew local / private testnet (Phase A7+C5)
   chainId:     %s (0x%x)
   rpc:         %s
   validators:  %d (BFT LocalCluster)
-  p2p hosts:   %d (loopback mesh)
+  p2p hosts:   %d (loopback mesh, encrypt=%s)
   faucet:      %s
   faucet key:  %s  (Anvil #0 — DEV ONLY)
   user1:       %s
@@ -236,9 +263,74 @@ func (n *Network) Info() string {
 		n.RPCURL,
 		n.ValidatorCount(),
 		len(n.Hosts),
+		enc,
 		n.Faucet.Address.Hex(),
 		n.Faucet.PrivHex,
 		n.User1.Address.Hex(),
 	)
+}
+
+// RestartHost stops P2P host i and starts a fresh host with the same key/chain
+// (chaos smoke: process kill simulation). Callers must re-dial the mesh.
+func (n *Network) RestartHost(i int) error {
+	if i < 0 || i >= len(n.Hosts) {
+		return fmt.Errorf("devnet: host index %d", i)
+	}
+	old := n.Hosts[i]
+	addr := old.ListenAddr()
+	_ = old.Close()
+
+	v := n.Validators[i]
+	mc := n.Chains[i]
+	encrypt := true
+	if n.encryptP2P != nil {
+		encrypt = *n.encryptP2P
+	}
+	cfg := p2p.Config{
+		PrivateKey: v.PrivateKey,
+		ChainID:    n.Genesis.ChainID(),
+		ListenAddr: "127.0.0.1:0", // new ephemeral port after restart
+		MaxPeers:   10,
+		Encrypt:    encrypt,
+	}
+	if !encrypt {
+		cfg.AllowCleartext = true
+	}
+	// Preserve tip for sync tests: OnBlock stores into mc
+	h, err := p2p.NewHost(cfg, mc, mc, p2p.AppHandlers{
+		OnBlock: func(number uint64, hash types.Hash, raw []byte, from p2p.PeerID) error {
+			mc.AddBlock(number, hash, raw)
+			return nil
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if err := h.Start(); err != nil {
+		return err
+	}
+	n.Hosts[i] = h
+	_ = addr
+	return nil
+}
+
+// RedialHost dials host i to every other host (skip if already connected).
+func (n *Network) RedialHost(i int) error {
+	if i < 0 || i >= len(n.Hosts) {
+		return fmt.Errorf("devnet: host index %d", i)
+	}
+	h := n.Hosts[i]
+	for j, other := range n.Hosts {
+		if j == i {
+			continue
+		}
+		if _, ok := h.Store().GetActive(other.ID()); ok {
+			continue
+		}
+		if _, err := h.Dial(other.ListenAddr()); err != nil {
+			return fmt.Errorf("redial %d→%d: %w", i, j, err)
+		}
+	}
+	return nil
 }
 

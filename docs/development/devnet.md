@@ -54,7 +54,9 @@ flowchart TD
     V0 --> RPC["JSON-RPC Node (:8545)<br>(Execution / MetaMask)"]
 ```
 
-All four roles run **in one `dew devnet` process** for local DX. Multi-process packaging can wrap the same packages later.
+All four roles run **in one `dew devnet` process** for local DX. P2P sessions use **encrypted transport by default** (Phase C2).
+
+For multi-host private networks, chaos restart, and operator runbook stubs see [Private multi-host testnet](./private-testnet.md) (Phase C5).
 
 ## Faucet (Anvil-compatible)
 

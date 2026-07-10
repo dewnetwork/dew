@@ -14,7 +14,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | :--- | :----- | :---- |
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
-| **C1–C6** | C1–C4 done; C5–C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
+| **C1–C6** | C1–C5 done; C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
 
 High-level order: [Roadmap](./roadmap.md).
 
@@ -273,15 +273,15 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Acceptance:**
 
-- [ ] Documented multi-host topology (3 validators + optional non-validator RPC) beyond in-process `dew devnet`
-- [ ] Nodes reconnect and sync after process kill / host restart (chaos smoke)
-- [ ] Runbook stubs: key material locations, enable/disable feature flags, emergency stop
-- [ ] Encrypted P2P (C2) used on the private net by default
-- [ ] ERC-20 (or equivalent) deploy + transfer over the multi-host RPC still works
+- [x] Documented multi-host topology (3 validators + optional non-validator RPC) beyond in-process `dew devnet`
+- [x] Nodes reconnect and sync after process kill / host restart (chaos smoke)
+- [x] Runbook stubs: key material locations, enable/disable feature flags, emergency stop
+- [x] Encrypted P2P (C2) used on the private net by default
+- [x] ERC-20 (or equivalent) deploy + transfer over the multi-host RPC still works
 
-**Packages:** `devnet/`, `cmd/dew`, `docs/development/devnet.md`, ops notes under `docs/security/` or development
+**Packages:** `devnet/` (chaos + encrypt default), `docs/development/private-testnet.md`, `cmd/dew`
 
-**Notes:** Aligns with [Security principles](../security/security-principles.md) “Private testnet” bar (multi-validator, chaos restart). No public faucet incentives required yet.
+**Notes:** Aligns with [Security principles](../security/security-principles.md) “Private testnet” bar. Chaos: `go test ./devnet/ -run Chaos`. No public faucet incentives (C6).
 
 ---
 

@@ -24,6 +24,11 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 - [ ] Wire ActiveSet into live Dew-BFT set rotation each epoch
 - [ ] Delegation / commission
 
+## C5 residuals
+
+- [ ] Multi-process binary packaging (systemd/docker compose samples) for true multi-host without in-process stand-in
+- [ ] Persistent peer store / auto-redial after restart (manual RedialMesh in chaos test today)
+
 ## Deferred / mainnet
 
 - [ ] PE uses fork+overlay, not full multi-version Block-STM — higher memory and re-exec cost under heavy conflicts (`core/vm/parallel.go`). Not required for first public testnet.
