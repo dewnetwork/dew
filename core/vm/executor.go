@@ -81,13 +81,15 @@ type Result struct {
 
 // Executor runs messages sequentially against a Dew StateDB.
 type Executor struct {
-	statedb *state.StateDB
-	bridge  *Bridge
-	config  *params.ChainConfig
-	block   BlockContext
+	statedb        *state.StateDB
+	bridge         *Bridge
+	config         *params.ChainConfig
+	block          BlockContext
+	dewPrecompiles bool // Phase B feature flag for 0x100+ system precompiles
 }
 
 // NewExecutor builds an executor for the given block context.
+// Dew system precompiles default to params.DefaultEnableDewPrecompiles.
 func NewExecutor(statedb *state.StateDB, block BlockContext) *Executor {
 	if block.BaseFee == nil {
 		block.BaseFee = big.NewInt(0)
@@ -99,10 +101,11 @@ func NewExecutor(statedb *state.StateDB, block BlockContext) *Executor {
 		block.GetHashFn = func(uint64) ethcommon.Hash { return ethcommon.Hash{} }
 	}
 	return &Executor{
-		statedb: statedb,
-		bridge:  NewBridge(statedb),
-		config:  DefaultChainConfig(block.ChainID),
-		block:   block,
+		statedb:        statedb,
+		bridge:         NewBridge(statedb),
+		config:         DefaultChainConfig(block.ChainID),
+		block:          block,
+		dewPrecompiles: true, // matches params.DefaultEnableDewPrecompiles
 	}
 }
 
@@ -158,6 +161,7 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 	}
 
 	evm := ethvm.NewEVM(blockCtx, txCtx, e.bridge, e.config, ethvm.Config{})
+	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles)
 
 	// Prepare access lists (Berlin+)
 	rules := e.config.Rules(blockCtx.BlockNumber, true, blockCtx.Time)
@@ -166,10 +170,13 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 		a := toEthAddr(*msg.To)
 		dest = &a
 	}
-	// Warm standard Cancun precompiles (0x01–0x0a).
-	precompiles := make([]ethcommon.Address, 0, 10)
+	// Warm standard Cancun precompiles (0x01–0x0a) and optional Dew 0x100+.
+	precompiles := make([]ethcommon.Address, 0, 12)
 	for i := byte(1); i <= 10; i++ {
 		precompiles = append(precompiles, ethcommon.BytesToAddress([]byte{i}))
+	}
+	if e.dewPrecompiles {
+		precompiles = append(precompiles, DewPrecompileAddresses()...)
 	}
 	e.bridge.Prepare(rules, toEthAddr(msg.From), toEthAddr(e.block.Coinbase), dest, precompiles, nil)
 	_ = evm // used below

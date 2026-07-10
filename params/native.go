@@ -21,3 +21,9 @@ const DefaultEnableNativePath = true
 
 // DefaultEnableDewPrecompiles enables Dew system precompiles (0x100+).
 const DefaultEnableDewPrecompiles = true
+
+// NativeTransferPrecompileGas is the fixed gas for address 0x100.
+const NativeTransferPrecompileGas uint64 = 3_000
+
+// StakingPrecompileGas is the fixed gas for reserved address 0x102 (stub).
+const StakingPrecompileGas uint64 = 2_000
