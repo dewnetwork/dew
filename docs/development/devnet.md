@@ -44,15 +44,14 @@ go test ./devnet/ -count=1 -v    # BFT + P2P + ERC-20 over RPC
 
 ## Topology
 
-```
-┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-│ validator-0 │───│ validator-1 │───│ validator-2 │   Dew-BFT + P2P
-└──────┬──────┘   └─────────────┘   └─────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────────────┐
-│  JSON-RPC node  :8545  (execution / MetaMask)    │
-└──────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph P2P ["Dew-BFT + P2P Mesh"]
+        V0[validator-0] <--> V1[validator-1]
+        V1 <--> V2[validator-2]
+        V2 <--> V0
+    end
+    V0 --> RPC["JSON-RPC Node (:8545)<br>(Execution / MetaMask)"]
 ```
 
 All four roles run **in one `dew devnet` process** for local DX. Multi-process packaging can wrap the same packages later.

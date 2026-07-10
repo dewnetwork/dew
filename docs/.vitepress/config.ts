@@ -146,6 +146,7 @@ export default withMermaid({
       dark: 'github-dark',
     },
     lineNumbers: false,
+    math: true,
   },
 
   mermaid: {

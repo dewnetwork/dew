@@ -222,7 +222,7 @@
   display: flex;
   justify-content: center;
   margin: 1.5rem 0;
-  padding: 1.25rem 1rem;
+  padding: 1.5rem;
   border-radius: 12px;
   border: 1px solid var(--vp-c-border);
   background: var(--vp-c-bg-soft);
@@ -233,9 +233,77 @@
 .mermaid svg {
   max-width: 100%;
   height: auto;
+  font-family: var(--vp-font-family-base) !important;
 }
 
 .dark .vp-doc .mermaid,
 .dark .mermaid {
   background: var(--vp-c-bg-elv);
+  border-color: rgba(94, 234, 212, 0.15);
 }
+
+/* Node styling */
+.vp-doc .mermaid .node rect,
+.vp-doc .mermaid .node circle,
+.vp-doc .mermaid .node polygon,
+.vp-doc .mermaid .node path,
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node polygon,
+.mermaid .node path {
+  fill: var(--vp-c-bg-elv) !important;
+  stroke: var(--vp-c-brand-1) !important;
+  stroke-width: 1.5px !important;
+}
+
+.vp-doc .mermaid .node rect,
+.mermaid .node rect {
+  rx: 8px !important; /* smooth rounded corners for rect nodes only */
+  ry: 8px !important;
+}
+
+/* Node labels */
+.vp-doc .mermaid .node .label,
+.mermaid .node .label {
+  color: var(--vp-c-text-1) !important;
+  font-family: var(--vp-font-family-base) !important;
+  font-weight: 500 !important;
+}
+
+/* Edges/Lines */
+.vp-doc .mermaid .edgePath .path,
+.mermaid .edgePath .path {
+  stroke: var(--vp-c-text-2) !important;
+  stroke-width: 1.5px !important;
+}
+
+/* Arrowheads */
+.vp-doc .mermaid .edgePath .arrowheadPath,
+.mermaid .edgePath .arrowheadPath {
+  fill: var(--vp-c-text-2) !important;
+  stroke: none !important;
+}
+
+/* Subgraphs (Clusters) */
+.vp-doc .mermaid .cluster rect,
+.mermaid .cluster rect {
+  fill: var(--vp-c-bg-alt) !important;
+  stroke: var(--vp-c-border) !important;
+  stroke-width: 1px !important;
+  rx: 12px !important;
+  ry: 12px !important;
+}
+
+.dark .vp-doc .mermaid .cluster rect,
+.dark .mermaid .cluster rect {
+  fill: var(--vp-c-bg-soft) !important;
+  stroke: var(--vp-c-divider) !important;
+}
+
+.vp-doc .mermaid .cluster .label,
+.mermaid .cluster .label {
+  color: var(--vp-c-text-2) !important;
+  font-family: var(--vp-font-family-base) !important;
+  font-weight: 600 !important;
+}
+

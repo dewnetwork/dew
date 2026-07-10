@@ -12,21 +12,13 @@ status: draft
 
 Dew embeds a standard EVM interpreter (typically via `go-ethereum` `core/vm`) behind a thin adapter. Opcode semantics follow the **Cancun-era** rules enabled from genesis (see [Genesis](../economics/genesis.md)).
 
+```mermaid
+flowchart TD
+    Executor["Dew Executor"] --> Bridge["StateDB bridge (interface)<br>Flat DB + journal + gas metering"]
+    Bridge --> Opcodes["EVM opcodes"]
+    Bridge --> Precompiles["Precompiles"]
 ```
-┌─────────────────────────────────────┐
-│         Dew Executor           │
-└─────────────────┬───────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────┐
-│     StateDB bridge (interface)      │
-│   Flat DB + journal + gas metering  │
-└─────────────────┬───────────────────┘
-                  │
-        ┌─────────┴─────────┐
-        ▼                   ▼
-   EVM opcodes        Precompiles
-```
+
 
 ## StateDB bridge
 
