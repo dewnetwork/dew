@@ -41,19 +41,29 @@ func (s *StateDB) Copy() *StateDB {
 
 // ApplyOverlay merges dirty account/storage/code from src into s.
 // Used by Dew-PE when a speculative execution is validated as non-conflicting.
+// Handles post-Finalise dirties where accounts may have been deleted (acc == nil).
 func (s *StateDB) ApplyOverlay(src *StateDB) {
 	if src == nil {
 		return
 	}
 	for addr := range src.accountDirty {
 		if _, dead := src.suicides[addr]; dead {
-			s.suicides[addr] = struct{}{}
 			delete(s.accounts, addr)
 			s.accountDirty[addr] = struct{}{}
+			// clear storage cache for addr
+			for id := range s.storage {
+				if id.addr == addr {
+					s.storage[id] = types.Hash{}
+					s.storageDirty[id] = struct{}{}
+				}
+			}
 			continue
 		}
 		acc := src.accounts[addr]
 		if acc == nil {
+			// Finalise deleted empty / destroyed account
+			delete(s.accounts, addr)
+			s.accountDirty[addr] = struct{}{}
 			continue
 		}
 		s.accounts[addr] = acc.Copy()
@@ -70,12 +80,18 @@ func (s *StateDB) ApplyOverlay(src *StateDB) {
 			s.storageDirty[id] = struct{}{}
 			continue
 		}
+		// account was deleted post-finalise
+		if _, accDirty := src.accountDirty[id.addr]; accDirty && src.accounts[id.addr] == nil {
+			s.storage[id] = types.Hash{}
+			s.storageDirty[id] = struct{}{}
+			continue
+		}
 		s.storage[id] = src.storage[id]
 		s.storageDirty[id] = struct{}{}
 	}
 	// Ensure account objects exist for storage-only dirties.
 	for id := range src.storageDirty {
-		if _, dead := src.suicides[id.addr]; dead {
+		if src.accounts[id.addr] == nil {
 			continue
 		}
 		if _, ok := s.accounts[id.addr]; !ok {
