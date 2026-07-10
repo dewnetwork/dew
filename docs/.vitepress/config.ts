@@ -56,11 +56,16 @@ function titleFromSlug(slug: string): string {
 
 const sidebar = loadSidebar()
 
+// When merging with the landing site, set DOCS_BASE=/docs/ so assets/links
+// resolve under /docs. Standalone `docs:dev` / `docs:build` keep base at /.
+const docsBase = process.env.DOCS_BASE?.trim() || '/'
+
 export default withMermaid({
   title: 'Dew',
   description:
     'High-performance, EVM-compatible Layer 1 — protocol docs for the Go + Node monorepo.',
   lang: 'en-US',
+  base: docsBase.endsWith('/') ? docsBase : `${docsBase}/`,
   cleanUrls: true,
   lastUpdated: true,
   ignoreDeadLinks: true,

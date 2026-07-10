@@ -47,6 +47,22 @@ pnpm web:build     # static site → web/dist
 pnpm web:preview
 ```
 
+## Combined production site
+
+Build landing + docs into one deployable folder (`dist/`):
+
+```bash
+pnpm build         # or pnpm site:build
+pnpm site:preview  # http://localhost:4173  →  / landing, /docs docs
+```
+
+Layout after merge:
+
+| Path | Source |
+| :--- | :--- |
+| `/` | Astro landing (`web/dist`) |
+| `/docs/` | VitePress docs (`docs/.vitepress/dist`, base `/docs/`) |
+
 **Start here:**
 
 1. [Vision](./docs/overview/vision.md)

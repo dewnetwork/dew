@@ -13,6 +13,9 @@
     "web:dev": "pnpm --dir web dev",
     "web:build": "pnpm --dir web build",
     "web:preview": "pnpm --dir web preview",
+    "build": "node scripts/build-site.mjs",
+    "site:build": "node scripts/build-site.mjs",
+    "site:preview": "npx --yes serve dist -l 4173",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "engines": {
