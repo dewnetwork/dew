@@ -121,10 +121,14 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] `genesis.json` + init instructions
-- [ ] 3 validators, 1 RPC node
-- [ ] Deploy and use ERC-20 over RPC
-- [ ] Document chain ID, ports, faucet
+- [x] `genesis.json` + init instructions
+- [x] 3 validators, 1 RPC node
+- [x] Deploy and use ERC-20 over RPC
+- [x] Document chain ID, ports, faucet
+
+**Packages:** `devnet/`, `cmd/dew` (`init`, `devnet`), `scripts/devnet-erc20.mjs`
+
+**Notes:** `dew init` writes genesis with 3 Anvil-compatible validators + faucet alloc. `dew devnet` starts in-process LocalCluster BFT, loopback P2P mesh, and JSON-RPC (default `:8545`). ERC-20 fixture over RPC covered by `go test ./devnet/`. Operator guide: [Local Devnet](./devnet.md).
 
 ---
 

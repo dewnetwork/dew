@@ -17,7 +17,8 @@
     "site:build": "node scripts/build-site.mjs",
     "site:preview": "npx --yes serve dist -l 4173",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "rpc:smoke": "node scripts/smoke-rpc.mjs"
+    "rpc:smoke": "node scripts/smoke-rpc.mjs",
+    "devnet:erc20": "node scripts/devnet-erc20.mjs"
   },
   "engines": {
     "node": ">=20",

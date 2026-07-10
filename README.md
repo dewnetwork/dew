@@ -40,6 +40,12 @@ go build -o bin/dew ./cmd/dew
 ./bin/dew run --genesis genesis.json --http.addr 127.0.0.1 --http.port 8545
 # MetaMask / Foundry: chainId 2026 (0x7ea), RPC http://127.0.0.1:8545
 node scripts/smoke-rpc.mjs              # eth_chainId smoke check
+
+# Local devnet: 3 BFT validators + P2P mesh + RPC (Phase A7)
+./bin/dew init --out genesis.json
+./bin/dew devnet --http.port 8545
+go test ./devnet/ -count=1              # BFT + ERC-20 over RPC
+# Faucet (Anvil #0): 0xf39F… / ac0974… — see docs/development/devnet.md
 ```
 
 | Package | Role |
@@ -56,8 +62,9 @@ node scripts/smoke-rpc.mjs              # eth_chainId smoke check
 | [`rpc/`](./rpc/) | Ethereum JSON-RPC HTTP (`eth_*` / `net_*` / `web3_*`) |
 | [`consensus/`](./consensus/) | Dew-BFT engine + local multi-validator cluster (Phase A5) |
 | [`p2p/`](./p2p/) | TCP host, handshake, gossip, sync, consensus fan-out (Phase A6) |
-| [`cmd/dew/`](./cmd/dew/) | Full node entrypoint |
-| [`genesis.json`](./genesis.json) | Dev genesis (chainId 2026, sample alloc) |
+| [`devnet/`](./devnet/) | Local 3-validator + RPC network helpers (Phase A7) |
+| [`cmd/dew/`](./cmd/dew/) | Full node entrypoint (`run`, `init`, `devnet`) |
+| [`genesis.json`](./genesis.json) | Dev genesis (chainId 2026, 3 validators, faucet alloc) |
 
 ## Documentation
 
@@ -109,7 +116,7 @@ Layout after merge:
 
 ## Status
 
-Docs site + landing are wired. **Phase A1–A6** done (crypto → EVM → JSON-RPC → Dew-BFT → P2P). Next: [Phase A7](./docs/development/phases.md) — multi-validator devnet + Solidity demo.
+Docs site + landing are wired. **Phase A1–A7** done (crypto → EVM → JSON-RPC → Dew-BFT → P2P → devnet). Next: [Phase B1](./docs/development/phases.md) — parallel execution (Dew-PE).
 
 ## License
 

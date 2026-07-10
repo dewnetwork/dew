@@ -1,7 +1,6 @@
 // Command dew is the Dew full node entrypoint.
 //
-// Phase A4+: load genesis, serve Ethereum JSON-RPC over HTTP (default :8545).
-// Dew-BFT: consensus/; networking: p2p/ (Phase A5–A6). Devnet wiring is A7.
+// Phases A4–A7: JSON-RPC node, Dew-BFT, P2P, and local multi-validator devnet.
 package main
 
 import (
@@ -10,8 +9,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/dewnetwork/dew/config"
+	"github.com/dewnetwork/dew/devnet"
 	"github.com/dewnetwork/dew/node"
 	"github.com/dewnetwork/dew/rpc"
 )
@@ -30,13 +31,17 @@ func run(args []string) error {
 	}
 	switch args[0] {
 	case "version":
-		fmt.Println("dew 0.1.0 (phase A6)")
+		fmt.Println("dew 0.1.0 (phase A7)")
 		return nil
 	case "help", "-h", "--help":
 		printUsage()
 		return nil
 	case "run", "start":
 		return cmdRun(args[1:])
+	case "init":
+		return cmdInit(args[1:])
+	case "devnet":
+		return cmdDevnet(args[1:])
 	default:
 		printUsage()
 		return fmt.Errorf("unknown command %q", args[0])
@@ -79,7 +84,6 @@ func cmdRun(args []string) error {
 		errCh <- srv.ListenAndServe(addr)
 	}()
 
-	// Wait for interrupt or server error
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	select {
@@ -92,6 +96,82 @@ func cmdRun(args []string) error {
 	}
 }
 
+func cmdInit(args []string) error {
+	fs := flag.NewFlagSet("init", flag.ContinueOnError)
+	out := fs.String("out", "genesis.json", "output genesis path")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	g, err := devnet.DefaultGenesis()
+	if err != nil {
+		return err
+	}
+	if err := devnet.WriteGenesisJSON(*out, g); err != nil {
+		return err
+	}
+	fmt.Printf("wrote %s (chainId=%s, validators=%d)\n", *out, g.ChainID(), len(g.InitialValidators))
+	fmt.Println("next: dew devnet   # or  dew run --genesis", *out)
+	return nil
+}
+
+func cmdDevnet(args []string) error {
+	fs := flag.NewFlagSet("devnet", flag.ContinueOnError)
+	httpAddr := fs.String("http.addr", "127.0.0.1", "JSON-RPC bind address")
+	httpPort := fs.Int("http.port", devnet.DefaultRPCPort, "JSON-RPC port")
+	noP2P := fs.Bool("no-p2p", false, "disable loopback P2P mesh")
+	bftHeights := fs.Int("bft.heights", 1, "BFT heights to commit on start (0=skip)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	netw, err := devnet.Start(devnet.NetworkConfig{
+		HTTPAddr:  fmt.Sprintf("%s:%d", *httpAddr, *httpPort),
+		EnableP2P: !*noP2P,
+	})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = netw.Stop() }()
+
+	fmt.Print(netw.Info())
+	if *bftHeights > 0 {
+		evs, err := netw.CommitHeights(*bftHeights)
+		if err != nil {
+			return fmt.Errorf("bft: %w", err)
+		}
+		fmt.Printf("  bft:         committed %d height(s), last=%s\n", len(evs), evs[len(evs)-1].BlockHash.Hex())
+	}
+	fmt.Println()
+	fmt.Println("MetaMask: add network chainId 2026, RPC", netw.RPCURL)
+	fmt.Println("Foundry:  forge create … --rpc-url", netw.RPCURL, "--private-key", netw.Faucet.PrivHex)
+	fmt.Println("Smoke:    node scripts/smoke-rpc.mjs", netw.RPCURL)
+	fmt.Println("ERC-20:   node scripts/devnet-erc20.mjs", netw.RPCURL)
+	fmt.Println()
+	fmt.Println("listening — Ctrl+C to stop")
+
+	// Optional: keep sealing empty BFT heights slowly for demo liveness.
+	stop := make(chan struct{})
+	go func() {
+		t := time.NewTicker(2 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-stop:
+				return
+			case <-t.C:
+				_, _ = netw.CommitHeights(1)
+			}
+		}
+	}()
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	<-sig
+	close(stop)
+	fmt.Println("shutting down…")
+	return nil
+}
+
 func waitSignal() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
@@ -102,6 +182,8 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, `dew — Dew full node
 
 Usage:
+  dew init [--out genesis.json]
+  dew devnet [--http.addr 127.0.0.1] [--http.port 8545] [--no-p2p] [--bft.heights 1]
   dew run [--genesis genesis.json] [--http.addr 127.0.0.1] [--http.port 8545]
   dew version
 

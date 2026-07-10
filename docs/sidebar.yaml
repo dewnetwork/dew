@@ -65,6 +65,7 @@
     - go-project-layout.md   # monorepo layout (Go + Node)
     - roadmap.md
     - phases.md
+    - devnet.md
 
 - category: Security
   path: security
