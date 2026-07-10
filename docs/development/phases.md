@@ -87,12 +87,14 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] Round state machine advances height
-- [ ] Single validator auto-commits (dev mode)
-- [ ] Three local validators reach commit with \(>2/3\) votes
-- [ ] Invalid root → prevote nil
+- [x] Round state machine advances height
+- [x] Single validator auto-commits (dev mode)
+- [x] Three local validators reach commit with \(>2/3\) votes
+- [x] Invalid root → prevote nil
 
 **Packages:** `consensus/`
+
+**Notes:** Tendermint-style steps (NewRound → Propose → Prevote → Precommit → Commit). Quorum is strict `>2/3` voting power. Stake-weighted round-robin proposer selection. In-process `LocalCluster` exercises multi-validator without P2P (A6). Invalid state root fails `ProposalValidator` → nil prevote → no commit.
 
 ---
 

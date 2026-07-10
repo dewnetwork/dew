@@ -54,6 +54,7 @@ node scripts/smoke-rpc.mjs              # eth_chainId smoke check
 | [`config/`](./config/) | Genesis JSON load + alloc commit |
 | [`node/`](./node/) | In-process backend (genesis, auto-mine, state) |
 | [`rpc/`](./rpc/) | Ethereum JSON-RPC HTTP (`eth_*` / `net_*` / `web3_*`) |
+| [`consensus/`](./consensus/) | Dew-BFT engine + local multi-validator cluster (Phase A5) |
 | [`cmd/dew/`](./cmd/dew/) | Full node entrypoint |
 | [`genesis.json`](./genesis.json) | Dev genesis (chainId 2026, sample alloc) |
 
@@ -107,7 +108,7 @@ Layout after merge:
 
 ## Status
 
-Docs site + landing are wired. **Phase A1–A4** done (crypto → EVM → JSON-RPC). Next: [Phase A5](./docs/development/phases.md) — Dew-BFT local consensus.
+Docs site + landing are wired. **Phase A1–A5** done (crypto → EVM → JSON-RPC → Dew-BFT local). Next: [Phase A6](./docs/development/phases.md) — P2P gossip & sync.
 
 ## License
 
