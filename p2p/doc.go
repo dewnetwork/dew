@@ -1,11 +1,14 @@
-// Package p2p implements Dew networking (Phase A6): TCP transport, framed
-// messages, handshake, peer store, inventory gossip for txs/blocks, catch-up
-// sync, and delivery of Dew-BFT consensus messages.
+// Package p2p implements Dew networking (Phase A6 + C2): TCP transport, framed
+// messages, optional encrypted sessions, handshake, peer store, inventory
+// gossip for txs/blocks, catch-up sync, and delivery of Dew-BFT consensus messages.
 //
 // Wire framing (docs/networking/p2p.md):
 //
-//	uint32be length || uint8 type || payload
+//	Cleartext: uint32be length || uint8 type || payload
+//	Encrypted (default): MsgSecureHello exchange, then
+//	  uint32be length || AES-256-GCM(ciphertext of type||payload)
 //
-// Payloads use RLP. Transport is cleartext TCP suitable for private devnets;
-// encrypted transport is deferred until public-network hardening.
+// Cipher suite: X25519 ECDH, keys via Keccak domain "Dew/Secure/1|2", AES-256-GCM.
+// Identity handshake (chain ID + node key signature) runs inside the encrypted
+// channel. Set Encrypt=false and AllowCleartext=true for explicit loopback dev only.
 package p2p

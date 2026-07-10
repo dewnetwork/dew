@@ -14,7 +14,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | :--- | :----- | :---- |
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
-| **C1–C6** | C1 done; C2–C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
+| **C1–C6** | C1–C2 done; C3–C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
 
 High-level order: [Roadmap](./roadmap.md).
 
@@ -220,14 +220,14 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Acceptance:**
 
-- [ ] Authenticated encrypted sessions between peers (handshake still binds chain ID + node identity)
-- [ ] Dev/loopback may keep cleartext behind an explicit flag; default for non-local is encrypted
-- [ ] Existing gossip, sync, and consensus message types still deliver correctly under encryption
-- [ ] Integration test: 3+ peers over encrypted transport reach the same committed height
+- [x] Authenticated encrypted sessions between peers (handshake still binds chain ID + node identity)
+- [x] Dev/loopback may keep cleartext behind an explicit flag; default for non-local is encrypted
+- [x] Existing gossip, sync, and consensus message types still deliver correctly under encryption
+- [x] Integration test: 3+ peers over encrypted transport reach the same committed height
 
-**Packages:** `p2p/`
+**Packages:** `p2p/` (`secure.go`, `Config.Encrypt`)
 
-**Notes:** Framing and RLP payloads from A6 stay; wrap or upgrade the byte stream. Document cipher suite and key material in [P2P](../networking/p2p.md). Do not treat cleartext as acceptable on public nets.
+**Notes:** Cipher suite: X25519 ECDH + AES-256-GCM; identity handshake after secure hello. Default `Encrypt=true`; cleartext needs `AllowCleartext=true`. Documented in [P2P](../networking/p2p.md).
 
 ---
 

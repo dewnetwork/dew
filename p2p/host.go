@@ -25,6 +25,13 @@ type Config struct {
 	WriteTimeout time.Duration
 	// MaxBlocksPerRequest caps GetBlocks range size.
 	MaxBlocksPerRequest uint64
+	// Encrypt enables X25519 + AES-256-GCM session wrapping before the
+	// identity handshake. Default true (Phase C2). Set false only for
+	// explicit cleartext dev/loopback (AllowCleartext must also be true).
+	Encrypt bool
+	// AllowCleartext permits Encrypt=false. Without this flag, NewHost
+	// rejects cleartext config so public/multi-host nets fail closed.
+	AllowCleartext bool
 }
 
 // Host is a P2P node: listen, dial, handshake, gossip, sync, consensus fan-out.
@@ -80,6 +87,14 @@ func NewHost(cfg Config, chain ChainBackend, txs TxBackend, handlers AppHandlers
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = "127.0.0.1:0"
 	}
+	// Default Encrypt=true unless caller explicitly requested cleartext.
+	// Zero-value Config gets encryption (safe default for multi-host).
+	if !cfg.Encrypt && !cfg.AllowCleartext {
+		cfg.Encrypt = true
+	}
+	if !cfg.Encrypt && !cfg.AllowCleartext {
+		return nil, fmt.Errorf("p2p: cleartext requires AllowCleartext=true")
+	}
 	return &Host{
 		cfg:     cfg,
 		nodeID:  crypto.PubkeyToAddress(&cfg.PrivateKey.PublicKey),
@@ -90,6 +105,9 @@ func NewHost(cfg Config, chain ChainBackend, txs TxBackend, handlers AppHandlers
 		seenInv: make(map[types.Hash]struct{}),
 	}, nil
 }
+
+// EncryptEnabled reports whether new sessions use encrypted transport.
+func (h *Host) EncryptEnabled() bool { return h.cfg.Encrypt }
 
 type emptyTxBackend struct{}
 
@@ -188,6 +206,28 @@ func (h *Host) negotiate(conn net.Conn, inbound bool) (*Peer, error) {
 	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
 	defer conn.SetDeadline(time.Time{})
 
+	var (
+		writeFn func(typ uint8, payload []byte) error
+		readFn  func() (Frame, error)
+		sec     *secureConn
+	)
+	if h.cfg.Encrypt {
+		sess, err := performSecureHandshake(conn, h.cfg.ChainID, h.cfg.MaxMsgSize, inbound)
+		if err != nil {
+			return nil, err
+		}
+		sec = &secureConn{Conn: conn, sess: sess, maxSize: h.cfg.MaxMsgSize}
+		writeFn = sec.WriteFrame
+		readFn = sec.ReadFrame
+	} else {
+		writeFn = func(typ uint8, payload []byte) error {
+			return WriteFrame(conn, typ, payload, h.cfg.MaxMsgSize)
+		}
+		readFn = func() (Frame, error) {
+			return ReadFrame(conn, h.cfg.MaxMsgSize)
+		}
+	}
+
 	local, err := h.buildHandshake()
 	if err != nil {
 		return nil, err
@@ -200,9 +240,9 @@ func (h *Host) negotiate(conn net.Conn, inbound bool) (*Peer, error) {
 	// Simultaneous exchange: write in a goroutine to avoid deadlock.
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- WriteFrame(conn, MsgHandshake, payload, h.cfg.MaxMsgSize)
+		errCh <- writeFn(MsgHandshake, payload)
 	}()
-	frame, err := ReadFrame(conn, h.cfg.MaxMsgSize)
+	frame, err := readFn()
 	if err != nil {
 		return nil, fmt.Errorf("p2p: read handshake: %w", err)
 	}
@@ -224,6 +264,7 @@ func (h *Host) negotiate(conn net.Conn, inbound bool) (*Peer, error) {
 	}
 
 	p := newPeer(h, conn, inbound)
+	p.secure = sec
 	p.ID = remote.NodeID
 	p.Height = remote.Height
 	p.HeadHash = remote.HeadHash

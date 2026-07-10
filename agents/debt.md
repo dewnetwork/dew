@@ -7,7 +7,7 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 ## Phase C (in scope — see phases.md)
 
 - [x] DewTx / EVM mempool admission limits & fee checks — **C1** (done: `mempool/`)
-- [ ] Cleartext P2P transport is dev-only — encrypted transport **C2**
+- [x] Cleartext P2P transport is dev-only — encrypted transport **C2** (X25519 + AES-GCM)
 - [ ] Flat state root is provisional sorted-leaf commitment — replace with SMT **C3**
 - [ ] Staking precompile `0x102` is a revert stub — implement module **C4**
 

@@ -20,10 +20,14 @@ type Peer struct {
 	Inbound    bool
 
 	host    *Host
+	secure  *secureConn // non-nil when C2 encryption is active
 	sendMu  sync.Mutex
 	closed  atomic.Bool
 	closeCh chan struct{}
 }
+
+// Encrypted reports whether this peer session uses AES-GCM transport.
+func (p *Peer) Encrypted() bool { return p.secure != nil }
 
 func newPeer(h *Host, conn net.Conn, inbound bool) *Peer {
 	return &Peer{
@@ -42,6 +46,9 @@ func (p *Peer) Send(typ uint8, payload []byte) error {
 	p.sendMu.Lock()
 	defer p.sendMu.Unlock()
 	_ = p.Conn.SetWriteDeadline(time.Now().Add(p.host.cfg.WriteTimeout))
+	if p.secure != nil {
+		return p.secure.WriteFrame(typ, payload)
+	}
 	return WriteFrame(p.Conn, typ, payload, p.host.cfg.MaxMsgSize)
 }
 
@@ -67,7 +74,15 @@ func (p *Peer) runRead() {
 		default:
 		}
 		_ = p.Conn.SetReadDeadline(time.Now().Add(p.host.cfg.ReadTimeout))
-		frame, err := ReadFrame(p.Conn, p.host.cfg.MaxMsgSize)
+		var (
+			frame Frame
+			err   error
+		)
+		if p.secure != nil {
+			frame, err = p.secure.ReadFrame()
+		} else {
+			frame, err = ReadFrame(p.Conn, p.host.cfg.MaxMsgSize)
+		}
 		if err != nil {
 			return
 		}

@@ -15,8 +15,31 @@ status: draft
 | Primary       | TCP                                              |
 | Optional      | WebSocket (light / browser-oriented peers later) |
 | Default port  | `30303` (configurable)                           |
-| Framing       | `uint32be length \|\| uint8 type \|\| payload`   |
-| Payload codec | Protocol Buffers (_tentative_)                   |
+| Framing       | See cleartext vs encrypted below                 |
+| Payload codec | RLP (current); Protocol Buffers later (_tentative_) |
+
+### Cleartext framing (dev only)
+
+```
+uint32be length || uint8 type || payload
+```
+
+`length` counts `type + payload`. Enabled only when `Encrypt=false` **and** `AllowCleartext=true`.
+
+### Encrypted transport (Phase C2 — default)
+
+1. **Secure hello** (still cleartext frames of type `0x00`): each side sends X25519 ephemeral pubkey + 32-byte random.
+2. **ECDH** shared secret → two AES-256-GCM keys via Keccak domain tags `Dew/Secure/1` and `Dew/Secure/2` (initiator send key vs responder send key), mixed with both randoms and chain ID.
+3. **Application frames** (including identity handshake):  
+   `uint32be length || AES-256-GCM(ciphertext)` where plaintext is `type || payload`.  
+   Nonce = 12 bytes with a per-direction uint64 counter in the last 8 bytes.
+
+Identity handshake (chain ID + node key signature) runs **inside** the encrypted session. Cleartext is not acceptable on public or multi-host private nets.
+
+| Go config | Meaning |
+| :-------- | :------ |
+| `Encrypt: true` (default) | Require secure hello + GCM |
+| `Encrypt: false` + `AllowCleartext: true` | Explicit dev cleartext |
 
 ## Node identity
 
@@ -24,7 +47,7 @@ status: draft
 dew://<hex_public_key>@<host>:<port>
 ```
 
-Handshake authenticates the peer’s key. Long-term: authenticated encryption (e.g. Noise or TLS) — Phase A may start with cleartext **only on private devnets**; public networks need encrypted transport before advertising security.
+Handshake authenticates the peer’s key after the encrypted session is established (or on cleartext when explicitly allowed).
 
 ## Discovery
 
@@ -40,6 +63,7 @@ Bootstrap → Handshake → GetPeers → Dial more → Maintain peer count
 
 | ID            | Name                             | Category      |
 | :------------ | :------------------------------- | :------------ |
+| `0x00`        | SecureHello (X25519)             | Session (C2)  |
 | `0x01`        | Handshake                        | Session       |
 | `0x02`        | Ping / Pong                      | Session       |
 | `0x03`        | GetPeers                         | Discovery     |
