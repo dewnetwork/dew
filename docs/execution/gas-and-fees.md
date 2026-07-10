@@ -73,12 +73,15 @@ $$
 
 Defined in Go: `params.DefaultDewTxFeeWei`, `params.TargetDewTxFeeWei(baseFee)`. Fee is paid to the block proposer (fee sink).
 
-## Dew system precompile gas (Phase B)
+## Dew system precompile gas (Phase B / C4)
 
 | Address | Name | Gas |
 | :------ | :--- | ---: |
 | `0x100` | Native transfer | `3_000` |
-| `0x102` | Staking stub | `2_000` (reverts until enabled) |
+| `0x102` | Staking bond | `50_000` |
+| `0x102` | Staking unbond | `40_000` |
+| `0x102` | Staking jail | `30_000` |
+| `0x102` | Staking queries | `2_000` |
 
 Rationale: `0x100` is a fixed-cost native balance move (no interpreter loop). It must stay well below 21_000 so contracts prefer it over spinning EVM transfers when bridging value. See [Precompiles](./precompiles.md).
 

@@ -9,12 +9,20 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 - [x] DewTx / EVM mempool admission limits & fee checks — **C1** (done: `mempool/`)
 - [x] Cleartext P2P transport is dev-only — encrypted transport **C2** (X25519 + AES-GCM)
 - [x] Flat state root is provisional sorted-leaf commitment — replace with SMT **C3**
-- [ ] Staking precompile `0x102` is a revert stub — implement module **C4**
+- [x] Staking precompile `0x102` is a revert stub — implement module **C4**
 
 ## C1 residuals
 
 - [ ] Full fee auction / priority ordering for multi-tx block builders (admission-only today; auto-mine path includes immediately)
 - [ ] Pending nonce-gap queue without immediate execute (dev node still auto-mines on admit)
+
+## C4 residuals
+
+- [ ] Enforce unbonding period (time/height) before stake withdrawal
+- [ ] Full double-sign evidence verification (not only non-zero hash placeholder)
+- [ ] Nested CALL caller for bond (currently top-level tx sender)
+- [ ] Wire ActiveSet into live Dew-BFT set rotation each epoch
+- [ ] Delegation / commission
 
 ## Deferred / mainnet
 

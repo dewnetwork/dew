@@ -47,6 +47,7 @@ type Node struct {
 	// Phase B feature flags / metrics
 	enableNative      bool
 	enablePrecompiles bool
+	enableStaking     bool // Phase C4: live 0x102 (default off)
 	peStats           vm.ExecutionStats
 
 	// Phase C1: unified mempool admission (EVM + DewTx)
@@ -96,6 +97,7 @@ func NewFromGenesis(g *config.Genesis) (*Node, error) {
 		baseFee:           new(big.Int).Set(h.BaseFee),
 		enableNative:      params.DefaultEnableNativePath,
 		enablePrecompiles: params.DefaultEnableDewPrecompiles,
+		enableStaking:     params.DefaultEnableStaking,
 		pool:              mempool.New(mempool.DefaultConfig()),
 	}
 	if n.baseFee == nil {
@@ -157,6 +159,20 @@ func (n *Node) PrecompilesEnabled() bool {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.enablePrecompiles
+}
+
+// SetStakingEnabled toggles live staking methods on 0x102 (C4).
+func (n *Node) SetStakingEnabled(v bool) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.enableStaking = v
+}
+
+// StakingEnabled reports whether 0x102 staking methods are live.
+func (n *Node) StakingEnabled() bool {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.enableStaking
 }
 
 // ExecutionStats returns Dew-PE / operational metrics.
@@ -417,6 +433,8 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 		Coinbase: n.header.Proposer,
 		ChainID:  n.chainID,
 	})
+	exec.EnableDewPrecompiles(n.enablePrecompiles)
+	exec.EnableStaking(n.enableStaking)
 
 	// Snapshot whole statedb via journal for full-tx failure after ApplyMessage outer errors
 	result, err := exec.ApplyMessage(msg)

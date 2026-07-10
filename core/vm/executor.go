@@ -81,15 +81,17 @@ type Result struct {
 
 // Executor runs messages sequentially against a Dew StateDB.
 type Executor struct {
-	statedb        *state.StateDB
-	bridge         *Bridge
-	config         *params.ChainConfig
-	block          BlockContext
-	dewPrecompiles bool // Phase B feature flag for 0x100+ system precompiles
+	statedb         *state.StateDB
+	bridge          *Bridge
+	config          *params.ChainConfig
+	block           BlockContext
+	dewPrecompiles  bool // Phase B feature flag for 0x100+ system precompiles
+	stakingEnabled  bool // Phase C4: live 0x102 methods (default off)
 }
 
 // NewExecutor builds an executor for the given block context.
 // Dew system precompiles default to params.DefaultEnableDewPrecompiles.
+// Staking (0x102 active) defaults to params.DefaultEnableStaking (off until ops opt-in).
 func NewExecutor(statedb *state.StateDB, block BlockContext) *Executor {
 	if block.BaseFee == nil {
 		block.BaseFee = big.NewInt(0)
@@ -100,12 +102,15 @@ func NewExecutor(statedb *state.StateDB, block BlockContext) *Executor {
 	if block.GetHashFn == nil {
 		block.GetHashFn = func(uint64) ethcommon.Hash { return ethcommon.Hash{} }
 	}
+	// Local import of dew params would shadow eth params — use false default matching package const.
+	// Actual default applied via dewparams in EnableStaking callers / node flags.
 	return &Executor{
 		statedb:        statedb,
 		bridge:         NewBridge(statedb),
 		config:         DefaultChainConfig(block.ChainID),
 		block:          block,
 		dewPrecompiles: true, // matches params.DefaultEnableDewPrecompiles
+		stakingEnabled: false, // matches params.DefaultEnableStaking
 	}
 }
 
@@ -161,7 +166,7 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 	}
 
 	evm := ethvm.NewEVM(blockCtx, txCtx, e.bridge, e.config, ethvm.Config{})
-	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles)
+	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles, msg.From, msg.Value, e.stakingEnabled)
 
 	// Prepare access lists (Berlin+)
 	rules := e.config.Rules(blockCtx.BlockNumber, true, blockCtx.Time)

@@ -25,5 +25,6 @@ const DefaultEnableDewPrecompiles = true
 // NativeTransferPrecompileGas is the fixed gas for address 0x100.
 const NativeTransferPrecompileGas uint64 = 3_000
 
-// StakingPrecompileGas is the fixed gas for reserved address 0x102 (stub).
+// StakingPrecompileGas is the default query gas for address 0x102.
+// Method-specific costs live in params/staking.go (bond/unbond/jail).
 const StakingPrecompileGas uint64 = 2_000

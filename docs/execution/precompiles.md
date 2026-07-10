@@ -36,7 +36,7 @@ Reserved starting at `0x100`. Enabled when the executor feature flag is on
 | :------ | :----------------- | ----------: | :------------------------------------------ |
 | `0x100` | Native transfer    |       3_000 | **Active** — forward CALLVALUE to recipient |
 | `0x101` | Native swap / book |         TBD | Reserved                                    |
-| `0x102` | Staking entrypoint |       2_000 | Reserved stub (reverts until staking lands) |
+| `0x102` | Staking entrypoint | method-based | **C4** — bond/unbond/queries/jail; feature-flagged |
 
 ### `0x100` — Native transfer
 
@@ -55,6 +55,27 @@ Useful bridge from Solidity into native DEW movement without an ERC-20 hop.
 3. Returns `uint256` amount forwarded (ABI left-padded 32 bytes).
 
 **Rules:** fixed gas; deterministic; reverts on malformed input (not 20 bytes). Feature flag off → address is a normal empty account (value sits at `0x100`, not forwarded).
+
+### `0x102` — Staking entrypoint (Phase C4)
+
+Enabled when Dew precompiles are on **and** `Executor.EnableStaking(true)` / `Node.SetStakingEnabled(true)`. Default **off** until private testnet operators opt in (`params.DefaultEnableStaking = false`).
+
+**Byte layout** (fail-closed; not full Solidity ABI):
+
+| Method | Input | Value | Gas | Effect |
+| :----- | :---- | :---- | --: | :----- |
+| `0x00` bond | `[0x00]` | self-stake amount | 50_000 | Escrow CALLVALUE on `0x102`; credit tx sender |
+| `0x01` unbond | `[0x01 \|\| amount uint256]` | 0 | 40_000 | Reduce stake; return funds to sender |
+| `0x02` getSelfStake | `[0x02 \|\| addr20]` | 0 | 2_000 | Return stake uint256 |
+| `0x03` getVotingPower | `[0x03 \|\| addr20]` | 0 | 2_000 | 0 if jailed / not candidate |
+| `0x04` activeCount | `[0x04]` | 0 | 2_000 | Top-K set size |
+| `0x05` activeAt | `[0x05 \|\| index uint256]` | 0 | 2_000 | Address at rank |
+| `0x06` jail | `[0x06 \|\| addr20 \|\| evidenceHash32]` | 0 | 30_000 | Jail (non-zero evidence required) |
+| `0x07` isJailed | `[0x07 \|\| addr20]` | 0 | 2_000 | 0/1 |
+
+**Rules:** min self-stake `100_000 * 10^18` wei (_tentative_); active set = top `K` by voting power among candidates ≥ min and not jailed. Unbonding period is **not** fully enforced yet (immediate return — residual). Bond credits **tx sender** (EOA path); nested contract staking deferred.
+
+Module state: `core/native/staking.go` storage under address `0x102`.
 
 ### Design rules for custom precompiles
 

@@ -14,7 +14,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | :--- | :----- | :---- |
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
-| **C1–C6** | C1–C3 done; C4–C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
+| **C1–C6** | C1–C4 done; C5–C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
 
 High-level order: [Roadmap](./roadmap.md).
 
@@ -255,15 +255,15 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Acceptance:**
 
-- [ ] Precompile `0x102` implements documented ABI (bond / unbond / at least self-stake register)
-- [ ] State updates respect min self-stake and epoch rules in [Validators](../consensus/validators.md) (_tentative_ numbers OK until C6 freeze)
-- [ ] Active set / voting power readable for consensus selection (or clear bridge from module state → BFT validator set)
-- [ ] Fail closed on malformed input; gas schedule documented in [Gas and fees](../execution/gas-and-fees.md)
-- [ ] Feature flag remains until private testnet operators opt in
+- [x] Precompile `0x102` implements documented ABI (bond / unbond / at least self-stake register)
+- [x] State updates respect min self-stake and epoch rules in [Validators](../consensus/validators.md) (_tentative_ numbers OK until C6 freeze)
+- [x] Active set / voting power readable for consensus selection (or clear bridge from module state → BFT validator set)
+- [x] Fail closed on malformed input; gas schedule documented in [Gas and fees](../execution/gas-and-fees.md)
+- [x] Feature flag remains until private testnet operators opt in
 
-**Packages:** `core/vm/` (precompile), likely `core/native/` or new staking package; `consensus/` integration; docs
+**Packages:** `core/native/staking.go`, `core/vm/precompiles.go`, `params/staking.go`, `node` flag
 
-**Notes:** Full slashing evidence pipeline can land incrementally, but double-sign path must not be silently ignored if the module claims to support jailing. Prefer minimal self-stake + set update over a complete liquid-staking product in C4.
+**Notes:** Self-stake only (no liquid staking). `ActiveSet()` ranks candidates for BFT selection. Jail requires non-zero evidence hash (placeholder until full double-sign verify). Unbonding period not fully enforced — residual. Default `EnableStaking=false`.
 
 ---
 
