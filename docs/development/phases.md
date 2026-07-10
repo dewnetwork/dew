@@ -14,7 +14,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | :--- | :----- | :---- |
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
-| **C1–C6** | C1–C2 done; C3–C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
+| **C1–C6** | C1–C3 done; C4–C6 planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
 
 High-level order: [Roadmap](./roadmap.md).
 
@@ -237,15 +237,15 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Acceptance:**
 
-- [ ] `header.StateRoot` is an SMT root over dirty accounts + storage slots after block execution
-- [ ] Same pre-state + same txs ⇒ identical root on independent nodes
-- [ ] Migration path or genesis rule documented for chains that used the provisional flat root (dev only OK to wipe)
-- [ ] Tests cover empty state, single account, storage slots, and delete/empty account cases
-- [ ] Devnet + PE paths still match sequential roots under the new commitment
+- [x] `header.StateRoot` is an SMT root over dirty accounts + storage slots after block execution
+- [x] Same pre-state + same txs ⇒ identical root on independent nodes
+- [x] Migration path or genesis rule documented for chains that used the provisional flat root (dev only OK to wipe)
+- [x] Tests cover empty state, single account, storage slots, and delete/empty account cases
+- [x] Devnet + PE paths still match sequential roots under the new commitment
 
-**Packages:** `core/state/`, possibly `crypto/` helpers; docs under `docs/protocol/state.md`
+**Packages:** `core/state/` (`smt.go`, `IntermediateRoot` → `ComputeSMTRoot`)
 
-**Notes:** Flat KV remains the **hot path**; SMT is commit-time only. Async SMT is allowed only if validators vote on the same root (see architecture overview). Freeze wire meaning of `StateRoot` in C6, not before C3 lands.
+**Notes:** Flat KV remains the **hot path**; SMT is commit-time only. Dev nets using provisional roots must re-genesis. Freeze wire meaning of `StateRoot` in C6.
 
 ---
 

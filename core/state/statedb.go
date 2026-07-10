@@ -1,8 +1,7 @@
 // Package state implements the flat account/storage model for Dew.
 //
-// Hot path is pure KV (no MPT walks). StateRoot is a deterministic commitment
-// over dirty flat state; SMT can replace IntermediateRoot later without changing
-// the StateDB API (see docs/protocol/state.md).
+// Hot path is pure KV (no MPT walks). StateRoot is an SMT commitment over the
+// flat snapshot at commit time (Phase C3; see docs/protocol/state.md).
 package state
 
 import (
@@ -294,34 +293,22 @@ func (s *StateDB) Commit() (types.Hash, error) {
 	return root, nil
 }
 
-// IntermediateRoot computes a deterministic commitment over flat state.
+// IntermediateRoot computes the SMT commitment over flat state (Phase C3).
 //
-// Algorithm (Phase A provisional — replace with SMT before testnet freeze):
-// merge cache over DB snapshot, sort leaves by key:
+// Hot path remains flat KV. At commit / intermediate root:
 //
-//	"a"+addr → account RLP
-//	"s"+addr+slot → value (32 bytes)
-//	"c"+codeHash → bytecode
+//	collect leaves: "a"+addr → account RLP, "s"+addr+slot → 32-byte value,
+//	                "c"+codeHash → bytecode
+//	root = ComputeSMTRoot(leaves)  // path = Keccak256(key), sparse binary tree
 //
-// root = Keccak256(RLP(list of Keccak256(key||value) for each leaf)).
+// Migration: chains that used the Phase A provisional sorted-leaf root must
+// re-genesis / wipe (dev-only). Wire meaning of header.StateRoot freezes at C6.
 func (s *StateDB) IntermediateRoot() (types.Hash, error) {
 	leaves, err := s.collectLeaves()
 	if err != nil {
 		return types.Hash{}, err
 	}
-	if len(leaves) == 0 {
-		empty, _ := rlp.EncodeToBytes([]interface{}{})
-		return types.Keccak256Hash(empty), nil
-	}
-	digests := make([][]byte, len(leaves))
-	for i, l := range leaves {
-		digests[i] = crypto.Keccak256(l.key, l.val)
-	}
-	enc, err := rlp.EncodeToBytes(digests)
-	if err != nil {
-		return types.Hash{}, err
-	}
-	return types.Keccak256Hash(enc), nil
+	return ComputeSMTRoot(leaves), nil
 }
 
 type leaf struct {

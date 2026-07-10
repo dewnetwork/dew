@@ -52,10 +52,28 @@ flowchart LR
 
 After all transactions in a block are applied:
 
-1. Collect dirty accounts and storage slots
-2. Build / update a **Sparse Merkle Tree** (SMT)
+1. Collect dirty accounts and storage slots (and code blobs) from the flat snapshot
+2. Build a **Sparse Merkle Tree** (SMT) over those leaves
 3. Set `header.StateRoot` to the SMT root
 4. Validators re-execute (or verify execution proof path) and **require equal `StateRoot`**
+
+### SMT algorithm (Phase C3)
+
+Implemented in `core/state/smt.go` (commit-time only; hot path stays flat KV):
+
+| Item | Spec |
+| :--- | :--- |
+| Leaf key path | `path = Keccak256(flatKey)` where flatKey is `a‖addr`, `s‖addr‖slot`, or `c‖codeHash` |
+| Leaf hash | `Keccak256(0x00 ‖ value)` |
+| Internal hash | `Keccak256(0x01 ‖ left ‖ right)` |
+| Empty subtrees | Precomputed `emptyHashes[h]`; empty state root = `emptyHashes[256]` |
+| Bit order | MSB of `path[0]` is the root branch bit |
+
+Same pre-state + same txs ⇒ identical root on independent nodes. PE and sequential paths must still agree (tested via existing PE equivalence suites).
+
+### Migration from provisional flat root
+
+Phase A–B used a sorted-leaf `Keccak256(RLP(digests))` provisional root. That commitment is **obsolete**. Dev / private nets that stored old roots should **wipe and re-genesis**. No mainnet historical migration is required before C6 freeze.
 
 ### Async SMT?
 
