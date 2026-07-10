@@ -17,6 +17,9 @@ importers:
       markdown-it-mathjax3:
         specifier: ^4.3.2
         version: 4.3.2
+      markdown-it-task-lists:
+        specifier: ^2.1.1
+        version: 2.1.1
       mermaid:
         specifier: ^11.16.0
         version: 11.16.0
@@ -1065,6 +1068,9 @@ packages:
 
   markdown-it-mathjax3@4.3.2:
     resolution: {integrity: sha512-TX3GW5NjmupgFtMJGRauioMbbkGsOXAAt1DZ/rzzYmTHqzkO1rNAdiMD4NiruurToPApn2kYy76x02QN26qr2w==}
+
+  markdown-it-task-lists@2.1.1:
+    resolution: {integrity: sha512-TxFAc76Jnhb2OUu+n3yz9RMu4CwGfaT788br6HhEDlvWfdeJcLUsxk1Hgw2yJio0OXsxv7pyIPmvECY7bMbluA==}
 
   marked@16.4.2:
     resolution: {integrity: sha512-TI3V8YYWvkVf3KJe1dRkpnjs68JUPyEa5vjKrp1XEEJUAOaQc+Qj+L1qWbPd0SJuAdQkFU0h73sXXqwDYxsiDA==}
@@ -2449,6 +2455,8 @@ snapshots:
       mathjax-full: 3.2.2
     transitivePeerDependencies:
       - encoding
+
+  markdown-it-task-lists@2.1.1: {}
 
   marked@16.4.2: {}
 

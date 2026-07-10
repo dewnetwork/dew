@@ -161,6 +161,61 @@
   left: -17px; /* sits on the group rail, clear of link text */
 }
 
+/* GFM task lists (phases acceptance, debt, audit checklists)
+   HTML shape: <li class="task-list-item"><label><input ...> text</label></li> */
+.vp-doc ul.contains-task-list {
+  list-style: none;
+  padding-left: 0.15rem;
+}
+
+.vp-doc li.task-list-item {
+  margin: 0.35rem 0;
+  list-style: none;
+}
+
+.vp-doc li.task-list-item > label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  cursor: default;
+  line-height: 1.6;
+}
+
+.vp-doc li.task-list-item input.task-list-item-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.28rem 0 0;
+  border: 1.5px solid var(--vp-c-border-hover);
+  border-radius: 0.25rem;
+  background: var(--vp-c-bg-soft);
+  cursor: default;
+  position: relative;
+}
+
+.vp-doc li.task-list-item input.task-list-item-checkbox:checked {
+  border-color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-1);
+}
+
+.vp-doc li.task-list-item input.task-list-item-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 0.22rem;
+  top: 0.02rem;
+  width: 0.28rem;
+  height: 0.5rem;
+  border: solid #fff;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+.dark .vp-doc li.task-list-item input.task-list-item-checkbox:checked::after {
+  border-color: var(--dew-ink);
+}
+
 /* Status badges in content (optional `status: draft` callouts stay plain) */
 .vp-doc table {
   font-size: 0.92em;

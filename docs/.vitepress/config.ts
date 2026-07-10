@@ -4,6 +4,8 @@ import { readFileSync, existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse as parseYaml } from 'yaml'
+// @ts-expect-error no bundled types
+import taskLists from 'markdown-it-task-lists'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const docsRoot = resolve(__dirname, '..')
@@ -147,6 +149,13 @@ export default withMermaid({
     },
     lineNumbers: false,
     math: true,
+    // Render `- [ ]` / `- [x]` as disabled checkboxes (docs are source of truth).
+    config(md) {
+      md.use(taskLists, {
+        enabled: false,
+        label: true,
+      })
+    },
   },
 
   mermaid: {
