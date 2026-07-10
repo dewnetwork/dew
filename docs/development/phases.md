@@ -104,12 +104,14 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Acceptance:**
 
-- [ ] Handshake + peer store
-- [ ] Tx and block gossip
-- [ ] Sync from height 0 behind peer
-- [ ] Consensus messages delivered among validators
+- [x] Handshake + peer store
+- [x] Tx and block gossip
+- [x] Sync from height 0 behind peer
+- [x] Consensus messages delivered among validators
 
 **Packages:** `p2p/`
+
+**Notes:** TCP framing `uint32be length || uint8 type || payload` with RLP payloads. Signed handshake (chain ID, height, node key). Inventory/GetData gossip for txs and blocks; `GetBlocks` range sync. Consensus channel `0x10–0x12` floods proposals/votes. Cleartext suitable for private devnets; encrypted transport later.
 
 ---
 

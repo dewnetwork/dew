@@ -1,7 +1,7 @@
 // Command dew is the Dew full node entrypoint.
 //
 // Phase A4+: load genesis, serve Ethereum JSON-RPC over HTTP (default :8545).
-// Dew-BFT local engine lives in consensus/ (Phase A5); P2P wiring is A6.
+// Dew-BFT: consensus/; networking: p2p/ (Phase A5–A6). Devnet wiring is A7.
 package main
 
 import (
@@ -30,7 +30,7 @@ func run(args []string) error {
 	}
 	switch args[0] {
 	case "version":
-		fmt.Println("dew 0.1.0 (phase A5)")
+		fmt.Println("dew 0.1.0 (phase A6)")
 		return nil
 	case "help", "-h", "--help":
 		printUsage()
