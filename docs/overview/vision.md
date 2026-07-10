@@ -50,6 +50,7 @@ L2s help scale execution, but they introduce bridges, different security assumpt
 flowchart LR
   A[Phase A<br/>Correct & compatible] --> T[Tune<br/>Fast enough]
   T --> B[Phase B<br/>Native & parallel]
+  B --> C[Phase C<br/>Testnet ready]
 ```
 
 Every design choice should answer: _Does this make Dew faster, safer, or cheaper without breaking the Ethereum developer path?_

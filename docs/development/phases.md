@@ -1,6 +1,6 @@
 ---
 title: Implementation Phases
-description: Acceptance criteria for each build phase.
+description: Acceptance criteria for Phases A–C (compat, native/PE, testnet readiness).
 category: development
 order: 30
 status: draft
@@ -9,6 +9,14 @@ status: draft
 # Implementation Phases
 
 Each phase should leave the **monorepo buildable and testable** (Go packages and any Node scripts that phase introduces). Prefer small PRs per phase.
+
+| Band | Status | Theme |
+| :--- | :----- | :---- |
+| **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
+| **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
+| **C1–C6** | Planned | Mempool, encrypted P2P, SMT, staking, private → public testnet |
+
+High-level order: [Roadmap](./roadmap.md).
 
 ---
 
@@ -184,4 +192,111 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 **Packages:** `tests/load`, `tests/security`, `params`, `docs/security/phase-b-audit.md`
 
-**Notes:** `go test ./tests/load/` and `./tests/security/`; benches under `core/vm` and `core/native`. Fee helpers in `params/fee.go`. Residual mainnet items tracked in `agents/debt.md` (external audit, mempool limits, encrypted P2P).
+**Notes:** `go test ./tests/load/` and `./tests/security/`; benches under `core/vm` and `core/native`. Fee helpers in `params/fee.go`. Residual items promoted into Phase C or mainnet debt in `agents/debt.md`.
+
+---
+
+## C1 — Mempool admission & fee policy
+
+**Goals:** Bound unconfirmed tx pressure for EVM and DewTx before any public RPC exposure.
+
+**Acceptance:**
+
+- [ ] Per-sender and global mempool size limits (configurable)
+- [ ] Minimum fee / tip checks aligned with [Gas and fees](../execution/gas-and-fees.md) and `params` helpers
+- [ ] Reject or drop underpriced / oversized payloads without stalling block production
+- [ ] Unit tests for eviction / replace-by-fee (or documented no-RBF rule)
+- [ ] DewTx path uses the same admission surface as EVM txs (or explicitly documented dual pools)
+
+**Packages:** `node/`, `rpc/`, new `mempool/` (preferred) or equivalent under `node/`
+
+**Notes:** Phase B ships flat DewTx fees without auction. C1 adds **admission limits** first; a full fee auction can be a follow-up if spam metrics require it. Threat model expects mempool limits against malicious users.
+
+---
+
+## C2 — Encrypted P2P transport
+
+**Goals:** Replace cleartext dev transport for multi-host and public networks.
+
+**Acceptance:**
+
+- [ ] Authenticated encrypted sessions between peers (handshake still binds chain ID + node identity)
+- [ ] Dev/loopback may keep cleartext behind an explicit flag; default for non-local is encrypted
+- [ ] Existing gossip, sync, and consensus message types still deliver correctly under encryption
+- [ ] Integration test: 3+ peers over encrypted transport reach the same committed height
+
+**Packages:** `p2p/`
+
+**Notes:** Framing and RLP payloads from A6 stay; wrap or upgrade the byte stream. Document cipher suite and key material in [P2P](../networking/p2p.md). Do not treat cleartext as acceptable on public nets.
+
+---
+
+## C3 — SMT state commitment
+
+**Goals:** Replace provisional sorted-leaf state root with Sparse Merkle Tree commitment matching [State](../protocol/state.md).
+
+**Acceptance:**
+
+- [ ] `header.StateRoot` is an SMT root over dirty accounts + storage slots after block execution
+- [ ] Same pre-state + same txs ⇒ identical root on independent nodes
+- [ ] Migration path or genesis rule documented for chains that used the provisional flat root (dev only OK to wipe)
+- [ ] Tests cover empty state, single account, storage slots, and delete/empty account cases
+- [ ] Devnet + PE paths still match sequential roots under the new commitment
+
+**Packages:** `core/state/`, possibly `crypto/` helpers; docs under `docs/protocol/state.md`
+
+**Notes:** Flat KV remains the **hot path**; SMT is commit-time only. Async SMT is allowed only if validators vote on the same root (see architecture overview). Freeze wire meaning of `StateRoot` in C6, not before C3 lands.
+
+---
+
+## C4 — Staking module (`0x102`)
+
+**Goals:** Real staking surface for validator candidates (and minimal delegation if in scope), replacing the revert stub.
+
+**Acceptance:**
+
+- [ ] Precompile `0x102` implements documented ABI (bond / unbond / at least self-stake register)
+- [ ] State updates respect min self-stake and epoch rules in [Validators](../consensus/validators.md) (_tentative_ numbers OK until C6 freeze)
+- [ ] Active set / voting power readable for consensus selection (or clear bridge from module state → BFT validator set)
+- [ ] Fail closed on malformed input; gas schedule documented in [Gas and fees](../execution/gas-and-fees.md)
+- [ ] Feature flag remains until private testnet operators opt in
+
+**Packages:** `core/vm/` (precompile), likely `core/native/` or new staking package; `consensus/` integration; docs
+
+**Notes:** Full slashing evidence pipeline can land incrementally, but double-sign path must not be silently ignored if the module claims to support jailing. Prefer minimal self-stake + set update over a complete liquid-staking product in C4.
+
+---
+
+## C5 — Private multi-host testnet & ops
+
+**Goals:** Run a non-loopback private network with restart/chaos discipline and operator docs.
+
+**Acceptance:**
+
+- [ ] Documented multi-host topology (3 validators + optional non-validator RPC) beyond in-process `dew devnet`
+- [ ] Nodes reconnect and sync after process kill / host restart (chaos smoke)
+- [ ] Runbook stubs: key material locations, enable/disable feature flags, emergency stop
+- [ ] Encrypted P2P (C2) used on the private net by default
+- [ ] ERC-20 (or equivalent) deploy + transfer over the multi-host RPC still works
+
+**Packages:** `devnet/`, `cmd/dew`, `docs/development/devnet.md`, ops notes under `docs/security/` or development
+
+**Notes:** Aligns with [Security principles](../security/security-principles.md) “Private testnet” bar (multi-validator, chaos restart). No public faucet incentives required yet.
+
+---
+
+## C6 — Public testnet freeze
+
+**Goals:** Freeze parameters and surfaces for the first public testnet; raise the abuse bar.
+
+**Acceptance:**
+
+- [ ] Genesis + chain ID + fee floors + precompile addresses documented as freeze candidates (update `_tentative_` where ready)
+- [ ] RPC abuse tests: oversized batches, invalid hex, spam sendRawTransaction under C1 limits
+- [ ] Optional external fuzzing pass on codec / RPC entrypoints (or scheduled with owners)
+- [ ] Docs: relevant pages move from pure draft toward “testnet freeze” notes; residual mainnet-only debt listed in `agents/debt.md`
+- [ ] Public testnet runbook: faucet policy, bootnodes, expected features on/off
+
+**Packages:** `config/`, `params/`, `tests/security/`, `docs/` (genesis, economics, API)
+
+**Notes:** C6 is a **release gate**, not a large feature dump. Mainnet still requires external audit of consensus + VM bridge + crypto (not C6 acceptance). After C6, prefer config/parameter changes over wire-format churn.

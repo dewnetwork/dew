@@ -1,6 +1,6 @@
 ---
 title: Roadmap
-description: Phased path from monorepo scaffold to ETH-compatible devnet and Dew advantages.
+description: Phased path from monorepo scaffold through native features to public testnet readiness.
 category: development
 order: 20
 status: draft
@@ -22,10 +22,16 @@ flowchart TB
     direction LR
     B1[Dew-PE] --> B2[DewTx] --> B3[Modules] --> B4[Precompiles / tune]
   end
-  A --> B
+  subgraph C["Phase C — testnet readiness"]
+    direction LR
+    C1[Mempool] --> C2[Encrypt P2P] --> C3[SMT] --> C4[Staking] --> C5[Private net] --> C6[Public freeze]
+  end
+  A --> B --> C
 ```
 
 **Ship A before optimizing B.** Parallel execution on a broken sequential chain only multiplies bugs.
+
+**Ship B before exposing C.** Public or multi-host networks need spam controls, encrypted transport, and a real state commitment — not only a working local devnet.
 
 ## Phase A detail
 
@@ -48,6 +54,30 @@ flowchart TD
   B3 --> B4[B4 Load tests, fee tuning, security audit]
 ```
 
+## Phase C detail
+
+```mermaid
+flowchart TD
+  C1[C1 Mempool limits & fee admission] --> C2[C2 Encrypted P2P transport]
+  C2 --> C3[C3 SMT state commitment]
+  C3 --> C4[C4 Staking module / 0x102]
+  C4 --> C5[C5 Private multi-host testnet + ops]
+  C5 --> C6[C6 Public testnet freeze]
+```
+
+**Ordering rationale**
+
+| Step | Why this order |
+| :--- | :------------- |
+| C1 before any public RPC | Mempool spam is the cheapest attack once endpoints are reachable |
+| C2 before multi-host public net | Cleartext P2P is acceptable only on private loopback/dev meshes |
+| C3 before freeze | Docs already specify SMT for `header.StateRoot`; provisional flat root must not ship as frozen |
+| C4 before product validator UX | Staking precompile is still a revert stub |
+| C5 before C6 | Private chaos / runbooks catch ops bugs before public incentives |
+| C6 last | Wire formats, genesis, and docs status freeze only after the above land |
+
+Out of Phase C (tracked as mainnet debt): full multi-version Block-STM upgrade, **external** security audit of consensus + VM bridge + crypto. See [Security principles](../security/security-principles.md) stage table and `agents/debt.md`.
+
 ## Mapping to docs
 
 | Phase | Primary docs                                                                                                |
@@ -62,6 +92,11 @@ flowchart TD
 | B1    | [Parallel execution](../execution/parallel-execution.md)                                                    |
 | B2–B3 | [Dew-native](../execution/dew-native.md), [Dew RPC](../api/dew-extensions.md)                               |
 | B4    | [Gas and fees](../execution/gas-and-fees.md), [Phase B audit](../security/phase-b-audit.md)                 |
+| C1    | [Transactions](../protocol/transactions.md), [Gas and fees](../execution/gas-and-fees.md), [Threat model](../security/threat-model.md) |
+| C2    | [P2P](../networking/p2p.md), [Security principles](../security/security-principles.md)                      |
+| C3    | [State](../protocol/state.md), [Blocks](../protocol/blocks.md)                                              |
+| C4    | [Validators](../consensus/validators.md), [Slashing](../consensus/slashing.md), [Precompiles](../execution/precompiles.md) |
+| C5–C6 | [Devnet](./devnet.md), [Genesis](../economics/genesis.md), [Phase B audit](../security/phase-b-audit.md)    |
 
 ## Milestone definition of done
 
