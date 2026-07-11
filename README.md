@@ -100,6 +100,14 @@ go build -o bin/dewfaucet ./cmd/dewfaucet
 
 See [docs/development/faucet.md](./docs/development/faucet.md).
 
+**Faucet Web App (React SPA):**
+
+```bash
+pnpm --dir faucet-web install
+pnpm faucet:dev      # http://localhost:5173 — calls dewfaucet HTTP API
+pnpm faucet:build    # → faucet-web/dist
+```
+
 Markdown under `docs/` is the source of truth; Node only builds the site.
 
 ## Landing website

@@ -44,10 +44,10 @@ From **repo root** after private soak:
 
 ```bash
 # Stop soak if still running
-docker compose -f deploy/docker-compose.soak.yml --env-file deploy/soak.env down
+docker compose -f deploy/node/docker-compose.soak.yml --env-file deploy/node/soak.env down
 
-cp deploy/public.env.example deploy/public.env   # once
-docker compose -f deploy/docker-compose.yml --env-file deploy/public.env up --build
+cp deploy/node/public.env.example deploy/node/public.env   # once
+docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env up --build
 ```
 
 | Container | Role | Host ports |
@@ -69,11 +69,11 @@ Config files:
 
 ### TLS with Compose
 
-1. Place `fullchain.pem` + `privkey.pem` under `deploy/certs/`.
+1. Place `fullchain.pem` + `privkey.pem` under `deploy/node/certs/`.
 2. Uncomment the `./certs` volume on `proxy` in `docker-compose.yml`.
 3. Uncomment the HTTPS `server` block in `nginx/dew-rpc.docker.conf`.
 4. Recreate proxy:  
-   `docker compose -f deploy/docker-compose.yml up -d --force-recreate proxy`
+   `docker compose -f deploy/node/docker-compose.yml up -d --force-recreate proxy`
 
 ### Ops (Compose)
 
@@ -81,9 +81,9 @@ Config files:
 | :--- | :--- |
 | Logs (node) | `docker logs -f dew-rpc` |
 | Logs (proxy) | `docker logs -f dew-rpc-proxy` |
-| Restart node | `docker compose -f deploy/docker-compose.yml restart dew` |
-| Stop public surface | `docker compose -f deploy/docker-compose.yml stop proxy` |
-| Full stop | `docker compose -f deploy/docker-compose.yml down` |
+| Restart node | `docker compose -f deploy/node/docker-compose.yml restart dew` |
+| Stop public surface | `docker compose -f deploy/node/docker-compose.yml stop proxy` |
+| Full stop | `docker compose -f deploy/node/docker-compose.yml down` |
 
 ---
 
@@ -106,7 +106,7 @@ sudo chown -R dew:dew /var/lib/dew
 ### systemd — listen only on loopback
 
 ```bash
-sudo install -m 644 deploy/systemd/dew-rpc-public.service /etc/systemd/system/dew.service
+sudo install -m 644 deploy/node/systemd/dew-rpc-public.service /etc/systemd/system/dew.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now dew
 sudo systemctl status dew --no-pager
@@ -127,14 +127,14 @@ Unit runs `dew run` (single execution node, auto-mine per tx). For in-process 3-
 
 ```bash
 sudo apt-get update && sudo apt-get install -y nginx certbot python3-certbot-nginx
-sudo install -m 644 deploy/nginx/dew-rpc.conf /etc/nginx/sites-available/dew-rpc
+sudo install -m 644 deploy/node/nginx/dew-rpc.conf /etc/nginx/sites-available/dew-rpc
 sudo ln -sf /etc/nginx/sites-available/dew-rpc /etc/nginx/sites-enabled/dew-rpc
 # edit server_name (rpc.example.com → your domain)
 sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d rpc.example.com
 ```
 
-nginx sample (`deploy/nginx/dew-rpc.conf`) includes:
+nginx sample (`deploy/node/nginx/dew-rpc.conf`) includes:
 
 - Proxy → `http://127.0.0.1:8545`
 - Only `POST` / `OPTIONS` (MetaMask preflight)
@@ -187,17 +187,17 @@ Monitor: 5xx from proxy, container/`journalctl` panics, disk, CPU. Dew already r
 
 ## 5. Emergency stop
 
-1. Stop the **proxy** first — Compose: `docker compose -f deploy/docker-compose.yml stop proxy` · systemd: `sudo systemctl stop nginx`  
+1. Stop the **proxy** first — Compose: `docker compose -f deploy/node/docker-compose.yml stop proxy` · systemd: `sudo systemctl stop nginx`  
 2. If node bug: stop Dew (`docker compose … stop dew` / `systemctl stop dew`)  
-3. Investigate; do not publish `:8545` on the public interface  
+3. Investigate; do not publish `:8545` on the public interface
 
 ---
 
 ## Related
 
-- [Launch checklist](../docs/development/launch-checklist.md)  
-- [Public testnet freeze](../docs/development/public-testnet.md)  
-- [deploy/README](./README.md)  
+- [Launch checklist](../../docs/development/launch-checklist.md)  
+- [Public testnet freeze](../../docs/development/public-testnet.md)  
+- [deploy/README](../README.md)  
 - [docker-compose.yml](./docker-compose.yml)  
 - [systemd/dew-rpc-public.service](./systemd/dew-rpc-public.service)  
 - [nginx/dew-rpc.conf](./nginx/dew-rpc.conf)  

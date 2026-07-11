@@ -93,6 +93,7 @@ Bootnodes:   n/a (single-host controlled RPC)
 ```
 
 Block explorer URL conventions and MetaMask base URL: [Block explorer (web)](./block-explorer.md).  
+Docker packaging: [`deploy/explorer/`](../../deploy/explorer/) (standalone) or combined [`deploy/docker-compose.yml`](../../deploy/docker-compose.yml).  
 Production faucet service: [Production faucet](./faucet.md) (`go build -o bin/dewfaucet ./cmd/dewfaucet`).
 
 ## C. Emergency stop

@@ -65,6 +65,9 @@ out/
 web/dist/
 web/.astro/
 
+# --- Faucet web ---
+faucet-web/dist/
+
 # --- Env & secrets ---
 .env
 .env.*
@@ -72,6 +75,11 @@ web/.astro/
 # deploy local env (copy from *.env.example); samples stay tracked
 deploy/soak.env
 deploy/public.env
+deploy/node/soak.env
+deploy/node/public.env
+deploy/faucet/faucet.env
+deploy/explorer/explorer.env
+deploy/.env
 *.pem
 *.key
 id_ed25519

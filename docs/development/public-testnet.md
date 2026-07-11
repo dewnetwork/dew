@@ -111,9 +111,9 @@ go test ./rpc/ -fuzz=FuzzDecodeBytes -fuzztime=5s
 
 ## Operator launch checklist
 
-Full one-page checklist (ports, env, compose, publish template): [Launch checklist](./launch-checklist.md). Packaging samples: [deploy/](../../deploy/).
+Full one-page checklist (ports, env, compose, publish template): [Launch checklist](./launch-checklist.md). Packaging samples: [deploy/node/](../../deploy/node/) and [deploy/faucet/](../../deploy/faucet/).
 
-**Fast path (single host, controlled RPC):** [deploy/public-rpc-single-host.md](../../deploy/public-rpc-single-host.md).
+**Fast path (single host, controlled RPC):** [deploy/node/public-rpc-single-host.md](../../deploy/node/public-rpc-single-host.md).
 
 1. Generate dedicated keys (validators, bootnodes, faucet) — no Anvil reuse  
 2. Distribute frozen genesis (chain ID 2205, alloc, initialValidators)  

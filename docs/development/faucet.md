@@ -148,13 +148,13 @@ go build -o bin/dewfaucet ./cmd/dewfaucet
 ## Production packaging
 
 1. Fund a **new** EOA in genesis `alloc` (or top up offline) — never Anvil #0.
-2. `cp deploy/faucet.env.example /etc/dew/faucet.env` and set secrets (`chmod 600`).
+2. `cp deploy/faucet/faucet.env.example /etc/dew/faucet.env` and set secrets (`chmod 600`).
 3. Install allowlist: `/etc/dew/faucet-allowlist.txt`.
 4. Install binary + unit:
 
 ```bash
 sudo install -m 755 bin/dewfaucet /usr/local/bin/dewfaucet
-sudo install -m 644 deploy/systemd/dewfaucet.service /etc/systemd/system/dewfaucet.service
+sudo install -m 644 deploy/faucet/systemd/dewfaucet.service /etc/systemd/system/dewfaucet.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now dewfaucet
 ```
@@ -162,7 +162,7 @@ sudo systemctl enable --now dewfaucet
 5. Reverse-proxy `127.0.0.1:8080` with TLS; set `FAUCET_TRUSTED_PROXY=true` if you rely on `X-Forwarded-For` for IP limits.
 6. Emergency: `systemctl stop dewfaucet` — validators/RPC can stay up.
 
-Env sample: [deploy/faucet.env.example](../../deploy/faucet.env.example). Unit: [deploy/systemd/dewfaucet.service](../../deploy/systemd/dewfaucet.service).
+Env sample: [faucet.env.example](../../deploy/faucet/faucet.env.example). Unit: [dewfaucet.service](../../deploy/faucet/systemd/dewfaucet.service).
 
 ## Publish template
 
@@ -184,8 +184,9 @@ Bootnodes:   …
 | `faucet/` | Rate limit, captcha, RPC client, HTTP API (library) |
 | `cmd/dewfaucet` | Process entry |
 | `faucet/allowlist.example.txt` | Allowlist format sample |
-| `deploy/faucet.env.example` | Operator env |
-| `deploy/systemd/dewfaucet.service` | systemd unit |
+| `faucet-web/` | React SPA drip UI — shares the landing design system (`web/`: ink/cyan tokens, Syne + Figtree) |
+| `deploy/faucet/faucet.env.example` | Operator env |
+| `deploy/faucet/systemd/dewfaucet.service` | systemd unit |
 
 Tests: `go test ./faucet/`.
 

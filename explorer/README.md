@@ -66,6 +66,20 @@ Etherscan-style strip + **Transaction History in 14 days** (Recharts):
 
 Header control cycles **Light → Dark → System** (follows OS). Preference is stored under `localStorage` key `dew-explorer-ui` (`theme` field). Default: System.
 
+## Deploy (Docker)
+
+Packaging lives under [`deploy/explorer/`](../deploy/explorer/) (nginx SPA, not under this package’s build):
+
+```bash
+# from monorepo root
+cp deploy/explorer/explorer.env.example deploy/explorer/explorer.env
+docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env up --build -d
+# → http://localhost:8082
+```
+
+Combined local stack (node + faucet + explorer): `docker compose -f deploy/docker-compose.yml up --build -d`.  
+See [deploy/README.md](../deploy/README.md) and [block-explorer.md](../docs/development/block-explorer.md).
+
 ## Security
 
 - Read-only UI (no `eth_sendRawTransaction`)

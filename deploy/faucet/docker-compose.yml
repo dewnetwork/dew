@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  faucet-backend:
+    build:
+      context: ../..
+      dockerfile: deploy/faucet/Dockerfile
+    container_name: dew-faucet-backend
+    environment:
+      - FAUCET_LISTEN=0.0.0.0:8080
+      - FAUCET_RPC_URL=${FAUCET_RPC_URL:-http://dew-rpc:8545}
+      - FAUCET_CHAIN_ID=${FAUCET_CHAIN_ID:-2205}
+      - FAUCET_PRIVATE_KEY=${FAUCET_PRIVATE_KEY}
+      - FAUCET_MODE=${FAUCET_MODE:-allowlist}
+      - FAUCET_ALLOWLIST=/etc/dew/faucet-allowlist.txt
+      - FAUCET_CAPTCHA_PROVIDER=${FAUCET_CAPTCHA_PROVIDER}
+      - FAUCET_CAPTCHA_SECRET=${FAUCET_CAPTCHA_SECRET}
+      - FAUCET_AMOUNT_WEI=${FAUCET_AMOUNT_WEI:-1000000000000000000}
+      - FAUCET_LIMIT_ADDRESS=${FAUCET_LIMIT_ADDRESS:-1}
+      - FAUCET_LIMIT_ADDRESS_WINDOW=${FAUCET_LIMIT_ADDRESS_WINDOW:-24h}
+      - FAUCET_LIMIT_IP=${FAUCET_LIMIT_IP:-10}
+      - FAUCET_LIMIT_IP_WINDOW=${FAUCET_LIMIT_IP_WINDOW:-1h}
+      - FAUCET_TRUSTED_PROXY=true
+      - FAUCET_ALLOW_ANVIL_KEY=${FAUCET_ALLOW_ANVIL_KEY:-false}
+    volumes:
+      # Map faucet allowlist. Maps to example file in repo as default fallback.
+      - ${FAUCET_ALLOWLIST_PATH:-../../faucet/allowlist.example.txt}:/etc/dew/faucet-allowlist.txt:ro
+    restart: unless-stopped
+    networks:
+      - dew_network
+
+  faucet-frontend:
+    build:
+      context: ../..
+      dockerfile: deploy/faucet/Dockerfile.web
+      args:
+        - PUBLIC_FAUCET_API_URL=${PUBLIC_FAUCET_API_URL:-/api}
+        - PUBLIC_EXPLORER_URL=${PUBLIC_EXPLORER_URL}
+        - PUBLIC_CAPTCHA_PROVIDER=${PUBLIC_CAPTCHA_PROVIDER}
+        - PUBLIC_CAPTCHA_SITE_KEY=${PUBLIC_CAPTCHA_SITE_KEY}
+    container_name: dew-faucet-frontend
+    ports:
+      - "${FAUCET_PORT:-8081}:80"
+    depends_on:
+      - faucet-backend
+    restart: unless-stopped
+    networks:
+      - dew_network
+
+networks:
+  dew_network:
+    driver: bridge

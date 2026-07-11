@@ -583,17 +583,43 @@ Ship only when **all** are true:
 5. Mobile: search usable; detail fields stack without horizontal page overflow (tables may scroll).  
 6. Lighthouse-ish basics: legible contrast on `ink` backgrounds; focus rings on interactive controls.
 
+## Deploy packaging
+
+Operator samples live under **`deploy/explorer/`** (same pattern as faucet static web):
+
+| Artifact | Role |
+| :--- | :--- |
+| [`deploy/explorer/Dockerfile`](../../deploy/explorer/Dockerfile) | Multi-stage `pnpm build` → nginx |
+| [`deploy/explorer/docker-compose.yml`](../../deploy/explorer/docker-compose.yml) | Standalone explorer on host `:8082` |
+| [`deploy/explorer/explorer.env.example`](../../deploy/explorer/explorer.env.example) | `PUBLIC_RPC_URL`, `PUBLIC_CHAIN_ID`, `PUBLIC_EXPLORER_BASE` |
+| [`deploy/explorer/nginx/`](../../deploy/explorer/nginx/) | SPA `try_files` for `/block`, `/tx`, `/address` |
+| [`deploy/docker-compose.yml`](../../deploy/docker-compose.yml) | Combined stack: node + faucet + **explorer** |
+
+```bash
+# Standalone (against an existing RPC)
+cp deploy/explorer/explorer.env.example deploy/explorer/explorer.env
+# set PUBLIC_RPC_URL / PUBLIC_EXPLORER_BASE
+docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env up --build -d
+
+# Full local stack (devnet + faucet + explorer)
+docker compose -f deploy/docker-compose.yml up --build -d
+# → explorer http://localhost:8082
+```
+
+`PUBLIC_*` values are **build-time** (Vite). Rebuild the image after changing RPC or base URL. The browser must reach `PUBLIC_RPC_URL` (use host `http://127.0.0.1:8545` or public HTTPS RPC — not Docker-internal hostnames).
+
 ## Operator checklist snippet
 
 When adding explorer to a live network:
 
-1. Deploy UI with `PUBLIC_RPC_URL` → your public HTTPS RPC  
+1. Deploy UI with `PUBLIC_RPC_URL` → your public HTTPS RPC (`deploy/explorer/` or any static host)  
 2. Confirm `eth_chainId` is `0x89d` (2205)  
 3. Smoke: open `/`, a recent `/block/{n}`, a known `/tx/{hash}`, a funded `/address/{addr}`  
 4. Visual smoke: stats cards render; copy buttons work; status pills correct on success/fail tx  
 5. Set MetaMask “Block explorer URL” to the **base** URL  
 6. Update public publish text: replace `Explorer: (none)` with the live base  
-7. Link from landing / docs only after smoke passes  
+7. Point faucet `PUBLIC_EXPLORER_URL` at the same base (optional deep links)  
+8. Link from landing / docs only after smoke passes  
 
 ## Related
 
@@ -601,7 +627,7 @@ When adding explorer to a live network:
 - [Public testnet freeze](./public-testnet.md)  
 - [JSON-RPC](../api/json-rpc.md)  
 - [Devnet](./devnet.md) — local RPC for explorer development  
-- [deploy packaging](../../deploy/README.md)  
+- [deploy packaging](../../deploy/README.md) — node, faucet, **explorer**  
 - Landing site notes: [`web/README.md`](../../web/README.md) (marketing only; explorer is separate)  
 - UI reference: [Etherscan](https://etherscan.io/) (information architecture only)  
 

@@ -2,18 +2,28 @@
 
 Operator samples for **private soak** and **controlled public RPC** after Phase C freeze.
 
-| Artifact | Role |
+| Directory / Artifact | Role |
 | :--- | :--- |
-| [Dockerfile](./Dockerfile) | Multi-stage build of `dew` |
-| [docker-compose.yml](./docker-compose.yml) | **Public path B** — Dew + nginx (no open `:8545`) |
-| [docker-compose.soak.yml](./docker-compose.soak.yml) | Private soak — devnet + optional 3-node mesh |
-| [soak.env.example](./soak.env.example) | Sample soak env (`cp` → `soak.env`, gitignored) |
-| [public.env.example](./public.env.example) | Sample public env (`cp` → `public.env`, gitignored) |
-| [nginx/dew-rpc.conf](./nginx/dew-rpc.conf) | Host/systemd TLS reverse proxy sample |
-| [nginx/dew-rpc.docker.conf](./nginx/dew-rpc.docker.conf) | Compose public proxy (upstream `dew:8545`) |
-| [systemd/dew.service](./systemd/dew.service) | Single-host RPC unit (general) |
-| [systemd/dew-rpc-public.service](./systemd/dew-rpc-public.service) | Public path B: loopback-only RPC (no Docker) |
-| [public-rpc-single-host.md](./public-rpc-single-host.md) | Public runbook (Compose **or** systemd) |
+| **[node/](./node/)** | **Core Node Deployment** |
+| ├── [Dockerfile](./node/Dockerfile) | Multi-stage build of `dew` |
+| ├── [docker-compose.yml](./node/docker-compose.yml) | **Public path B** — Dew + nginx (no open `:8545`) |
+| ├── [docker-compose.soak.yml](./node/docker-compose.soak.yml) | Private soak — devnet + optional 3-node mesh |
+| ├── [soak.env.example](./node/soak.env.example) | Sample soak env (`cp` → `soak.env`, gitignored) |
+| ├── [public.env.example](./node/public.env.example) | Sample public env (`cp` → `public.env`, gitignored) |
+| ├── [nginx/](./node/nginx/) | Nginx proxy configurations |
+| ├── [systemd/](./node/systemd/) | Systemd service files for Node |
+| └── [public-rpc-single-host.md](./node/public-rpc-single-host.md) | Public runbook (Compose **or** systemd) |
+| **[faucet/](./faucet/)** | **Faucet Service Deployment** |
+| ├── [Dockerfile](./faucet/Dockerfile) | Go faucet backend container |
+| ├── [Dockerfile.web](./faucet/Dockerfile.web) | React faucet frontend container |
+| ├── [docker-compose.yml](./faucet/docker-compose.yml) | Orchestrate backend & frontend |
+| ├── [faucet.env.example](./faucet/faucet.env.example) | Faucet environment variable config |
+| └── [systemd/](./faucet/systemd/) | Systemd service files for Faucet |
+| **[explorer/](./explorer/)** | **Block Explorer SPA Deployment** |
+| ├── [Dockerfile](./explorer/Dockerfile) | Multi-stage Vite build + nginx |
+| ├── [docker-compose.yml](./explorer/docker-compose.yml) | Standalone explorer container |
+| ├── [explorer.env.example](./explorer/explorer.env.example) | `PUBLIC_RPC_URL` / chain / base URL |
+| └── [nginx/](./explorer/nginx/) | SPA `try_files` for client routes |
 | [Launch checklist](../docs/development/launch-checklist.md) | End-to-end ops checklist |
 
 ## Prerequisites
@@ -27,10 +37,10 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 From **repo root**:
 
 ```bash
-cp deploy/soak.env.example deploy/soak.env   # once; edit ports/profile as needed
-docker compose -f deploy/docker-compose.soak.yml --env-file deploy/soak.env up --build
+cp deploy/node/soak.env.example deploy/node/soak.env   # once; edit ports/profile as needed
+docker compose -f deploy/node/docker-compose.soak.yml --env-file deploy/node/soak.env up --build
 # equivalent:
-docker compose -f deploy/docker-compose.soak.yml --profile devnet up --build
+docker compose -f deploy/node/docker-compose.soak.yml --profile devnet up --build
 ```
 
 - RPC: `http://127.0.0.1:8545`
@@ -52,8 +62,8 @@ Do **not** combine with `devnet` (both want host `:8545`).
 
 ```bash
 # Stop any prior soak stack first
-docker compose -f deploy/docker-compose.soak.yml --profile devnet down
-docker compose -f deploy/docker-compose.soak.yml --profile multi up --build
+docker compose -f deploy/node/docker-compose.soak.yml --profile devnet down
+docker compose -f deploy/node/docker-compose.soak.yml --profile multi up --build
 ```
 
 | Container | JSON-RPC (host) | P2P (host) |
@@ -78,10 +88,10 @@ After private soak. Dew is **not** published on host `:8545`; only nginx is on `
 
 ```bash
 # Stop soak first if it holds ports 80/443 (usually not) or 8545
-docker compose -f deploy/docker-compose.soak.yml --profile devnet down
+docker compose -f deploy/node/docker-compose.soak.yml --profile devnet down
 
-cp deploy/public.env.example deploy/public.env   # once
-docker compose -f deploy/docker-compose.yml --env-file deploy/public.env up --build
+cp deploy/node/public.env.example deploy/node/public.env   # once
+docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env up --build
 ```
 
 | Service | Role | Host ports |
@@ -89,31 +99,30 @@ docker compose -f deploy/docker-compose.yml --env-file deploy/public.env up --bu
 | `dew-rpc` | `dew run` on internal network only | none |
 | `dew-rpc-proxy` | nginx rate-limit + proxy → `dew:8545` | `:80`, `:443` |
 
-Smoke (HTTP until TLS is configured):
+Smoke (HTTP before TLS):
 
 ```bash
 node scripts/smoke-rpc.mjs http://127.0.0.1
-# or: curl -s -X POST http://127.0.0.1 -H 'content-type: application/json' \
-#   -d '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}'
+# expect chainId 2205 / 0x89d
 ```
 
 ### TLS with Compose
 
 1. Obtain certs (certbot on host, or ACME elsewhere).
-2. Place `fullchain.pem` + `privkey.pem` under `deploy/certs/`.
+2. Place `fullchain.pem` + `privkey.pem` under `deploy/node/certs/`.
 3. Uncomment the `./certs` volume on `proxy` in `docker-compose.yml`.
 4. Uncomment the HTTPS `server` block in `nginx/dew-rpc.docker.conf`.
-5. `docker compose -f deploy/docker-compose.yml up -d --force-recreate proxy`
+5. `docker compose -f deploy/node/docker-compose.yml up -d --force-recreate proxy`
 
 Firewall: allow 22/80/443 only — **never** publish container `:8545` on `0.0.0.0`.
 
 ### Systemd alternative (no Docker)
 
-See [public-rpc-single-host.md](./public-rpc-single-host.md) — Dew on `127.0.0.1:8545`, host nginx on `:443`.
+See [public-rpc-single-host.md](./node/public-rpc-single-host.md) — Dew on `127.0.0.1:8545`, host nginx on `:443`.
 
 ## systemd (binary install)
 
-See [systemd/dew.service](./systemd/dew.service) (general) or [dew-rpc-public.service](./systemd/dew-rpc-public.service) (path B). Create user/dirs:
+See [systemd/dew.service](./node/systemd/dew.service) (general) or [dew-rpc-public.service](./node/systemd/dew-rpc-public.service) (path B). Create user/dirs:
 
 ```bash
 sudo useradd --system --home /var/lib/dew --shell /usr/sbin/nologin dew || true
@@ -121,13 +130,64 @@ sudo mkdir -p /var/lib/dew /etc/dew
 sudo install -m 755 bin/dew /usr/local/bin/dew
 sudo install -m 644 genesis.json /etc/dew/genesis.json
 sudo chown -R dew:dew /var/lib/dew
-sudo install -m 644 deploy/systemd/dew.service /etc/systemd/system/dew.service
+sudo install -m 644 deploy/node/systemd/dew.service /etc/systemd/system/dew.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now dew
 ```
 
+## Faucet Deployment (Dockerized)
+
+See [faucet/docker-compose.yml](./faucet/docker-compose.yml) to deploy Faucet backend and frontend under a single host.
+
+```bash
+cp deploy/faucet/faucet.env.example deploy/faucet/faucet.env
+# edit deploy/faucet/faucet.env with your keys, chain details, and recaptcha config
+docker compose -f deploy/faucet/docker-compose.yml up --build -d
+```
+
+Frontend runs on `:8081` by default and routes backend requests internally.
+
+## Explorer Deployment (Dockerized)
+
+Static SPA only — no backend, no keys. Browser calls `PUBLIC_RPC_URL` directly (must be CORS-reachable). Spec: [block-explorer.md](../docs/development/block-explorer.md).
+
+```bash
+cp deploy/explorer/explorer.env.example deploy/explorer/explorer.env
+# edit PUBLIC_RPC_URL (public HTTPS RPC) and PUBLIC_EXPLORER_BASE
+docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env up --build -d
+```
+
+Default host port: **`:8082`**. Rebuild the image when env changes (Vite bakes `PUBLIC_*` at build time).
+
+Smoke:
+
+1. Open `http://localhost:8082/` — home stats + latest blocks  
+2. Deep links: `/block/{n}`, `/tx/{hash}`, `/address/{addr}`  
+3. Set faucet `PUBLIC_EXPLORER_URL` to the same base for “View on block explorer” links  
+
+## Combined Node + Faucet + Explorer (Docker Compose)
+
+Local full stack: Dew devnet, faucet (backend + web), and block explorer:
+
+```bash
+cp deploy/.env.example deploy/.env   # optional; defaults work for local Anvil #0 faucet
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
+# or without env file (built-in defaults):
+docker compose -f deploy/docker-compose.yml up --build -d
+```
+
+| Surface | URL |
+| :--- | :--- |
+| JSON-RPC | `http://localhost:8545` |
+| Faucet web | `http://localhost:8081` |
+| Faucet API | `http://localhost:8081/api` |
+| **Explorer** | **`http://localhost:8082`** |
+
+`PUBLIC_RPC_URL` for the explorer must be **browser-reachable** (`http://127.0.0.1:8545` on the host), not Docker-internal `http://dew-node:8545`.
+
 ## Related residual
 
 - Persistent peer store / auto-redial after restart — `agents/debt.md` (C5)
-- Production faucet — D2: `cmd/dewfaucet`, [docs/development/faucet.md](../docs/development/faucet.md), [faucet.env.example](./faucet.env.example), [systemd/dewfaucet.service](./systemd/dewfaucet.service)
+- Production faucet — D2: `cmd/dewfaucet`, [docs/development/faucet.md](../docs/development/faucet.md), [faucet.env.example](./faucet/faucet.env.example), [systemd/dewfaucet.service](./faucet/systemd/dewfaucet.service)
+- Block explorer packaging — D1: [explorer/](./explorer/), [block-explorer.md](../docs/development/block-explorer.md)
 - Public bootnode hostnames — C6 ops residual

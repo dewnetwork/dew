@@ -1,64 +1,98 @@
-# Dew controlled public RPC (path B) — single host.
-#
-# From repo root:
-#   cp deploy/public.env.example deploy/public.env   # once
-#   docker compose -f deploy/docker-compose.yml --env-file deploy/public.env up --build
-#
-# Layout:
-#   - dew: JSON-RPC only on the internal compose network (not published to host)
-#   - proxy: nginx on host :80 / :443 → dew:8545 with rate limit + body cap
-#
-# TLS: mount certs into deploy/certs/ (see README) or terminate TLS elsewhere.
-# Systemd alternative: deploy/public-rpc-single-host.md
-#
-# Do not use this file for private soak — use docker-compose.soak.yml.
-
-name: dew-public
+version: '3.8'
 
 services:
-  dew:
+  # 1. Dew Blockchain Node (Devnet Mode)
+  dew-node:
     build:
       context: ..
-      dockerfile: deploy/Dockerfile
-    image: ${DEW_IMAGE:-dew:local}
-    container_name: dew-rpc
+      dockerfile: deploy/node/Dockerfile
+    container_name: dew-node
     command:
-      - run
-      - --genesis
-      - /etc/dew/genesis.json
+      - devnet
       - --http.addr
       - "0.0.0.0"
       - --http.port
       - "8545"
-    # No host ports — reachable only via dew_internal (proxy).
-    # Port must stay 8545 to match nginx/dew-rpc.docker.conf upstream.
-    expose:
-      - "8545"
-    restart: unless-stopped
-    networks:
-      - dew_internal
-
-  proxy:
-    image: ${NGINX_IMAGE:-nginx:1.27-alpine}
-    container_name: dew-rpc-proxy
-    depends_on:
-      - dew
+      - --bft.heights
+      - "1"
     ports:
-      - "${PROXY_HTTP_PORT:-80}:80"
-      - "${PROXY_HTTPS_PORT:-443}:443"
-    volumes:
-      - ./nginx/dew-rpc.docker.conf:/etc/nginx/conf.d/default.conf:ro
-      # Optional TLS material (uncomment HTTPS block in dew-rpc.docker.conf):
-      # - ./certs:/etc/nginx/certs:ro
+      - "${DEW_HTTP_PORT:-8545}:8545"
     restart: unless-stopped
     networks:
-      - dew_internal
-      - dew_edge
+      - dew_network
+
+  # 2. Faucet Go Backend
+  faucet-backend:
+    build:
+      context: ..
+      dockerfile: deploy/faucet/Dockerfile
+    container_name: dew-faucet-backend
+    environment:
+      - FAUCET_LISTEN=0.0.0.0:8080
+      - FAUCET_RPC_URL=http://dew-node:8545
+      - FAUCET_CHAIN_ID=${FAUCET_CHAIN_ID:-2205}
+      - FAUCET_PRIVATE_KEY=${FAUCET_PRIVATE_KEY:-ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80} # Default to Anvil #0 for local dev
+      - FAUCET_MODE=${FAUCET_MODE:-dev} # Dev mode by default for local compose
+      - FAUCET_ALLOWLIST=/etc/dew/faucet-allowlist.txt
+      - FAUCET_AMOUNT_WEI=${FAUCET_AMOUNT_WEI:-1000000000000000000}
+      - FAUCET_LIMIT_ADDRESS=${FAUCET_LIMIT_ADDRESS:-1}
+      - FAUCET_LIMIT_ADDRESS_WINDOW=${FAUCET_LIMIT_ADDRESS_WINDOW:-24h}
+      - FAUCET_LIMIT_IP=${FAUCET_LIMIT_IP:-10}
+      - FAUCET_LIMIT_IP_WINDOW=${FAUCET_LIMIT_IP_WINDOW:-1h}
+      - FAUCET_TRUSTED_PROXY=true
+      - FAUCET_ALLOW_ANVIL_KEY=true # Required to allow dev Anvil #0 key
+    volumes:
+      # Map faucet allowlist. Maps to example file in repo as default fallback.
+      - ${FAUCET_ALLOWLIST_PATH:-../faucet/allowlist.example.txt}:/etc/dew/faucet-allowlist.txt:ro
+    depends_on:
+      - dew-node
+    restart: unless-stopped
+    networks:
+      - dew_network
+
+  # 3. Faucet React Frontend (served via Nginx and proxied to backend)
+  faucet-frontend:
+    build:
+      context: ..
+      dockerfile: deploy/faucet/Dockerfile.web
+      args:
+        - PUBLIC_FAUCET_API_URL=${PUBLIC_FAUCET_API_URL:-/api}
+        - PUBLIC_EXPLORER_URL=${PUBLIC_EXPLORER_URL:-http://localhost:8082}
+        - PUBLIC_CAPTCHA_PROVIDER=${PUBLIC_CAPTCHA_PROVIDER}
+        - PUBLIC_CAPTCHA_SITE_KEY=${PUBLIC_CAPTCHA_SITE_KEY}
+    container_name: dew-faucet-frontend
+    ports:
+      - "${FAUCET_PORT:-8081}:80"
+    depends_on:
+      - faucet-backend
+    restart: unless-stopped
+    networks:
+      - dew_network
+
+  # 4. Block Explorer SPA (static nginx; browser talks to PUBLIC_RPC_URL)
+  explorer:
+    build:
+      context: ..
+      dockerfile: deploy/explorer/Dockerfile
+      args:
+        # Browser-reachable RPC (host port published by dew-node)
+        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-http://127.0.0.1:8545}
+        - PUBLIC_CHAIN_ID=${PUBLIC_CHAIN_ID:-2205}
+        - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-http://localhost:8082}
+        - PUBLIC_DEW_PRICE_USD=${PUBLIC_DEW_PRICE_USD:-}
+        - PUBLIC_DEW_PRICE_BTC=${PUBLIC_DEW_PRICE_BTC:-}
+        - PUBLIC_DEW_PRICE_CHANGE_24H=${PUBLIC_DEW_PRICE_CHANGE_24H:-}
+        - PUBLIC_DEW_MARKET_CAP_USD=${PUBLIC_DEW_MARKET_CAP_USD:-}
+        - PUBLIC_DEW_TOTAL_SUPPLY=${PUBLIC_DEW_TOTAL_SUPPLY:-}
+    container_name: dew-explorer
+    ports:
+      - "${EXPLORER_PORT:-8082}:80"
+    depends_on:
+      - dew-node
+    restart: unless-stopped
+    networks:
+      - dew_network
 
 networks:
-  # No direct host/internet path to Dew; proxy bridges edge ↔ internal.
-  dew_internal:
-    driver: bridge
-    internal: true
-  dew_edge:
+  dew_network:
     driver: bridge

@@ -1,18 +1,18 @@
 # Dew private staging / soak packaging.
 #
 # From repo root:
-#   cp deploy/soak.env.example deploy/soak.env   # once
-#   docker compose -f deploy/docker-compose.soak.yml --env-file deploy/soak.env up --build
+#   cp deploy/node/soak.env.example deploy/node/soak.env   # once
+#   docker compose -f deploy/node/docker-compose.soak.yml --env-file deploy/node/soak.env up --build
 #   # or explicitly:
-#   docker compose -f deploy/docker-compose.soak.yml --profile devnet up --build
-#   docker compose -f deploy/docker-compose.soak.yml --profile multi up --build
+#   docker compose -f deploy/node/docker-compose.soak.yml --profile devnet up --build
+#   docker compose -f deploy/node/docker-compose.soak.yml --profile multi up --build
 #
 # Profile "devnet": one container, in-process 3-validator + RPC (fastest soak).
 # Profile "multi": three processes with encrypted P2P mesh + independent JSON-RPC
 #   (each auto-mines locally; multi-process Dew-BFT block production is still residual).
 #
 # Profiles are mutually exclusive (both bind host :8545 by default).
-# Public path B uses deploy/docker-compose.yml (not this file).
+# Public path B uses deploy/node/docker-compose.yml (not this file).
 
 name: dew-private
 
@@ -21,8 +21,8 @@ services:
   devnet:
     profiles: ["devnet"]
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+      context: ../..
+      dockerfile: deploy/node/Dockerfile
     image: ${DEW_IMAGE:-dew:local}
     container_name: dew-devnet
     command:
@@ -42,8 +42,8 @@ services:
   node-0:
     profiles: ["multi"]
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+      context: ../..
+      dockerfile: deploy/node/Dockerfile
     image: ${DEW_IMAGE:-dew:local}
     container_name: dew-node-0
     command:
@@ -68,8 +68,8 @@ services:
   node-1:
     profiles: ["multi"]
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+      context: ../..
+      dockerfile: deploy/node/Dockerfile
     image: ${DEW_IMAGE:-dew:local}
     container_name: dew-node-1
     command:
@@ -94,8 +94,8 @@ services:
   node-2:
     profiles: ["multi"]
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+      context: ../..
+      dockerfile: deploy/node/Dockerfile
     image: ${DEW_IMAGE:-dew:local}
     container_name: dew-node-2
     command:

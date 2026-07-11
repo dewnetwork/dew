@@ -2,7 +2,7 @@
 # Install:
 #   sudo install -m 755 bin/dew /usr/local/bin/dew
 #   sudo install -m 644 genesis.json /etc/dew/genesis.json
-#   sudo install -m 644 deploy/systemd/dew.service /etc/systemd/system/dew.service
+#   sudo install -m 644 deploy/node/systemd/dew.service /etc/systemd/system/dew.service
 #   sudo systemctl daemon-reload && sudo systemctl enable --now dew
 #
 # Override keys/ports: drop a file in /etc/systemd/system/dew.service.d/override.conf

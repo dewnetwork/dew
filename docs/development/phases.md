@@ -336,7 +336,7 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 
 **Packages:** `explorer/`, root `package.json` scripts; docs only under `docs/development/block-explorer.md`
 
-**Notes:** JSON-RPC only for MVP (no indexer). Do not reimplement state transition in Node. Deploy and MetaMask base URL are operator steps after smoke (launch checklist + explorer operator snippet).
+**Notes:** JSON-RPC only for MVP (no indexer). Do not reimplement state transition in Node. Deploy packaging: `deploy/explorer/` (Dockerfile + compose) and combined `deploy/docker-compose.yml`. MetaMask base URL and publish template: launch checklist + explorer operator snippet.
 
 ---
 

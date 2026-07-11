@@ -1,0 +1,26 @@
+version: '3.8'
+
+# Standalone explorer SPA against a browser-reachable JSON-RPC URL.
+# From repo root:
+#   cp deploy/explorer/explorer.env.example deploy/explorer/explorer.env
+#   # edit PUBLIC_RPC_URL / PUBLIC_EXPLORER_BASE
+#   docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env up --build -d
+
+services:
+  explorer:
+    build:
+      context: ../..
+      dockerfile: deploy/explorer/Dockerfile
+      args:
+        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-http://127.0.0.1:8545}
+        - PUBLIC_CHAIN_ID=${PUBLIC_CHAIN_ID:-2205}
+        - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-http://localhost:8082}
+        - PUBLIC_DEW_PRICE_USD=${PUBLIC_DEW_PRICE_USD:-}
+        - PUBLIC_DEW_PRICE_BTC=${PUBLIC_DEW_PRICE_BTC:-}
+        - PUBLIC_DEW_PRICE_CHANGE_24H=${PUBLIC_DEW_PRICE_CHANGE_24H:-}
+        - PUBLIC_DEW_MARKET_CAP_USD=${PUBLIC_DEW_MARKET_CAP_USD:-}
+        - PUBLIC_DEW_TOTAL_SUPPLY=${PUBLIC_DEW_TOTAL_SUPPLY:-}
+    container_name: dew-explorer
+    ports:
+      - "${EXPLORER_PORT:-8082}:80"
+    restart: unless-stopped

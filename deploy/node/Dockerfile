@@ -1,6 +1,6 @@
 # Multi-stage build for the Dew full node (cmd/dew).
 # Build from repo root:
-#   docker build -f deploy/Dockerfile -t dew:local .
+#   docker build -f deploy/node/Dockerfile -t dew:local .
 
 FROM golang:1.23-bookworm AS build
 WORKDIR /src
