@@ -44,6 +44,22 @@ docker compose -f deploy/docker-compose.yml --profile multi up --build
 
 ## B. Public launch (after soak)
 
+### Path B — controlled RPC on **one host** (fastest)
+
+Full copy-paste runbook: [deploy/public-rpc-single-host.md](../../deploy/public-rpc-single-host.md).
+
+| # | Step | Notes |
+| -: | :--- | :---- |
+| 1 | Dew on loopback | `dew-rpc-public.service` → `127.0.0.1:8545` only |
+| 2 | TLS proxy | nginx + certbot (+ rate limit) — see `deploy/nginx/dew-rpc.conf` |
+| 3 | Firewall | Allow 22/80/443 only — **not** 8545 |
+| 4 | Feature flags | No `--staking`; Anvil keys **not** on public pages |
+| 5 | Publish | HTTPS RPC + chain ID `2026` (bootnodes n/a for path B) |
+| 6 | Smoke | `node scripts/smoke-rpc.mjs https://rpc.example.com` |
+| 7 | Emergency | Stop nginx first; node can stay on loopback |
+
+### Path A — multi-host public (later)
+
 | # | Step | Notes |
 | -: | :--- | :---- |
 | 1 | New keys | Validators, bootnodes, faucet — **never** Anvil / staging keys |
@@ -54,15 +70,15 @@ docker compose -f deploy/docker-compose.yml --profile multi up --build
 | 6 | Faucet | Rate limit per IP/address; small amounts; captcha recommended |
 | 7 | Monitor | RPC 4xx/5xx, mempool rejects, peer count; ready to stop RPC only |
 
-### Public publish template
+### Public publish template (path B)
 
 ```text
 Network:     Dew public-testnet-v1
 Chain ID:    2026
 RPC:         https://rpc.example.com
-Bootnodes:   host0:30303, host1:30304   # replace at launch
-Faucet:      <URL or "request via …">   # policy: N DEW / address / day
 Symbol:      DEW
+Faucet:      none / allowlist only
+Bootnodes:   n/a (single-host controlled RPC)
 ```
 
 ## C. Emergency stop

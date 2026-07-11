@@ -111,6 +111,8 @@ go test ./rpc/ -fuzz=FuzzDecodeBytes -fuzztime=5s
 
 Full one-page checklist (ports, env, compose, publish template): [Launch checklist](./launch-checklist.md). Packaging samples: [deploy/](../../deploy/).
 
+**Fast path (single host, controlled RPC):** [deploy/public-rpc-single-host.md](../../deploy/public-rpc-single-host.md).
+
 1. Generate dedicated keys (validators, bootnodes, faucet) — no Anvil reuse  
 2. Distribute frozen genesis (chain ID 2026, alloc, initialValidators)  
 3. Start ≥ 3 validators + optional RPC with encrypted P2P  

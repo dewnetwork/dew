@@ -1,0 +1,36 @@
+# Controlled public RPC on a single host (path B).
+# Dew listens on loopback only; put nginx on :443 in front.
+#
+#   sudo install -m 644 deploy/systemd/dew-rpc-public.service /etc/systemd/system/dew.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now dew
+#
+# See deploy/public-rpc-single-host.md
+
+[Unit]
+Description=Dew JSON-RPC (loopback — public via reverse proxy)
+Documentation=file:///opt/dew/deploy/public-rpc-single-host.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dew
+Group=dew
+WorkingDirectory=/var/lib/dew
+# Loopback only — never 0.0.0.0 for path B public RPC
+ExecStart=/usr/local/bin/dew run \
+  --genesis /etc/dew/genesis.json \
+  --http.addr 127.0.0.1 \
+  --http.port 8545
+# Staking stays off (no --staking)
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dew
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

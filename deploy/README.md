@@ -6,7 +6,10 @@ Operator samples for **private staging** and multi-process layout after Phase C 
 | :--- | :--- |
 | [Dockerfile](./Dockerfile) | Multi-stage build of `dew` |
 | [docker-compose.yml](./docker-compose.yml) | Devnet soak + optional 3-node mesh |
-| [systemd/dew.service](./systemd/dew.service) | Single-host RPC unit |
+| [systemd/dew.service](./systemd/dew.service) | Single-host RPC unit (general) |
+| [systemd/dew-rpc-public.service](./systemd/dew-rpc-public.service) | Public path B: loopback-only RPC |
+| [public-rpc-single-host.md](./public-rpc-single-host.md) | **Controlled public RPC on one host** |
+| [nginx/dew-rpc.conf](./nginx/dew-rpc.conf) | TLS reverse proxy + rate limit (certbot) |
 | [Launch checklist](../docs/development/launch-checklist.md) | End-to-end ops checklist |
 
 ## Prerequisites
@@ -64,9 +67,13 @@ Each process:
 
 Compose uses **Anvil #0–#2** keys for private packaging only. **Never** reuse on a public net.
 
+## Controlled public RPC (single host)
+
+After private soak: [public-rpc-single-host.md](./public-rpc-single-host.md) — Dew on `127.0.0.1:8545`, nginx on `:443`, no open `:8545`.
+
 ## systemd
 
-See [systemd/dew.service](./systemd/dew.service). Create user/dirs:
+See [systemd/dew.service](./systemd/dew.service) (general) or [dew-rpc-public.service](./systemd/dew-rpc-public.service) (path B). Create user/dirs:
 
 ```bash
 sudo useradd --system --home /var/lib/dew --shell /usr/sbin/nologin dew || true
