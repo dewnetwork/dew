@@ -50,7 +50,7 @@ Do **not** block Phase A on parallel execution or Dew-native formats. Compatibil
 | [Networking](./networking/)     | `docs/networking/`   | P2P, gossip, sync                           |
 | [API](./api/)                   | `docs/api/`          | JSON-RPC (`eth_*`, later `dew_*`)           |
 | [Economics](./economics/)       | `docs/economics/`    | Tokenomics, genesis                         |
-| [Development](./development/)   | `docs/development/`  | Monorepo layout, roadmap, phased build      |
+| [Development](./development/)   | `docs/development/`  | Monorepo layout, roadmap, testnet, explorer |
 | [Security](./security/)         | `docs/security/`     | Threat model, security principles           |
 
 ## Suggested reading order

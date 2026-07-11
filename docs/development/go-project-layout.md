@@ -51,6 +51,8 @@ dew/                          # monorepo root
 ├── tests/                         # Go integration / multi-node tests
 ├── scripts/                       # Shell + Node helper scripts
 ├── deploy/                        # Docker Compose, Dockerfile, systemd samples
+├── web/                           # Astro landing (marketing only)
+├── explorer/                      # Block explorer SPA (React/Vite; not under web/)
 ├── packages/                      # Node workspaces (optional as we grow)
 │   ├── sdk/                       # TS client for eth_* / dew_* (later)
 │   └── localnet/                  # Spin up multi-validator devnet (later)

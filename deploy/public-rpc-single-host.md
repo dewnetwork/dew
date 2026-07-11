@@ -164,7 +164,8 @@ Faucet:      (none / manual / allowlist only)
 Bootnodes:   (n/a — single RPC path B)
 ```
 
-MetaMask: Custom network → RPC URL HTTPS, chain ID **2205**, symbol **DEW**.
+MetaMask: Custom network → RPC URL HTTPS, chain ID **2205**, symbol **DEW**.  
+**Explorer:** leave `(none)` until a live UI exists; when publishing a base URL use the conventions in [docs/development/block-explorer.md](../docs/development/block-explorer.md) (MetaMask “Block explorer URL” = base only, e.g. `https://explorer.example.com`).
 
 External smoke:
 

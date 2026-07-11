@@ -45,3 +45,9 @@ public/                # favicon + logo
 Docs remain on VitePress under `docs/` (`pnpm docs:dev`). Production merges both via monorepo `pnpm site:build` (see root README — GitHub Pages at `/dew/` + `/dew/docs/`).
 
 When `SITE_BASE` is set (e.g. `/dew`), use `withBase()` from `src/lib/paths.ts` for site-absolute links and static assets so project pages resolve correctly.
+
+## Block explorer (separate app)
+
+The explorer is **not** part of this package. It lives in monorepo root **`explorer/`** (React + Vite + Tailwind + Radix + nuqs + TanStack Query + TanStack Router + Zustand).
+
+Spec: [`docs/development/block-explorer.md`](../docs/development/block-explorer.md). Until that app ships, publish templates use `Explorer: (none)`.

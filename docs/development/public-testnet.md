@@ -116,7 +116,7 @@ Full one-page checklist (ports, env, compose, publish template): [Launch checkli
 1. Generate dedicated keys (validators, bootnodes, faucet) — no Anvil reuse  
 2. Distribute frozen genesis (chain ID 2205, alloc, initialValidators)  
 3. Start ≥ 3 validators + optional RPC with encrypted P2P  
-4. Publish RPC URL, chain ID, bootnodes, faucet rules  
+4. Publish RPC URL, chain ID, bootnodes, faucet rules, explorer base or `(none)` ([Block explorer](./block-explorer.md))  
 5. Confirm feature flags match the table above  
 6. Run chaos smoke on private staging first (`go test ./devnet/ -run Chaos`)  
 7. Monitor RPC errors / mempool rejects; be ready to disable native/staking flags  
@@ -135,6 +135,7 @@ Tracked in `agents/debt.md`: fee auction, nonce-gap queue, full unbonding, doubl
 ## Related
 
 - [Launch checklist](./launch-checklist.md)  
+- [Block explorer (web)](./block-explorer.md) — public Explorer URL, deep links  
 - [Phases](./phases.md) — C6 acceptance  
 - [Genesis](../economics/genesis.md)  
 - [Gas and fees](../execution/gas-and-fees.md)  

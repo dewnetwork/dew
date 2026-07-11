@@ -76,7 +76,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | 2 | Freeze genesis | Same `chainId` / alloc / `initialValidators` on every host |
 | 3 | Topology | ≥ 3 validators + optional non-validator RPC |
 | 4 | Feature flags | Staking **off** unless operators agree; native/precompiles **on** |
-| 5 | Publish | RPC URL, chain ID `2205`, bootnode list, faucet rate rules |
+| 5 | Publish | RPC URL, chain ID `2205`, bootnode list, faucet rate rules, explorer base or `(none)` |
 | 6 | Faucet | Rate limit per IP/address; small amounts; captcha recommended |
 | 7 | Monitor | RPC 4xx/5xx, mempool rejects, peer count; ready to stop RPC only |
 
@@ -87,9 +87,12 @@ Network:     Dew public-testnet-v1
 Chain ID:    2205
 RPC:         https://rpc.example.com
 Symbol:      DEW
+Explorer:    (none)   # or https://explorer.example.com — see block-explorer.md
 Faucet:      none / allowlist only
 Bootnodes:   n/a (single-host controlled RPC)
 ```
+
+Block explorer URL conventions and MetaMask base URL: [Block explorer (web)](./block-explorer.md).
 
 ## C. Emergency stop
 
@@ -100,5 +103,6 @@ Bootnodes:   n/a (single-host controlled RPC)
 ## Related
 
 - [Public testnet freeze](./public-testnet.md)  
+- [Block explorer (web)](./block-explorer.md)  
 - [Private multi-host](./private-testnet.md)  
 - [deploy/README](../../deploy/README.md)  
