@@ -129,4 +129,5 @@ sudo systemctl enable --now dew
 ## Related residual
 
 - Persistent peer store / auto-redial after restart — `agents/debt.md` (C5)
-- Production faucet, public bootnode hostnames — C6 ops residual
+- Production faucet — D2: `cmd/dewfaucet`, [docs/development/faucet.md](../docs/development/faucet.md), [faucet.env.example](./faucet.env.example), [systemd/dewfaucet.service](./systemd/dewfaucet.service)
+- Public bootnode hostnames — C6 ops residual

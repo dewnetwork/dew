@@ -1,0 +1,23 @@
+[Unit]
+Description=Dew public-testnet-v1 faucet (ops — stop independently of validators)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dew
+Group=dew
+EnvironmentFile=-/etc/dew/faucet.env
+ExecStart=/usr/local/bin/dewfaucet
+Restart=on-failure
+RestartSec=3
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

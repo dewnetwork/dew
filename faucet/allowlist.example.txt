@@ -1,0 +1,4 @@
+# Dew public-testnet-v1 faucet allowlist (one address per line).
+# Lines starting with # are ignored.
+#
+# 0xYourAddressHere

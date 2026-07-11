@@ -15,7 +15,7 @@ This repository is a **single monorepo** for the whole Dew stack:
 
 | Stack | Role |
 | :--- | :--- |
-| **Go** | Core L1: node (`dew`), CLI (`dewcli`), consensus, P2P, state, EVM bridge, JSON-RPC server |
+| **Go** | Core L1: node (`dew`), CLI (`dewcli`), ops faucet (`dewfaucet`), consensus, P2P, state, EVM bridge, JSON-RPC server |
 | **Node.js** | **Build and serve the documentation website** from `docs/`; plus scripts, localnet helpers, SDK/RPC tests, deploy utilities |
 
 Protocol logic lives in Go. Node is for docs web + developer tooling — not a second consensus client.
@@ -64,6 +64,7 @@ go test ./devnet/ -count=1              # BFT + ERC-20 over RPC
 | [`p2p/`](./p2p/) | TCP host, handshake, gossip, sync, consensus fan-out (Phase A6) |
 | [`devnet/`](./devnet/) | Local 3-validator + RPC network helpers (Phase A7) |
 | [`cmd/dew/`](./cmd/dew/) | Full node entrypoint (`run`, `init`, `devnet`) |
+| [`faucet/`](./faucet/) · [`cmd/dewfaucet/`](./cmd/dewfaucet/) | Production faucet HTTP service (Phase D2; ops, not consensus) |
 | [`genesis.json`](./genesis.json) | Dev genesis (chainId 2205, 3 validators, faucet alloc) |
 
 ## Documentation
@@ -88,6 +89,16 @@ pnpm explorer:build  # → explorer/dist
 ```
 
 See [`explorer/README.md`](./explorer/README.md) and [block explorer design](./docs/development/block-explorer.md).
+
+**Production faucet (Phase D2):**
+
+```bash
+go build -o bin/dewfaucet ./cmd/dewfaucet
+# Public: allowlist or captcha modes — never Anvil keys
+# Local only: -mode dev -allow-anvil-key
+```
+
+See [docs/development/faucet.md](./docs/development/faucet.md).
 
 Markdown under `docs/` is the source of truth; Node only builds the site.
 

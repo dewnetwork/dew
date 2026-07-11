@@ -53,6 +53,8 @@ dew/                          # monorepo root
 ├── deploy/                        # Docker Compose, Dockerfile, systemd samples
 ├── web/                           # Astro landing (marketing only)
 ├── explorer/                      # Block explorer SPA (React/Vite; not under web/)
+├── faucet/                        # D2 production faucet library (ops HTTP; not consensus)
+├── cmd/dewfaucet/                 # Faucet process entry
 ├── packages/                      # Node workspaces (optional as we grow)
 │   ├── sdk/                       # TS client for eth_* / dew_* (later)
 │   └── localnet/                  # Spin up multi-validator devnet (later)
@@ -90,7 +92,8 @@ Node is the **docs website + tooling lane** of the monorepo:
 | Use | Priority | Examples |
 | :--- | :--- | :--- |
 | **Docs website** | **Primary Node role** | VitePress dev server + production build from `docs/**/*.md` |
-| Scripts | As needed | `localnet`, genesis helpers, faucet |
+| Scripts | As needed | `localnet`, genesis helpers |
+| Ops faucet | As needed | Go `faucet/` + `cmd/dewfaucet` (not Node) |
 | Tests | As needed | RPC smoke tests against a running Go node |
 | SDK | Later | TypeScript client for `eth_*` / `dew_*` |
 

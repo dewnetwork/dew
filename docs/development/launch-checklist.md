@@ -77,7 +77,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | 3 | Topology | ≥ 3 validators + optional non-validator RPC |
 | 4 | Feature flags | Staking **off** unless operators agree; native/precompiles **on** |
 | 5 | Publish | RPC URL, chain ID `2205`, bootnode list, faucet rate rules, explorer base or `(none)` |
-| 6 | Faucet | Rate limit per IP/address; small amounts; captcha recommended |
+| 6 | Faucet | Optional `dewfaucet` ([faucet.md](./faucet.md)): allowlist or captcha; rate limits; never Anvil keys |
 | 7 | Monitor | RPC 4xx/5xx, mempool rejects, peer count; ready to stop RPC only |
 
 ### Public publish template (path B)
@@ -88,15 +88,16 @@ Chain ID:    2205
 RPC:         https://rpc.example.com
 Symbol:      DEW
 Explorer:    (none)   # or https://explorer.example.com — see block-explorer.md
-Faucet:      none / allowlist only
+Faucet:      none / allowlist only   # or https://faucet.example.com — see faucet.md
 Bootnodes:   n/a (single-host controlled RPC)
 ```
 
-Block explorer URL conventions and MetaMask base URL: [Block explorer (web)](./block-explorer.md).
+Block explorer URL conventions and MetaMask base URL: [Block explorer (web)](./block-explorer.md).  
+Production faucet service: [Production faucet](./faucet.md) (`go build -o bin/dewfaucet ./cmd/dewfaucet`).
 
 ## C. Emergency stop
 
-1. Stop **public RPC** (and faucet) first — `docker compose -f deploy/docker-compose.yml stop proxy` / nginx / systemd stop  
+1. Stop **public RPC** (and faucet) first — `docker compose -f deploy/docker-compose.yml stop proxy` / nginx / `systemctl stop dewfaucet` / systemd stop RPC proxy
 2. Disable native / staking if module bug (validators may stay up)  
 3. Re-genesis only if wire freeze intentionally broken — coordinate publicly  
 

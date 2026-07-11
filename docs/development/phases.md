@@ -15,7 +15,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
 | **C1–C6** | **Done** (C6 = public-testnet-v1 freeze) | Mempool, encrypted P2P, SMT, staking, private → public freeze |
-| **D1–D3** | **D1 done** · D2–D3 pending | Product surface + optional ops scale after public-testnet-v1 |
+| **D1–D3** | **D1–D2 done** · D3 pending | Product surface + optional ops scale after public-testnet-v1 |
 
 High-level order: [Roadmap](./roadmap.md).
 
@@ -346,15 +346,15 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 
 **Acceptance:**
 
-- [ ] Rate limit per IP and/or address (documented operator defaults)
-- [ ] Captcha or allowlist before open mint
-- [ ] Small fixed amounts suitable for deploy + a few transfers (not yield)
-- [ ] Runs **outside** monorepo consensus core (separate service or `scripts`/ops package); disable independently of validators
-- [ ] Publish template documents faucet URL or `none` / allowlist-only
+- [x] Rate limit per IP and/or address (documented operator defaults)
+- [x] Captcha or allowlist before open mint
+- [x] Small fixed amounts suitable for deploy + a few transfers (not yield)
+- [x] Runs **outside** monorepo consensus core (separate service or `scripts`/ops package); disable independently of validators
+- [x] Publish template documents faucet URL or `none` / allowlist-only
 
-**Packages:** ops service (TBD path); policy already in [public-testnet](./public-testnet.md) faucet table
+**Packages:** `faucet/`, `cmd/dewfaucet`, `deploy/faucet.env.example`, `deploy/systemd/dewfaucet.service`; operator guide [Production faucet](./faucet.md)
 
-**Notes:** Optional — skip if allowlist / offline distribution is enough. Promotes C6 residual “Production faucet service” when implemented.
+**Notes:** Default public mode **allowlist**; **captcha** (Turnstile/hCaptcha) for open mint; **dev** rate-limit-only for private nets. Default drip **1 DEW**; per-address **1/24h**, per-IP **10/h**. Anvil #0 key refused unless `-allow-anvil-key`. C6 residual “Production faucet service” closed by this package.
 
 ---
 

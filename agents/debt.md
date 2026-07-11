@@ -6,7 +6,7 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 
 **Phase C (C1–C6) complete** — freeze tag `public-testnet-v1`. See [public-testnet.md](../docs/development/public-testnet.md).
 
-**Phase D active** — D1 block explorer MVP → D2 optional faucet → D3 scale (Path A / C4 / audit). Acceptance in [phases.md](../docs/development/phases.md).
+**Phase D** — D1 explorer + D2 faucet done → D3 scale (Path A / C4 / audit) when needed. Acceptance in [phases.md](../docs/development/phases.md).
 
 ## C1 residuals
 
@@ -30,7 +30,7 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 ## C6 residuals (ops, not freeze blockers)
 
 - [ ] Publish real public bootnode hostnames / multiaddrs at launch (process documented; values not in-repo)
-- [ ] Production faucet service (rate limits, captcha) outside monorepo core
+- [x] Production faucet service (rate limits, captcha) outside monorepo core — `faucet/` + `cmd/dewfaucet` (D2); see [docs/development/faucet.md](../docs/development/faucet.md)
 - [ ] Longer continuous fuzz in CI (`-fuzztime` schedules)
 
 ## Deferred / mainnet

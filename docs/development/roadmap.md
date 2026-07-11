@@ -115,7 +115,7 @@ Out of Phase C / into D3 or mainnet debt: full multi-version Block-STM upgrade, 
 | C4    | [Validators](../consensus/validators.md), [Slashing](../consensus/slashing.md), [Precompiles](../execution/precompiles.md) |
 | C5–C6 | [Devnet](./devnet.md), [Private testnet](./private-testnet.md), [Public testnet freeze](./public-testnet.md), [Genesis](../economics/genesis.md) |
 | D1    | [Block explorer](./block-explorer.md), [Launch checklist](./launch-checklist.md) |
-| D2    | [Public testnet freeze](./public-testnet.md) (faucet policy) |
+| D2    | [Production faucet](./faucet.md), [Public testnet freeze](./public-testnet.md) (faucet policy) |
 | D3    | [Launch checklist](./launch-checklist.md) path A, [Validators](../consensus/validators.md), [debt](../../agents/debt.md) |
 
 ## Milestone definition of done

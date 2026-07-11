@@ -61,10 +61,12 @@ Numbers formerly marked `_tentative_` that appear in this table are **frozen for
 | Dev Anvil keys | **Never** as public faucet or validator keys |
 | Rate limit | Cap per IP / address / day (operator-chosen; document on launch page) |
 | Amount | Small enough for deploy + a few transfers; not economic yield |
-| Captcha / allowlist | Recommended before open faucet |
+| Captcha / allowlist | Required for public open mint (`allowlist` or `captcha` mode) |
 | Incentives | Optional; if any, separate from faucet and time-bounded |
 
 Faucet is **ops**, not consensus. Disable faucet independently of validators.
+
+**In-repo service (Phase D2):** `cmd/dewfaucet` — see [Production faucet](./faucet.md). Operator defaults: **1 DEW** / drip, **1 / address / 24h**, **10 / IP / hour**; modes `allowlist` (default) · `captcha` · `dev` (private only).
 
 ## Bootnodes
 
@@ -136,6 +138,7 @@ Tracked in `agents/debt.md`: fee auction, nonce-gap queue, full unbonding, doubl
 
 - [Launch checklist](./launch-checklist.md)  
 - [Block explorer (web)](./block-explorer.md) — public Explorer URL, deep links  
+- [Production faucet](./faucet.md) — D2 `dewfaucet`  
 - [Phases](./phases.md) — C6 acceptance  
 - [Genesis](../economics/genesis.md)  
 - [Gas and fees](../execution/gas-and-fees.md)  

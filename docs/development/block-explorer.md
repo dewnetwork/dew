@@ -376,7 +376,7 @@ Chain ID:    2205
 RPC:         https://rpc.example.com
 Symbol:      DEW
 Explorer:    https://explorer.example.com
-Faucet:      none / allowlist only
+Faucet:      none / allowlist only   # or live faucet URL — see faucet.md
 Bootnodes:   … (path A) or n/a (path B single-host RPC)
 ```
 
