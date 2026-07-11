@@ -12,10 +12,10 @@ The **block explorer** is the public, read-only web UI for browsing Dew chain da
 
 | Item | Status |
 | :--- | :--- |
-| In-repo explorer app | **Not shipped** |
+| In-repo explorer app | **MVP shipped** (`explorer/`; deploy URL still operator-owned) |
 | Publish field `Explorer:` | Use `(none)` until a live URL exists |
 | Wire / genesis impact | **None** — explorer only consumes JSON-RPC |
-| UI bar | **Beautiful + dense detail** — information architecture inspired by [Etherscan](https://etherscan.io/), visual system from Dew brand (not a clone) |
+| UI bar | **Readable + dense detail** — IA and light theme inspired by [Etherscan](https://etherscan.io/); **not** required to match Dew marketing (`web/`) brand tokens |
 
 Freeze tag and RPC limits: [Public testnet freeze](./public-testnet.md). Operator checklist: [Launch checklist](./launch-checklist.md).
 
@@ -33,8 +33,8 @@ The explorer **must not** hold validator keys, faucet keys, or admin signing mat
 
 ## UI product bar (Etherscan-class detail)
 
-**Reference:** [etherscan.io](https://etherscan.io/) for layout density, field completeness, search behavior, and detail-page structure.  
-**Not a visual clone:** Dew uses maritime ink + dew cyan, Syne / Figtree / IBM Plex Mono (same tokens as [`web/`](../../web/README.md) and docs theme). No ad rails, no cluttered sponsor rows.
+**Reference:** [etherscan.io](https://etherscan.io/) for layout density, field completeness, search behavior, light surfaces, and detail-page structure.  
+**Independent of marketing site:** Explorer may use a plain light theme (Roboto / blue links / white cards) for scanability. No requirement to share `web/` brand tokens. No ad rails.
 
 ### Design principles
 
@@ -48,17 +48,16 @@ The explorer **must not** hold validator keys, faucet keys, or admin signing mat
 | **Dense, not cramped** | Etherscan-level fields; Dew spacing, type scale, and card chrome so it still feels premium |
 | **Mobile second layout** | Stack stats; horizontal-scroll tables only when necessary; sticky search |
 
-### Visual system
+### Visual system (Etherscan-like light; explorer-local tokens)
 
-| Token | Use |
+| Token / cue | Use |
 | :--- | :--- |
-| `ink` / `ink-soft` / `panel` | Page bg, cards, elevated panels |
-| `cyan` / `mist` / `teal` | Links, focus, success accents, live pulse |
-| `frost` / `slate` / `muted` | Primary text, secondary, labels |
-| `gold` | Warnings, pending, non-success status |
-| Display **Syne** | Page titles (“Transaction Details”) |
-| Body **Figtree** | Labels, prose |
-| Mono **IBM Plex Mono** | Hashes, addresses, numbers, input data |
+| Light / dark via `data-theme` | Toggle: Light → Dark → System (OS); persisted in `localStorage` |
+| Light: page `#f8f9fa`, white cards | Scanable tables (Etherscan-like) |
+| Dark: GitHub-ish ink panels | Same density; link blue `#58a6ff` |
+| Success / fail / pending tokens | Theme-aware status pills |
+| Body **Roboto**, mono **Roboto Mono** | Dense fields |
+| Top strip + header search | Network head + theme control |
 
 Status colors:
 
@@ -513,13 +512,13 @@ explorer/
 ├── public/
 ├── src/
 │   ├── main.tsx
-│   ├── routes/           # TanStack Router file/code routes
-│   ├── components/       # shell, tables, fields (Radix + Tailwind)
+│   ├── routes/           # kebab-case pages: home-page.tsx, block-page.tsx, …
+│   ├── components/       # kebab-case: explorer-shell.tsx, search-box.tsx, …
 │   ├── lib/
 │   │   ├── rpc.ts        # JSON-RPC client
 │   │   ├── format.ts     # wei / gwei / address truncate
 │   │   └── query-keys.ts
-│   ├── hooks/            # useBlock, useTx, useAddress (Query)
+│   ├── hooks/            # kebab-case: use-chain.ts (useBlock, useTx, …)
 │   ├── stores/           # Zustand stores
 │   └── styles/           # Tailwind entry + Dew tokens
 └── README.md

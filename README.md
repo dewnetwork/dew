@@ -79,6 +79,16 @@ pnpm docs:build    # static site → docs/.vitepress/dist
 pnpm docs:preview  # serve production build
 ```
 
+**Block explorer (Phase D1, React SPA):**
+
+```bash
+pnpm --dir explorer install
+pnpm explorer:dev    # http://localhost:4321 — needs RPC (e.g. dew devnet :8545)
+pnpm explorer:build  # → explorer/dist
+```
+
+See [`explorer/README.md`](./explorer/README.md) and [block explorer design](./docs/development/block-explorer.md).
+
 Markdown under `docs/` is the source of truth; Node only builds the site.
 
 ## Landing website

@@ -6,6 +6,8 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 
 **Phase C (C1–C6) complete** — freeze tag `public-testnet-v1`. See [public-testnet.md](../docs/development/public-testnet.md).
 
+**Phase D active** — D1 block explorer MVP → D2 optional faucet → D3 scale (Path A / C4 / audit). Acceptance in [phases.md](../docs/development/phases.md).
+
 ## C1 residuals
 
 - [ ] Full fee auction / priority ordering for multi-tx block builders (admission-only today; auto-mine path includes immediately)

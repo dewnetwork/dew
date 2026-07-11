@@ -1,6 +1,6 @@
 ---
 title: Implementation Phases
-description: Acceptance criteria for Phases A–C (compat, native/PE, testnet readiness).
+description: Acceptance criteria for Phases A–D (compat, native/PE, testnet, product surface).
 category: development
 order: 30
 status: draft
@@ -15,8 +15,11 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
 | **C1–C6** | **Done** (C6 = public-testnet-v1 freeze) | Mempool, encrypted P2P, SMT, staking, private → public freeze |
+| **D1–D3** | **D1 done** · D2–D3 pending | Product surface + optional ops scale after public-testnet-v1 |
 
 High-level order: [Roadmap](./roadmap.md).
+
+**Ops note:** Private soak and public RPC path B (launch checklist A–B) are complete for operators who have already launched; Phase D assumes a live or local RPC (`chainId` **2205**) and does **not** re-open the C6 wire freeze.
 
 ---
 
@@ -300,3 +303,74 @@ High-level order: [Roadmap](./roadmap.md).
 **Packages:** `params/`, `rpc/`, `tests/security/`, `docs/development/public-testnet.md`
 
 **Notes:** Freeze tag **`public-testnet-v1`**. C6 is a **release gate**, not a large feature dump. Mainnet still requires external audit of consensus + VM bridge + crypto (not C6 acceptance). After C6, prefer config/parameter changes over wire-format churn. RPC limits: 1 MiB body, 100 batch items.
+
+---
+
+## Phase D — After public-testnet-v1
+
+Post-freeze work is **product / ops / scale**, not a new consensus wire format. Order:
+
+```text
+D1 Block explorer MVP  →  D2 optional faucet  →  D3 Path A / C4 residuals / audit when scaling
+```
+
+Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remain in [agents/debt.md](../../agents/debt.md) until a D-step owns them.
+
+---
+
+## D1 — Block explorer MVP
+
+**Goals:** Ship a read-only web UI so public publish can replace `Explorer: (none)` with a live base URL. Spec: [Block explorer (web)](./block-explorer.md).
+
+**Acceptance:**
+
+- [x] Package `explorer/` (React + Vite + Tailwind; stack frozen in explorer doc — not under `web/`)
+- [x] Env: `PUBLIC_RPC_URL`, `PUBLIC_CHAIN_ID` (`2205`), optional `PUBLIC_EXPLORER_BASE`
+- [x] Shell: search, network badge, Dew dark theme, honest RPC / wrong-chain banners
+- [x] Home: stats + latest blocks + latest txs (poll ~3–5s while tab visible)
+- [x] Routes: `/`, `/block/{n|hash}`, `/tx/{hash}`, `/address/{addr}` with Overview fields from the explorer doc
+- [x] Search resolves address / tx hash / block number (and block hash when applicable)
+- [x] Failed / pending / not-found states styled; copy + truncate links; mobile stacks without page overflow
+- [x] Root scripts: `pnpm explorer:dev` / `explorer:build` / `explorer:preview`
+- [x] README + local dev against `dew devnet` / public RPC; no secrets in frontend
+
+**Packages:** `explorer/`, root `package.json` scripts; docs only under `docs/development/block-explorer.md`
+
+**Notes:** JSON-RPC only for MVP (no indexer). Do not reimplement state transition in Node. Deploy and MetaMask base URL are operator steps after smoke (launch checklist + explorer operator snippet).
+
+---
+
+## D2 — Optional production faucet
+
+**Goals:** Let public users obtain small amounts of test DEW without Anvil keys or unbounded spam.
+
+**Acceptance:**
+
+- [ ] Rate limit per IP and/or address (documented operator defaults)
+- [ ] Captcha or allowlist before open mint
+- [ ] Small fixed amounts suitable for deploy + a few transfers (not yield)
+- [ ] Runs **outside** monorepo consensus core (separate service or `scripts`/ops package); disable independently of validators
+- [ ] Publish template documents faucet URL or `none` / allowlist-only
+
+**Packages:** ops service (TBD path); policy already in [public-testnet](./public-testnet.md) faucet table
+
+**Notes:** Optional — skip if allowlist / offline distribution is enough. Promotes C6 residual “Production faucet service” when implemented.
+
+---
+
+## D3 — Scale when needed (Path A / C4 / audit)
+
+**Goals:** Grow beyond single-host controlled RPC and self-stake stubs only when product demand requires it. Not a single PR; pick workstreams explicitly.
+
+**Acceptance (per workstream — do not require all at once):**
+
+| Workstream | Done when |
+| :--- | :--- |
+| **Path A multi-host public** | ≥3 validators + optional non-validator RPC; new keys (never Anvil); freeze genesis shared; bootnodes published; faucet rate rules; monitor + emergency stop RPC first ([launch-checklist](./launch-checklist.md) path A) |
+| **C4 staking residuals** | Unbonding period enforced; double-sign evidence verification; ActiveSet wired into live Dew-BFT epoch rotation; optional nested CALL bond + delegation/commission as scoped ([debt](../../agents/debt.md) C4) |
+| **C5 multi-process BFT** | Compose/multi-host processes share one Dew-BFT production path (not per-process auto-mine only); peer store / auto-redial residuals as needed |
+| **External audit** | Scoped audit of consensus + VM bridge + crypto before mainnet claims ([phase-b-audit](../security/phase-b-audit.md), security principles) |
+
+**Packages:** `consensus/`, `p2p/`, `core/native`, `deploy/`, operator docs
+
+**Notes:** Prefer config/genesis changes over wire churn under `public-testnet-v1`. Tokenomics issuance numbers may stay draft until mainnet.

@@ -1,0 +1,38 @@
+{
+  "name": "dew-explorer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dew block explorer SPA — read-only JSON-RPC client",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit --pretty false"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-tabs": "^1.1.12",
+    "@radix-ui/react-tooltip": "^1.2.7",
+    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-router": "^1.129.0",
+    "nuqs": "^2.4.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^3.9.2",
+    "zustand": "^5.0.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}
