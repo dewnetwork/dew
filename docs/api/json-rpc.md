@@ -33,8 +33,8 @@ Oversized body/batch → JSON-RPC error `-32600`. Tx admission also enforces mem
 | Method | Notes |
 | :--- | :--- |
 | `web3_clientVersion` | e.g. `Dew/v0.1.0/go1.22` |
-| `net_version` | Decimal network id string, e.g. `"2026"` |
-| `eth_chainId` | Hex chain id, e.g. `"0x7ea"` (2026) |
+| `net_version` | Decimal network id string, e.g. `"2205"` |
+| `eth_chainId` | Hex chain id, e.g. `"0x89d"` (2205) |
 | `net_listening` | Boolean |
 | `net_peerCount` | Hex peer count |
 

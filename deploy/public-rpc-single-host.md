@@ -2,7 +2,7 @@
 
 Fastest public surface after private soak: **one host**, **one JSON-RPC**, **TLS + rate limit**, no multi-validator public mesh yet.
 
-Freeze: **`public-testnet-v1`** · chain ID **`2026`**.
+Freeze: **`public-testnet-v1`** · chain ID **`2205`**.
 
 | Do | Do not |
 | :--- | :--- |
@@ -59,7 +59,7 @@ Smoke (HTTP before TLS):
 
 ```bash
 node scripts/smoke-rpc.mjs http://127.0.0.1
-# expect chainId 2026 / 0x7ea
+# expect chainId 2205 / 0x89d
 ```
 
 Config files:
@@ -101,7 +101,7 @@ sudo install -m 644 genesis.json /etc/dew/genesis.json
 sudo chown -R dew:dew /var/lib/dew
 ```
 
-**Genesis:** use the freeze sample or a dedicated public genesis. Same chain ID **2026**. If you re-alloc faucet, use a **new** funded key — not Anvil #0 on a long-lived public endpoint.
+**Genesis:** use the freeze sample or a dedicated public genesis. Same chain ID **2205**. If you re-alloc faucet, use a **new** funded key — not Anvil #0 on a long-lived public endpoint.
 
 ### systemd — listen only on loopback
 
@@ -118,7 +118,7 @@ Smoke **on the host**:
 curl -s -X POST http://127.0.0.1:8545 \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}'
-# expect "result":"0x7ea"
+# expect "result":"0x89d"
 ```
 
 Unit runs `dew run` (single execution node, auto-mine per tx). For in-process 3-validator demo instead, change `ExecStart` to `dew devnet --http.addr 127.0.0.1 --http.port 8545` (heavier; still one host).
@@ -156,7 +156,7 @@ nginx sample (`deploy/nginx/dew-rpc.conf`) includes:
 
 ```text
 Network:     Dew public-testnet-v1
-Chain ID:    2026
+Chain ID:    2205
 RPC:         https://rpc.example.com
 Symbol:      DEW
 Explorer:    (none)
@@ -164,7 +164,7 @@ Faucet:      (none / manual / allowlist only)
 Bootnodes:   (n/a — single RPC path B)
 ```
 
-MetaMask: Custom network → RPC URL HTTPS, chain ID **2026**, symbol **DEW**.
+MetaMask: Custom network → RPC URL HTTPS, chain ID **2205**, symbol **DEW**.
 
 External smoke:
 

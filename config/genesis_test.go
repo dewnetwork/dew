@@ -13,7 +13,7 @@ import (
 
 const sampleGenesis = `{
   "config": {
-    "chainId": 2026,
+    "chainId": 2205,
     "homesteadBlock": 0,
     "eip150Block": 0,
     "eip155Block": 0,
@@ -64,7 +64,7 @@ func TestParseGenesis_AndCommitAlloc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseGenesis: %v", err)
 	}
-	if g.ChainID().Cmp(big.NewInt(2026)) != 0 {
+	if g.ChainID().Cmp(big.NewInt(2205)) != 0 {
 		t.Fatalf("chainId = %s", g.ChainID())
 	}
 
@@ -141,7 +141,7 @@ func TestLoadGenesisFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g.ChainID().Int64() != 2026 {
+	if g.ChainID().Int64() != 2205 {
 		t.Fatal(g.ChainID())
 	}
 }

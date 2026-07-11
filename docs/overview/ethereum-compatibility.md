@@ -33,7 +33,7 @@ Dew should feel like a **custom EVM chain** to developers: same keys, same contr
 | Finality      | Epoch-based      | Instant on commit                        |
 | Block time    | ~12s target      | ~1s target (_tentative_)                 |
 | State backend | MPT primary path | Flat DB + SMT commitment                 |
-| Chain ID      | 1 (mainnet)      | `2026` public-testnet-v1 (frozen C6)     |
+| Chain ID      | 1 (mainnet)      | `2205` public-testnet-v1 (frozen C6)     |
 | Token         | ETH              | DEW (18 decimals)                        |
 
 “EVM compatible” means **contracts and tooling**, not identical consensus or economics.

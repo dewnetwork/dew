@@ -16,10 +16,10 @@ import (
 	"github.com/dewnetwork/dew/crypto"
 )
 
-// DefaultChainConfig is Cancun-era rules from genesis (chain id 2026).
+// DefaultChainConfig is Cancun-era rules from genesis (chain id 2205).
 func DefaultChainConfig(chainID *big.Int) *params.ChainConfig {
 	if chainID == nil {
-		chainID = big.NewInt(2026)
+		chainID = big.NewInt(2205)
 	}
 	zero := uint64(0)
 	return &params.ChainConfig{

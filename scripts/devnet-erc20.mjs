@@ -44,7 +44,7 @@ async function main() {
   }
 
   const { Wallet, JsonRpcProvider, ContractFactory, parseEther } = ethers;
-  const provider = new JsonRpcProvider(url, 2026);
+  const provider = new JsonRpcProvider(url, 2205);
   const wallet = new Wallet(PRIV, provider);
 
   const chainId = await rpc("eth_chainId");

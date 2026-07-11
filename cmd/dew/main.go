@@ -239,7 +239,7 @@ func cmdDevnet(args []string) error {
 		fmt.Printf("  bft:         committed %d height(s), last=%s\n", len(evs), evs[len(evs)-1].BlockHash.Hex())
 	}
 	fmt.Println()
-	fmt.Println("MetaMask: add network chainId 2026, RPC", netw.RPCURL)
+	fmt.Println("MetaMask: add network chainId 2205, RPC", netw.RPCURL)
 	fmt.Println("Foundry:  forge create … --rpc-url", netw.RPCURL, "--private-key", netw.Faucet.PrivHex)
 	fmt.Println("Smoke:    node scripts/smoke-rpc.mjs", netw.RPCURL)
 	fmt.Println("ERC-20:   node scripts/devnet-erc20.mjs", netw.RPCURL)

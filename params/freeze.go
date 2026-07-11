@@ -11,8 +11,9 @@ const (
 	PublicTestnetFreezeTag = "public-testnet-v1"
 
 	// PublicTestnetChainID is the chain ID for the first public testnet.
-	// Matches sample genesis.json and eth_chainId 0x7ea.
-	PublicTestnetChainID uint64 = 2026
+	// Matches sample genesis.json and eth_chainId 0x89d.
+	// 2026 was avoided: already assigned to Edgeless Network (symbol EwEth) on chainlist.
+	PublicTestnetChainID uint64 = 2205
 
 	// PublicTestnetBaseFeeWei is the genesis base fee (1 gwei).
 	PublicTestnetBaseFeeWei uint64 = ReferenceBaseFeeWei

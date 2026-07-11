@@ -34,7 +34,7 @@ func BenchmarkDewTxTransfer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tx := types.NewDewTx(big.NewInt(2026), uint64(i), sender, recv, uint256.NewInt(10), params.DefaultDewTxFeeWei, nil, nil)
+		tx := types.NewDewTx(big.NewInt(2205), uint64(i), sender, recv, uint256.NewInt(10), params.DefaultDewTxFeeWei, nil, nil)
 		if err := types.SignDewTx(tx, key); err != nil {
 			b.Fatal(err)
 		}

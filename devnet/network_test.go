@@ -53,7 +53,7 @@ func TestDevnet_ThreeValidatorsOneRPC_ERC20(t *testing.T) {
 
 	// RPC identity
 	chainID := rpcString(t, netw.RPCURL, "eth_chainId", nil)
-	if chainID != "0x7ea" {
+	if chainID != "0x89d" {
 		t.Fatalf("chainId=%s", chainID)
 	}
 

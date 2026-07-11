@@ -3,8 +3,8 @@ package params
 import "testing"
 
 func TestPublicTestnetFreezeConsistency(t *testing.T) {
-	if PublicTestnetChainID != 2026 {
-		t.Fatalf("chain id %d want 2026", PublicTestnetChainID)
+	if PublicTestnetChainID != 2205 {
+		t.Fatalf("chain id %d want 2205", PublicTestnetChainID)
 	}
 	if PublicTestnetBlockGasLimit != DefaultBlockGasLimit {
 		t.Fatalf("block gas limit %d != DefaultBlockGasLimit %d", PublicTestnetBlockGasLimit, DefaultBlockGasLimit)

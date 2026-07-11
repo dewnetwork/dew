@@ -46,7 +46,7 @@ func FuzzDewTxRoundTripIfValid(f *testing.F) {
 	key, _ := crypto.GenerateKey()
 	sender := crypto.PubkeyToAddress(&key.PublicKey)
 	recv := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
-	tx := NewDewTx(big.NewInt(2026), 1, sender, recv, uint256.NewInt(42), params.DefaultDewTxFeeWei, nil, []crypto.Address{recv})
+	tx := NewDewTx(big.NewInt(2205), 1, sender, recv, uint256.NewInt(42), params.DefaultDewTxFeeWei, nil, []crypto.Address{recv})
 	_ = SignDewTx(tx, key)
 	raw, _ := tx.MarshalBinary()
 	f.Add(raw)

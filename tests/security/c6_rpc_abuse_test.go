@@ -83,7 +83,7 @@ func TestC6_RPC_BatchAtLimitOK(t *testing.T) {
 		if r["error"] != nil {
 			t.Fatalf("item %d error %v", i, r["error"])
 		}
-		if r["result"] != "0x7ea" {
+		if r["result"] != "0x89d" {
 			t.Fatalf("item %d result %v", i, r["result"])
 		}
 	}

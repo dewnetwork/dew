@@ -8,7 +8,7 @@ status: draft
 
 # Launch checklist
 
-Freeze tag: **`public-testnet-v1`** · chain ID **`2026`**.  
+Freeze tag: **`public-testnet-v1`** · chain ID **`2205`**.  
 Packaging: [deploy/](../../deploy/) · freeze table: [Public testnet](./public-testnet.md) · private ops: [Private testnet](./private-testnet.md).
 
 ## A. Private staging (do this first)
@@ -19,7 +19,7 @@ Packaging: [deploy/](../../deploy/) · freeze table: [Public testnet](./public-t
 | 2 | Chaos smoke | `go test ./devnet/ -run Chaos -count=1` |
 | 3 | RPC abuse bar | `go test ./tests/security/ -run C6 -count=1` |
 | 4 | Start private stack | **Compose:** `cp deploy/soak.env.example deploy/soak.env` then `docker compose -f deploy/docker-compose.soak.yml --env-file deploy/soak.env up --build` **or** `./bin/dew devnet --http.addr 0.0.0.0 --http.port 8545` |
-| 5 | RPC smoke | `node scripts/smoke-rpc.mjs http://127.0.0.1:8545` → chainId `2026` |
+| 5 | RPC smoke | `node scripts/smoke-rpc.mjs http://127.0.0.1:8545` → chainId `2205` |
 | 6 | App smoke | `node scripts/devnet-erc20.mjs http://127.0.0.1:8545` |
 | 7 | Soak | Keep process/containers up **24–48h**; restart once; re-run smoke |
 
@@ -28,7 +28,7 @@ Packaging: [deploy/](../../deploy/) · freeze table: [Public testnet](./public-t
 | Item | Default |
 | :--- | :------ |
 | JSON-RPC | `http://0.0.0.0:8545` → clients use `http://127.0.0.1:8545` |
-| Chain ID | `2026` (`0x7ea`) |
+| Chain ID | `2205` (`0x89d`) |
 | Genesis | shared `genesis.json` (repo sample or `dew init --out …`) |
 | Staking `0x102` | **off** (`--staking` only if intentional) |
 | Native DewTx / precompiles | **on** (code defaults) |
@@ -64,7 +64,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | 2 | TLS proxy | Compose: `proxy` service · or host nginx + certbot (`deploy/nginx/dew-rpc.conf`) |
 | 3 | Firewall | Allow 22/80/443 only — **not** 8545 |
 | 4 | Feature flags | No `--staking`; Anvil keys **not** on public pages |
-| 5 | Publish | HTTPS RPC + chain ID `2026` (bootnodes n/a for path B) |
+| 5 | Publish | HTTPS RPC + chain ID `2205` (bootnodes n/a for path B) |
 | 6 | Smoke | `node scripts/smoke-rpc.mjs https://rpc.example.com` (or `http://127.0.0.1` pre-TLS) |
 | 7 | Emergency | Stop proxy first (`docker compose stop proxy` / nginx); node can stay private |
 
@@ -76,7 +76,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | 2 | Freeze genesis | Same `chainId` / alloc / `initialValidators` on every host |
 | 3 | Topology | ≥ 3 validators + optional non-validator RPC |
 | 4 | Feature flags | Staking **off** unless operators agree; native/precompiles **on** |
-| 5 | Publish | RPC URL, chain ID `2026`, bootnode list, faucet rate rules |
+| 5 | Publish | RPC URL, chain ID `2205`, bootnode list, faucet rate rules |
 | 6 | Faucet | Rate limit per IP/address; small amounts; captcha recommended |
 | 7 | Monitor | RPC 4xx/5xx, mempool rejects, peer count; ready to stop RPC only |
 
@@ -84,7 +84,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 
 ```text
 Network:     Dew public-testnet-v1
-Chain ID:    2026
+Chain ID:    2205
 RPC:         https://rpc.example.com
 Symbol:      DEW
 Faucet:      none / allowlist only

@@ -26,8 +26,8 @@ const net = await rpc("net_version");
 
 console.log(JSON.stringify({ url, chainId, blockNumber: block, client: version, net_version: net }, null, 2));
 
-if (chainId !== "0x7ea") {
-  console.error("expected eth_chainId 0x7ea (2026)");
+if (chainId !== "0x89d") {
+  console.error("expected eth_chainId 0x89d (2205)");
   process.exit(1);
 }
 console.log("smoke-rpc: ok");

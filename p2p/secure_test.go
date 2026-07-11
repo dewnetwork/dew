@@ -116,7 +116,7 @@ func newEncryptedHost(t *testing.T, chain *MemoryChain, handlers AppHandlers) *H
 	}
 	h, err := NewHost(Config{
 		PrivateKey: key,
-		ChainID:    big.NewInt(2026),
+		ChainID:    big.NewInt(2205),
 		ListenAddr: "127.0.0.1:0",
 		MaxPeers:   10,
 		Encrypt:    true,
@@ -139,7 +139,7 @@ func newCleartextHost(t *testing.T, chain *MemoryChain, handlers AppHandlers) *H
 	}
 	h, err := NewHost(Config{
 		PrivateKey:     key,
-		ChainID:        big.NewInt(2026),
+		ChainID:        big.NewInt(2205),
 		ListenAddr:     "127.0.0.1:0",
 		MaxPeers:       10,
 		Encrypt:        false,

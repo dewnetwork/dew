@@ -38,7 +38,7 @@ go build -o bin/dewcli ./cmd/dewcli
 # Full node + JSON-RPC (Phase A4)
 go build -o bin/dew ./cmd/dew
 ./bin/dew run --genesis genesis.json --http.addr 127.0.0.1 --http.port 8545
-# MetaMask / Foundry: chainId 2026 (0x7ea), RPC http://127.0.0.1:8545
+# MetaMask / Foundry: chainId 2205 (0x89d), RPC http://127.0.0.1:8545
 node scripts/smoke-rpc.mjs              # eth_chainId smoke check
 
 # Local devnet: 3 BFT validators + P2P mesh + RPC (Phase A7)
@@ -64,7 +64,7 @@ go test ./devnet/ -count=1              # BFT + ERC-20 over RPC
 | [`p2p/`](./p2p/) | TCP host, handshake, gossip, sync, consensus fan-out (Phase A6) |
 | [`devnet/`](./devnet/) | Local 3-validator + RPC network helpers (Phase A7) |
 | [`cmd/dew/`](./cmd/dew/) | Full node entrypoint (`run`, `init`, `devnet`) |
-| [`genesis.json`](./genesis.json) | Dev genesis (chainId 2026, 3 validators, faucet alloc) |
+| [`genesis.json`](./genesis.json) | Dev genesis (chainId 2205, 3 validators, faucet alloc) |
 
 ## Documentation
 

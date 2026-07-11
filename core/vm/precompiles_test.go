@@ -28,7 +28,7 @@ func TestNativeTransferPrecompile_CallWithValue(t *testing.T) {
 		GasLimit: 30_000_000,
 		BaseFee:  big.NewInt(0),
 		Coinbase: coinbase,
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	})
 	exec.EnableDewPrecompiles(true)
 
@@ -73,7 +73,7 @@ func TestNativeTransferPrecompile_Disabled(t *testing.T) {
 	exec := NewExecutor(statedb, BlockContext{
 		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
 		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	})
 	exec.EnableDewPrecompiles(false)
 
@@ -109,7 +109,7 @@ func TestStakingPrecompile_DisabledReverts(t *testing.T) {
 	exec := NewExecutor(statedb, BlockContext{
 		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
 		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	})
 	exec.EnableDewPrecompiles(true)
 	// stakingEnabled default false
@@ -142,7 +142,7 @@ func TestStakingPrecompile_BondUnbondActiveSet(t *testing.T) {
 	exec := NewExecutor(statedb, BlockContext{
 		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
 		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	})
 	exec.EnableDewPrecompiles(true)
 	exec.EnableStaking(true)

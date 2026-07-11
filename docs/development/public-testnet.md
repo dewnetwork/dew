@@ -19,7 +19,7 @@ Private multi-host ops remain in [Private multi-host testnet](./private-testnet.
 | Surface | Value | Code / source |
 | :------ | :---- | :------------ |
 | Freeze tag | `public-testnet-v1` | `params.PublicTestnetFreezeTag` |
-| Chain ID | `2026` (`0x7ea`) | `params.PublicTestnetChainID`, genesis |
+| Chain ID | `2205` (`0x89d`) | `params.PublicTestnetChainID`, genesis — not `2026` (Edgeless / EwEth on chainlist) |
 | Genesis base fee | 1 gwei | `baseFeePerGas` / `ReferenceBaseFeeWei` |
 | Block gas limit | 120,000,000 | `DefaultBlockGasLimit` |
 | State root | SMT commit-time root | `core/state` (C3) |
@@ -114,7 +114,7 @@ Full one-page checklist (ports, env, compose, publish template): [Launch checkli
 **Fast path (single host, controlled RPC):** [deploy/public-rpc-single-host.md](../../deploy/public-rpc-single-host.md).
 
 1. Generate dedicated keys (validators, bootnodes, faucet) — no Anvil reuse  
-2. Distribute frozen genesis (chain ID 2026, alloc, initialValidators)  
+2. Distribute frozen genesis (chain ID 2205, alloc, initialValidators)  
 3. Start ≥ 3 validators + optional RPC with encrypted P2P  
 4. Publish RPC URL, chain ID, bootnodes, faucet rules  
 5. Confirm feature flags match the table above  

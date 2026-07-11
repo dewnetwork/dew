@@ -35,7 +35,7 @@ go test ./devnet/ -count=1 -v    # BFT + P2P + ERC-20 over RPC
 
 | Item | Value |
 | :--- | :--- |
-| **Chain ID** | `2026` (`0x7ea`) |
+| **Chain ID** | `2205` (`0x89d`) |
 | **JSON-RPC** | `http://127.0.0.1:8545` (override `--http.port`) |
 | **P2P** | Loopback mesh (ephemeral ports; in-process hosts) |
 | **Consensus** | Dew-BFT, 3 validators, equal voting power |
@@ -74,7 +74,7 @@ Validators for BFT are the same three accounts (#0–#2) with `votingPower: 1` i
 
 ## MetaMask
 
-1. Add network: **Dew Local**, RPC `http://127.0.0.1:8545`, chain ID **2026**, symbol **DEW**
+1. Add network: **Dew Local**, RPC `http://127.0.0.1:8545`, chain ID **2205**, symbol **DEW**
 2. Import faucet private key (Anvil #0)
 3. Confirm balance shows non-zero native DEW
 
@@ -84,7 +84,7 @@ Validators for BFT are the same three accounts (#0–#2) with `votingPower: 1` i
 export ETH_RPC_URL=http://127.0.0.1:8545
 export PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
-cast chain-id                          # 2026
+cast chain-id                          # 2205
 cast balance 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 
 # Deploy any Solidity contract

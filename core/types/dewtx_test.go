@@ -21,7 +21,7 @@ func TestDewTx_SignRecoverRoundTrip(t *testing.T) {
 	extra := crypto.MustHexToAddress("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")
 
 	tx := NewDewTx(
-		big.NewInt(2026),
+		big.NewInt(2205),
 		0,
 		sender,
 		recv,
@@ -74,7 +74,7 @@ func TestDewTx_DomainSeparatedFromEVM(t *testing.T) {
 	}
 	sender := crypto.PubkeyToAddress(&key.PublicKey)
 	recv := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
-	tx := NewDewTx(big.NewInt(2026), 0, sender, recv, uint256.NewInt(1), 1, nil, nil)
+	tx := NewDewTx(big.NewInt(2205), 0, sender, recv, uint256.NewInt(1), 1, nil, nil)
 	h1 := tx.SigningHash()
 	// Mutating domain tag would change hash — ensure non-zero and stable
 	h2 := tx.SigningHash()
@@ -95,7 +95,7 @@ func TestDewTx_ContainsAccess(t *testing.T) {
 	recv := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
 	extra := crypto.MustHexToAddress("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")
 	other := crypto.MustHexToAddress("0x90F79bf6EB2c4f870365E785982E1f101E93b906")
-	tx := NewDewTx(big.NewInt(2026), 0, sender, recv, uint256.NewInt(0), 1, nil, []crypto.Address{extra})
+	tx := NewDewTx(big.NewInt(2205), 0, sender, recv, uint256.NewInt(0), 1, nil, []crypto.Address{extra})
 	if !tx.ContainsAccess(sender) || !tx.ContainsAccess(recv) || !tx.ContainsAccess(extra) {
 		t.Fatal("expected access")
 	}

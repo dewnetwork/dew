@@ -33,7 +33,7 @@ func setup(t *testing.T) (*state.StateDB, *ecdsa.PrivateKey, crypto.Address, cry
 func TestNative_Transfer(t *testing.T) {
 	s, key, sender, recv, sink := setup(t)
 
-	tx := types.NewDewTx(big.NewInt(2026), 0, sender, recv, uint256.NewInt(1000), params.DefaultDewTxFeeWei, nil, nil)
+	tx := types.NewDewTx(big.NewInt(2205), 0, sender, recv, uint256.NewInt(1000), params.DefaultDewTxFeeWei, nil, nil)
 	if err := types.SignDewTx(tx, key); err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestNative_FailClosedIncompleteAccessList(t *testing.T) {
 	b32 := uint256.NewInt(50).Bytes32()
 	copy(payload[21:], b32[:])
 
-	tx := types.NewDewTx(big.NewInt(2026), 0, sender, recv, uint256.NewInt(0), params.DefaultDewTxFeeWei, payload, nil)
+	tx := types.NewDewTx(big.NewInt(2205), 0, sender, recv, uint256.NewInt(0), params.DefaultDewTxFeeWei, payload, nil)
 	if err := types.SignDewTx(tx, key); err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestNative_CreditWithAccessList(t *testing.T) {
 	b32 := uint256.NewInt(50).Bytes32()
 	copy(payload[21:], b32[:])
 
-	tx := types.NewDewTx(big.NewInt(2026), 0, sender, recv, uint256.NewInt(10), params.DefaultDewTxFeeWei, payload, []crypto.Address{third})
+	tx := types.NewDewTx(big.NewInt(2205), 0, sender, recv, uint256.NewInt(10), params.DefaultDewTxFeeWei, payload, []crypto.Address{third})
 	if err := types.SignDewTx(tx, key); err != nil {
 		t.Fatal(err)
 	}

@@ -149,7 +149,7 @@ func TestLoad_NativeDewTx_Throughput(t *testing.T) {
 
 	start := time.Now()
 	for i := 0; i < n; i++ {
-		tx := types.NewDewTx(big.NewInt(2026), uint64(i), sender, recv, uint256.NewInt(10), params.DefaultDewTxFeeWei, nil, nil)
+		tx := types.NewDewTx(big.NewInt(2205), uint64(i), sender, recv, uint256.NewInt(10), params.DefaultDewTxFeeWei, nil, nil)
 		if err := types.SignDewTx(tx, key); err != nil {
 			t.Fatal(err)
 		}
@@ -220,6 +220,6 @@ func loadBlock() vm.BlockContext {
 		GasLimit: 120_000_000,
 		BaseFee:  big.NewInt(0),
 		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	}
 }

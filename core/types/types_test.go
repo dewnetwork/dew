@@ -114,7 +114,7 @@ func TestTxRoot_EmptyAndNonEmpty(t *testing.T) {
 		t.Fatal("nil txs root")
 	}
 	to := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-	tx := NewDynamicFeeTx(big.NewInt(2026), 0, big.NewInt(1), big.NewInt(2), 21000, &to, big.NewInt(0), nil)
+	tx := NewDynamicFeeTx(big.NewInt(2205), 0, big.NewInt(1), big.NewInt(2), 21000, &to, big.NewInt(0), nil)
 	tx.V, tx.R, tx.S = big.NewInt(0), big.NewInt(1), big.NewInt(2)
 	root := TxRoot([]*Transaction{tx})
 	if root == EmptyTxRoot || root.IsZero() {

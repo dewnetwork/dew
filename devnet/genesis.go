@@ -12,8 +12,8 @@ import (
 	"github.com/dewnetwork/dew/crypto"
 )
 
-// DefaultChainID is the Dew local/test chain id (2026 / 0x7ea).
-const DefaultChainID int64 = 2026
+// DefaultChainID is the Dew local/test chain id (2205 / 0x89d).
+const DefaultChainID int64 = 2205
 
 // DefaultRPCPort is the JSON-RPC HTTP port for the RPC node.
 const DefaultRPCPort = 8545

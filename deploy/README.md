@@ -64,7 +64,7 @@ docker compose -f deploy/docker-compose.soak.yml --profile multi up --build
 
 Each process:
 
-- Loads the same genesis (`chainId` 2026)
+- Loads the same genesis (`chainId` 2205)
 - Listens for encrypted P2P and dials the other containers
 - Serves JSON-RPC with **dev auto-mine** per accepted tx
 

@@ -27,7 +27,7 @@ func TestSecurity_DewTxDomainNotEVMReplay(t *testing.T) {
 	}
 	sender := crypto.PubkeyToAddress(&key.PublicKey)
 	recv := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
-	tx := types.NewDewTx(big.NewInt(2026), 0, sender, recv, uint256.NewInt(1), params.DefaultDewTxFeeWei, nil, nil)
+	tx := types.NewDewTx(big.NewInt(2205), 0, sender, recv, uint256.NewInt(1), params.DefaultDewTxFeeWei, nil, nil)
 	if err := types.SignDewTx(tx, key); err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func TestSecurity_AccessListFailClosedNoMutation(t *testing.T) {
 	copy(payload[1:21], third[:])
 	b32 := uint256.NewInt(1).Bytes32()
 	copy(payload[21:], b32[:])
-	tx := types.NewDewTx(big.NewInt(2026), 0, sender, recv, uint256.NewInt(0), params.DefaultDewTxFeeWei, payload, nil)
+	tx := types.NewDewTx(big.NewInt(2205), 0, sender, recv, uint256.NewInt(0), params.DefaultDewTxFeeWei, payload, nil)
 	_ = types.SignDewTx(tx, key)
 	res, err := native.NewExecutor(st, sink).ApplyDewTx(tx)
 	if err != nil {
@@ -119,7 +119,7 @@ func TestSecurity_PrecompileDisabledNoForward(t *testing.T) {
 	exec := vm.NewExecutor(st, vm.BlockContext{
 		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
 		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	})
 	exec.EnableDewPrecompiles(false)
 	var pre crypto.Address
@@ -145,7 +145,7 @@ func TestSecurity_PrecompileBadInputReverts(t *testing.T) {
 	exec := vm.NewExecutor(st, vm.BlockContext{
 		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
 		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	})
 	exec.EnableDewPrecompiles(true)
 	var pre crypto.Address
@@ -183,7 +183,7 @@ func TestSecurity_ParallelEquivalenceUnderConflict(t *testing.T) {
 	bc := vm.BlockContext{
 		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
 		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	}
 	if _, err := vm.NewParallelExecutor(seq, bc, 1).ApplySequential(msgs); err != nil {
 		t.Fatal(err)
@@ -205,7 +205,7 @@ func TestSecurity_ParallelEquivalenceUnderConflict(t *testing.T) {
 func newTestNode(t *testing.T) *node.Node {
 	t.Helper()
 	g, err := config.ParseGenesis([]byte(`{
-	  "config": {"chainId": 2026, "homesteadBlock": 0, "eip150Block": 0, "eip155Block": 0, "eip158Block": 0,
+	  "config": {"chainId": 2205, "homesteadBlock": 0, "eip150Block": 0, "eip155Block": 0, "eip158Block": 0,
 	    "byzantiumBlock": 0, "constantinopleBlock": 0, "petersburgBlock": 0, "istanbulBlock": 0,
 	    "muirGlacierBlock": 0, "berlinBlock": 0, "londonBlock": 0, "shanghaiBlock": 0, "cancunBlock": 0},
 	  "timestamp": 0, "extraData": "0x", "gasLimit": "0x7270e00", "baseFeePerGas": "0x3b9aca00",

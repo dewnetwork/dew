@@ -52,7 +52,7 @@ func TestAddEVM_MinFeeAndLimits(t *testing.T) {
 	cfg.MaxPerSender = 2
 	cfg.MinGasPriceWei = big.NewInt(1_000_000_000)
 	p := New(cfg)
-	chainID := big.NewInt(2026)
+	chainID := big.NewInt(2205)
 	key, from := testKey(t)
 
 	// underpriced
@@ -88,7 +88,7 @@ func TestAddEVM_TxTooLarge(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.MaxTxBytes = 100
 	p := New(cfg)
-	chainID := big.NewInt(2026)
+	chainID := big.NewInt(2205)
 	key, from := testKey(t)
 	data := make([]byte, 200)
 	tx, raw := signLegacy(t, key, chainID, 0, big.NewInt(1_000_000_000), data)
@@ -101,7 +101,7 @@ func TestReplaceByFee(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.PriceBumpPercent = 10
 	p := New(cfg)
-	chainID := big.NewInt(2026)
+	chainID := big.NewInt(2205)
 	key, from := testKey(t)
 
 	tx, raw := signLegacy(t, key, chainID, 0, big.NewInt(1_000_000_000), nil)
@@ -137,7 +137,7 @@ func TestRBFDisabled(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.PriceBumpPercent = 0
 	p := New(cfg)
-	chainID := big.NewInt(2026)
+	chainID := big.NewInt(2205)
 	key, from := testKey(t)
 
 	tx, raw := signLegacy(t, key, chainID, 0, big.NewInt(1_000_000_000), nil)
@@ -155,7 +155,7 @@ func TestGlobalEviction(t *testing.T) {
 	cfg.MaxGlobal = 2
 	cfg.MaxPerSender = 10
 	p := New(cfg)
-	chainID := big.NewInt(2026)
+	chainID := big.NewInt(2205)
 
 	k1, f1 := testKey(t)
 	k2, f2 := testKey(t)
@@ -186,7 +186,7 @@ func TestAddDew_MinFee(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.MinDewFeeWei = params.MinDewTxFeeWei
 	p := New(cfg)
-	chainID := big.NewInt(2026)
+	chainID := big.NewInt(2205)
 	key, from := testKey(t)
 	to := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
 
@@ -220,7 +220,7 @@ func TestUnifiedSurface_EVMAndDewShareLimits(t *testing.T) {
 	cfg.MaxGlobal = 2
 	cfg.MaxPerSender = 2
 	p := New(cfg)
-	chainID := big.NewInt(2026)
+	chainID := big.NewInt(2205)
 	key, from := testKey(t)
 	to := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
 

@@ -34,7 +34,7 @@ func TestExecutor_DeployERC20_Transfer_Events(t *testing.T) {
 		GasLimit: 30_000_000,
 		BaseFee:  big.NewInt(0),
 		Coinbase: coinbase,
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	})
 
 	parsed, err := abi.JSON(strings.NewReader(TokenABI))
@@ -161,7 +161,7 @@ func TestExecutor_FailedTx_RevertsState(t *testing.T) {
 		Time:     1,
 		GasLimit: 30_000_000,
 		BaseFee:  big.NewInt(0),
-		ChainID:  big.NewInt(2026),
+		ChainID:  big.NewInt(2205),
 	})
 
 	// Deploy token with small supply
