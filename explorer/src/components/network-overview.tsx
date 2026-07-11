@@ -140,9 +140,17 @@ export function NetworkOverview() {
   const mcap =
     config.marketCapUsd ??
     (price != null && config.totalSupply != null ? price * config.totalSupply : null);
-  const gasGwei = Number(formatGwei(s.gasPriceWei, 6));
+  // gasPriceWei is decimal wei string from med gas resolver
+  const gasWei = BigInt(s.gasPriceWei);
+  const gasGwei = Number(formatGwei(gasWei, 6));
   const gasUsd =
     price != null ? (gasGwei * 21_000 * price) / 1e9 : null;
+  const gasTitle =
+    s.gasPriceSource === "tx_median"
+      ? `Median effective gas from ${s.gasPriceSamples} tx(s) in last ${s.recentBlocks} blocks`
+      : s.gasPriceSource === "base_fee_median"
+        ? `Median baseFeePerGas over last ${s.recentBlocks} blocks (no recent txs)`
+        : "Node eth_gasPrice suggestion (no recent fee samples)";
 
   const changeColor =
     change == null
@@ -203,8 +211,8 @@ export function NetworkOverview() {
           label="Med Gas Price"
           className="col-span-2 border-b border-[var(--color-line)] sm:col-span-1 lg:col-span-1 lg:border-r"
         >
-          <span className="font-semibold tracking-tight">
-            {formatGwei(s.gasPriceWei)} Gwei
+          <span className="font-semibold tracking-tight" title={gasTitle}>
+            {formatGwei(gasWei)} Gwei
             {gasUsd != null ? (
               <span className="font-normal text-muted">
                 {" "}

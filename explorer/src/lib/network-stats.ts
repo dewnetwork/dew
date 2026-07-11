@@ -1,10 +1,11 @@
-import { hexToNumber } from "./format";
+import { hexToBigInt, hexToNumber } from "./format";
 import {
   ethBlockNumber,
   ethGasPrice,
   ethGetBlockByNumber,
   rpcBatch,
   type RpcBlock,
+  type RpcTx,
 } from "./rpc";
 
 const DAY_SEC = 86_400;
@@ -22,11 +23,18 @@ export type DayTxPoint = {
   estimated: boolean;
 };
 
+/** How Med Gas Price was derived (explorer client-side; not an indexer). */
+export type GasPriceSource = "tx_median" | "base_fee_median" | "rpc_gas_price";
+
 export type NetworkStats = {
   head: number;
   finalized: number;
   safe: number;
+  /** Median effective gas (wei) as decimal string, or RPC fallback. */
   gasPriceWei: string;
+  gasPriceSource: GasPriceSource;
+  /** Number of tx samples used when source is tx_median */
+  gasPriceSamples: number;
   avgBlockTimeSec: number;
   tps: number;
   /** Tx count in the recent sample window */
@@ -78,6 +86,103 @@ function txCount(b: RpcBlock | null): number {
 }
 
 /**
+ * Effective gas price for a tx in a block (wei).
+ * EIP-1559: min(maxFeePerGas, baseFee + maxPriorityFeePerGas).
+ * Legacy / type-2 with only gasPrice: gasPrice.
+ */
+export function effectiveGasPriceWei(tx: RpcTx, baseFeeWei: bigint | null): bigint | null {
+  const feeCap =
+    tx.maxFeePerGas != null && tx.maxFeePerGas !== ""
+      ? hexToBigInt(tx.maxFeePerGas)
+      : tx.gasPrice != null && tx.gasPrice !== ""
+        ? hexToBigInt(tx.gasPrice)
+        : null;
+  if (feeCap == null) return null;
+
+  const tip =
+    tx.maxPriorityFeePerGas != null && tx.maxPriorityFeePerGas !== ""
+      ? hexToBigInt(tx.maxPriorityFeePerGas)
+      : null;
+
+  // Legacy or RPC that only exposes gasPrice (Dew sets gasPrice = feeCap for type-2)
+  if (tip == null || baseFeeWei == null) {
+    return feeCap > 0n ? feeCap : null;
+  }
+
+  // effective = min(feeCap, baseFee + tip)
+  const withTip = baseFeeWei + tip;
+  const eff = withTip < feeCap ? withTip : feeCap;
+  return eff > 0n ? eff : null;
+}
+
+/** Median of bigint samples; even length uses floor of average of the two middle values. */
+export function medianBigInt(values: bigint[]): bigint | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) return sorted[mid]!;
+  return (sorted[mid - 1]! + sorted[mid]!) / 2n;
+}
+
+function collectTxGasPrices(blocks: RpcBlock[]): bigint[] {
+  const out: bigint[] = [];
+  for (const b of blocks) {
+    const base =
+      b.baseFeePerGas != null && b.baseFeePerGas !== ""
+        ? hexToBigInt(b.baseFeePerGas)
+        : null;
+    for (const t of b.transactions ?? []) {
+      if (typeof t === "string") continue;
+      const g = effectiveGasPriceWei(t, base);
+      if (g != null) out.push(g);
+    }
+  }
+  return out;
+}
+
+function collectBaseFees(blocks: RpcBlock[]): bigint[] {
+  const out: bigint[] = [];
+  for (const b of blocks) {
+    if (b.baseFeePerGas != null && b.baseFeePerGas !== "") {
+      const v = hexToBigInt(b.baseFeePerGas);
+      if (v > 0n) out.push(v);
+    }
+  }
+  return out;
+}
+
+/**
+ * Med gas from recent full blocks: tx effective median → baseFee median → eth_gasPrice.
+ */
+export function resolveMedGasPrice(
+  recentBlocks: RpcBlock[],
+  rpcGasPriceHex: string,
+): { gasPriceWei: string; gasPriceSource: GasPriceSource; gasPriceSamples: number } {
+  const txPrices = collectTxGasPrices(recentBlocks);
+  const txMed = medianBigInt(txPrices);
+  if (txMed != null) {
+    return {
+      gasPriceWei: txMed.toString(),
+      gasPriceSource: "tx_median",
+      gasPriceSamples: txPrices.length,
+    };
+  }
+  const baseMed = medianBigInt(collectBaseFees(recentBlocks));
+  if (baseMed != null) {
+    return {
+      gasPriceWei: baseMed.toString(),
+      gasPriceSource: "base_fee_median",
+      gasPriceSamples: 0,
+    };
+  }
+  return {
+    gasPriceWei: hexToBigInt(rpcGasPriceHex).toString(),
+    gasPriceSource: "rpc_gas_price",
+    gasPriceSamples: 0,
+  };
+}
+
+/**
  * Estimate block number for a past timestamp using average block time and head.
  * Clamped to [0, head].
  */
@@ -97,19 +202,24 @@ function estimateBlockAt(
  * Not a full indexer — short chains are more accurate; long chains are sampled.
  */
 export async function fetchNetworkStats(): Promise<NetworkStats> {
-  const [head, gasPriceWei] = await Promise.all([ethBlockNumber(), ethGasPrice()]);
+  const [head, rpcGasPrice] = await Promise.all([ethBlockNumber(), ethGasPrice()]);
   const headBlock = await ethGetBlockByNumber(head, false);
   if (!headBlock) {
     throw new Error("Could not load head block");
   }
   const headTs = hexToNumber(headBlock.timestamp);
 
-  // Recent window for TPS + block time
+  // Recent window for TPS + block time + med gas
   const recentStart = Math.max(0, head - RECENT_WINDOW + 1);
   const recentNums: number[] = [];
   for (let n = recentStart; n <= head; n++) recentNums.push(n);
   const recentBlocks = await getBlocksByNumber(recentNums, true);
   const validRecent = recentBlocks.filter((b): b is RpcBlock => b != null);
+
+  const { gasPriceWei, gasPriceSource, gasPriceSamples } = resolveMedGasPrice(
+    validRecent,
+    rpcGasPrice,
+  );
 
   let recentTxCount = 0;
   for (const b of validRecent) recentTxCount += txCount(b);
@@ -231,6 +341,8 @@ export async function fetchNetworkStats(): Promise<NetworkStats> {
     finalized: head,
     safe: head,
     gasPriceWei,
+    gasPriceSource,
+    gasPriceSamples,
     avgBlockTimeSec,
     tps,
     recentTxCount,

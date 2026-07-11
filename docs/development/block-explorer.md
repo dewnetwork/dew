@@ -119,7 +119,7 @@ Status colors:
 | :--- | :--- | :--- |
 | Latest block | `eth_blockNumber` | Link to `/block/{n}` |
 | Chain ID | `eth_chainId` | Show decimal + hex (`2205` / `0x89d`) |
-| Gas price | `eth_gasPrice` / fee fields | Gwei |
+| Gas price (Med) | Median effective gas from txs in last *N* blocks; else median `baseFeePerGas`; else `eth_gasPrice` | Gwei; client-side, not indexer |
 | Base fee (if present) | latest block `baseFeePerGas` | EIP-1559 |
 | Tx count (window) | Count txs in last *N* blocks client-side | Label “in last N blocks”; not global historical TPS without indexer |
 | Client | `web3_clientVersion` | Footer or small chip |
