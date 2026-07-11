@@ -73,11 +73,12 @@ export function SearchBox({ className = "" }: { className?: string }) {
           spellCheck={false}
           aria-label="Search"
         />
+        {/* m-1 inset → radius = shell (xl) − margin so corners stay concentric */}
         <button
           type="submit"
           disabled={busy}
           className="btn-primary m-1 border-0 px-3.5 sm:px-4"
-          style={{ borderRadius: "var(--radius-md)" }}
+          style={{ borderRadius: "calc(var(--radius-xl) - 0.25rem)" }}
         >
           {busy ? "…" : "Search"}
         </button>
