@@ -6,10 +6,10 @@ Freeze: **`public-testnet-v1`** · chain ID **`2026`**.
 
 | Do | Do not |
 | :--- | :--- |
-| Bind Dew to **localhost** only | Expose `:8545` on `0.0.0.0` to the internet |
-| Terminate HTTPS on 443 (nginx + certbot) | Ship Anvil / staging keys as faucet or “validator” |
+| Keep Dew off the public interface | Expose `:8545` on `0.0.0.0` to the internet |
+| Terminate HTTP(S) on 80/443 (nginx) | Ship Anvil / staging keys as faucet or “validator” |
 | Rate-limit POST body / RPS | Open staking (`--staking`) without a plan |
-| Keep emergency stop: stop proxy or unit | Promise mainnet or economic incentives |
+| Keep emergency stop: stop proxy first | Promise mainnet or economic incentives |
 
 This is a **public demo RPC**, not a multi-host BFT network. Clients share one auto-mine / in-process stack.
 
@@ -21,8 +21,8 @@ This is a **public demo RPC**, not a multi-host BFT network. Clients share one a
 | :--- | :------ |
 | Host | Ubuntu 22.04/24.04, 1–2 vCPU, 2 GB RAM |
 | Domain (optional but recommended) | `rpc.example.com` → A-record to this host |
-| Public URL | `https://rpc.example.com` |
-| Local Dew | `http://127.0.0.1:8545` (never publish this raw if proxy is up) |
+| Public URL | `https://rpc.example.com` (or `http://…` until TLS) |
+| Dew RPC | internal only (Compose) or `http://127.0.0.1:8545` (systemd) |
 
 Firewall (ufw):
 
@@ -38,7 +38,56 @@ sudo ufw enable
 
 ---
 
-## 1. Install Dew (binary + systemd)
+## 1. Docker Compose (recommended packaging)
+
+From **repo root** after private soak:
+
+```bash
+# Stop soak if still running
+docker compose -f deploy/docker-compose.soak.yml --env-file deploy/soak.env down
+
+cp deploy/public.env.example deploy/public.env   # once
+docker compose -f deploy/docker-compose.yml --env-file deploy/public.env up --build
+```
+
+| Container | Role | Host ports |
+| :--- | :--- | :--- |
+| `dew-rpc` | `dew run` on network `dew_internal` only | none |
+| `dew-rpc-proxy` | nginx → `dew:8545` (rate limit, 1m body, POST/OPTIONS) | `:80`, `:443` |
+
+Smoke (HTTP before TLS):
+
+```bash
+node scripts/smoke-rpc.mjs http://127.0.0.1
+# expect chainId 2026 / 0x7ea
+```
+
+Config files:
+
+- [docker-compose.yml](./docker-compose.yml)
+- [nginx/dew-rpc.docker.conf](./nginx/dew-rpc.docker.conf) — upstream `dew:8545`
+
+### TLS with Compose
+
+1. Place `fullchain.pem` + `privkey.pem` under `deploy/certs/`.
+2. Uncomment the `./certs` volume on `proxy` in `docker-compose.yml`.
+3. Uncomment the HTTPS `server` block in `nginx/dew-rpc.docker.conf`.
+4. Recreate proxy:  
+   `docker compose -f deploy/docker-compose.yml up -d --force-recreate proxy`
+
+### Ops (Compose)
+
+| Action | Command |
+| :--- | :--- |
+| Logs (node) | `docker logs -f dew-rpc` |
+| Logs (proxy) | `docker logs -f dew-rpc-proxy` |
+| Restart node | `docker compose -f deploy/docker-compose.yml restart dew` |
+| Stop public surface | `docker compose -f deploy/docker-compose.yml stop proxy` |
+| Full stop | `docker compose -f deploy/docker-compose.yml down` |
+
+---
+
+## 2. Binary + systemd (no Docker)
 
 On a build machine or the host (needs Go 1.23+):
 
@@ -74,9 +123,7 @@ curl -s -X POST http://127.0.0.1:8545 \
 
 Unit runs `dew run` (single execution node, auto-mine per tx). For in-process 3-validator demo instead, change `ExecStart` to `dew devnet --http.addr 127.0.0.1 --http.port 8545` (heavier; still one host).
 
----
-
-## 2. TLS reverse proxy + rate limit (nginx + certbot)
+### TLS reverse proxy + rate limit (host nginx + certbot)
 
 ```bash
 sudo apt-get update && sudo apt-get install -y nginx certbot python3-certbot-nginx
@@ -93,6 +140,15 @@ nginx sample (`deploy/nginx/dew-rpc.conf`) includes:
 - Only `POST` / `OPTIONS` (MetaMask preflight)
 - Rate limit ~**10 r/s** burst 20 per IP (tune if abused)
 - Body size **1m** (matches Dew `MaxRequestBodyBytes`)
+
+### Ops (systemd)
+
+| Action | Command |
+| :--- | :--- |
+| Logs | `journalctl -u dew -f` |
+| Restart node | `sudo systemctl restart dew` |
+| Stop public surface | `sudo systemctl stop nginx` (node can stay on loopback) |
+| Full stop | `sudo systemctl stop dew` |
 
 ---
 
@@ -118,44 +174,21 @@ node scripts/smoke-rpc.mjs https://rpc.example.com
 
 ---
 
-## 4. Ops while live
+## 4. While live
 
-| Action | Command |
-| :--- | :------ |
-| Logs | `journalctl -u dew -f` |
-| Restart node | `sudo systemctl restart dew` |
-| Stop public surface | `sudo systemctl stop nginx` (node can stay on loopback) |
-| Full stop | `sudo systemctl stop dew` |
-
-Monitor: 5xx from proxy, `journalctl` panics, disk, CPU. Dew already rejects oversized body/batch (C6).
+Monitor: 5xx from proxy, container/`journalctl` panics, disk, CPU. Dew already rejects oversized body/batch (C6).
 
 **Faucet:** optional and separate. Prefer allowlist DM / form; never paste Anvil keys on a public page.
 
-**Staking:** leave default **off** (`dew-rpc-public.service` has no `--staking`).
+**Staking:** leave default **off** (Compose and `dew-rpc-public.service` have no `--staking`).
 
 ---
 
 ## 5. Emergency stop
 
-1. `sudo systemctl stop nginx` — cuts public traffic immediately  
-2. If node bug: `sudo systemctl stop dew`  
-3. Investigate; do not re-open 8545 on the public interface  
-
----
-
-## 6. Docker alternative (optional)
-
-If you prefer containers, still bind Dew to loopback on the host carefully:
-
-```bash
-# Dew only on host loopback via published port restricted to 127.0.0.1
-docker run -d --name dew-rpc --restart unless-stopped \
-  -p 127.0.0.1:8545:8545 \
-  dew:local run --genesis /etc/dew/genesis.json \
-  --http.addr 0.0.0.0 --http.port 8545
-```
-
-Then put nginx on the host as above. Do **not** `-p 8545:8545` without `127.0.0.1:`.
+1. Stop the **proxy** first — Compose: `docker compose -f deploy/docker-compose.yml stop proxy` · systemd: `sudo systemctl stop nginx`  
+2. If node bug: stop Dew (`docker compose … stop dew` / `systemctl stop dew`)  
+3. Investigate; do not publish `:8545` on the public interface  
 
 ---
 
@@ -163,5 +196,8 @@ Then put nginx on the host as above. Do **not** `-p 8545:8545` without `127.0.0.
 
 - [Launch checklist](../docs/development/launch-checklist.md)  
 - [Public testnet freeze](../docs/development/public-testnet.md)  
+- [deploy/README](./README.md)  
+- [docker-compose.yml](./docker-compose.yml)  
 - [systemd/dew-rpc-public.service](./systemd/dew-rpc-public.service)  
 - [nginx/dew-rpc.conf](./nginx/dew-rpc.conf)  
+- [nginx/dew-rpc.docker.conf](./nginx/dew-rpc.docker.conf)  

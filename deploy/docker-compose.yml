@@ -1,49 +1,27 @@
-# Dew private staging packaging (C5 residual).
+# Dew controlled public RPC (path B) — single host.
 #
-# From repo root (default profile = private soak via COMPOSE_PROFILES):
-#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build
-#   # or explicitly:
-#   docker compose -f deploy/docker-compose.yml --profile devnet up --build
-#   docker compose -f deploy/docker-compose.yml --profile multi up --build
+# From repo root:
+#   cp deploy/public.env.example deploy/public.env   # once
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/public.env up --build
 #
-# Profile "devnet": one container, in-process 3-validator + RPC (fastest soak).
-# Profile "multi": three processes with encrypted P2P mesh + independent JSON-RPC
-#   (each auto-mines locally; multi-process Dew-BFT block production is still residual).
+# Layout:
+#   - dew: JSON-RPC only on the internal compose network (not published to host)
+#   - proxy: nginx on host :80 / :443 → dew:8545 with rate limit + body cap
 #
-# Profiles are mutually exclusive (both bind host :8545).
+# TLS: mount certs into deploy/certs/ (see README) or terminate TLS elsewhere.
+# Systemd alternative: deploy/public-rpc-single-host.md
+#
+# Do not use this file for private soak — use docker-compose.soak.yml.
 
-name: dew-private
+name: dew-public
 
 services:
-  # --- Profile devnet: private soak stack (recommended) ---
-  devnet:
-    profiles: ["devnet"]
+  dew:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
-    image: dew:local
-    container_name: dew-devnet
-    command:
-      - devnet
-      - --http.addr
-      - "0.0.0.0"
-      - --http.port
-      - "8545"
-      - --bft.heights
-      - "1"
-    ports:
-      - "8545:8545"
-    restart: unless-stopped
-
-  # --- Profile multi: multi-process layout ---
-  # Dev Anvil keys for private packaging only — never reuse on public nets.
-  node-0:
-    profiles: ["multi"]
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-    image: dew:local
-    container_name: dew-node-0
+    image: ${DEW_IMAGE:-dew:local}
+    container_name: dew-rpc
     command:
       - run
       - --genesis
@@ -52,65 +30,35 @@ services:
       - "0.0.0.0"
       - --http.port
       - "8545"
-      - --p2p.listen
-      - "0.0.0.0:30303"
-      - --p2p.key
-      - ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-      - --p2p.bootnodes
-      - "node-1:30303,node-2:30303"
-    ports:
-      - "8545:8545"
-      - "30303:30303"
-    restart: unless-stopped
-
-  node-1:
-    profiles: ["multi"]
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-    image: dew:local
-    container_name: dew-node-1
-    command:
-      - run
-      - --genesis
-      - /etc/dew/genesis.json
-      - --http.addr
-      - "0.0.0.0"
-      - --http.port
+    # No host ports — reachable only via dew_internal (proxy).
+    # Port must stay 8545 to match nginx/dew-rpc.docker.conf upstream.
+    expose:
       - "8545"
-      - --p2p.listen
-      - "0.0.0.0:30303"
-      - --p2p.key
-      - 59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
-      - --p2p.bootnodes
-      - "node-0:30303,node-2:30303"
-    ports:
-      - "8546:8545"
-      - "30304:30303"
     restart: unless-stopped
+    networks:
+      - dew_internal
 
-  node-2:
-    profiles: ["multi"]
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-    image: dew:local
-    container_name: dew-node-2
-    command:
-      - run
-      - --genesis
-      - /etc/dew/genesis.json
-      - --http.addr
-      - "0.0.0.0"
-      - --http.port
-      - "8545"
-      - --p2p.listen
-      - "0.0.0.0:30303"
-      - --p2p.key
-      - 5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
-      - --p2p.bootnodes
-      - "node-0:30303,node-1:30303"
+  proxy:
+    image: ${NGINX_IMAGE:-nginx:1.27-alpine}
+    container_name: dew-rpc-proxy
+    depends_on:
+      - dew
     ports:
-      - "8547:8545"
-      - "30305:30303"
+      - "${PROXY_HTTP_PORT:-80}:80"
+      - "${PROXY_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/dew-rpc.docker.conf:/etc/nginx/conf.d/default.conf:ro
+      # Optional TLS material (uncomment HTTPS block in dew-rpc.docker.conf):
+      # - ./certs:/etc/nginx/certs:ro
     restart: unless-stopped
+    networks:
+      - dew_internal
+      - dew_edge
+
+networks:
+  # No direct host/internet path to Dew; proxy bridges edge ↔ internal.
+  dew_internal:
+    driver: bridge
+    internal: true
+  dew_edge:
+    driver: bridge

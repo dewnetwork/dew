@@ -69,10 +69,14 @@ web/.astro/
 .env
 .env.*
 !.env.example
+# deploy local env (copy from *.env.example); samples stay tracked
+deploy/soak.env
+deploy/public.env
 *.pem
 *.key
 id_ed25519
 id_rsa
+
 
 # --- Node / chain local data (when running dew) ---
 data/

@@ -45,10 +45,11 @@ Samples live under [deploy/](../../deploy/) (Docker Compose + systemd). One-page
 
 ```bash
 # Fast private soak (in-process 3-validator + RPC)
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build
+cp deploy/soak.env.example deploy/soak.env   # once
+docker compose -f deploy/docker-compose.soak.yml --env-file deploy/soak.env up --build
 
 # Multi-process layout: encrypted P2P mesh + per-node JSON-RPC (not with devnet)
-docker compose -f deploy/docker-compose.yml --profile multi up --build
+docker compose -f deploy/docker-compose.soak.yml --profile multi up --build
 ```
 
 Manual multi-process sketch (same genesis on every host):

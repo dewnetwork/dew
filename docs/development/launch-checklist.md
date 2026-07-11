@@ -18,7 +18,7 @@ Packaging: [deploy/](../../deploy/) · freeze table: [Public testnet](./public-t
 | 1 | Build binary | `go build -o bin/dew ./cmd/dew` |
 | 2 | Chaos smoke | `go test ./devnet/ -run Chaos -count=1` |
 | 3 | RPC abuse bar | `go test ./tests/security/ -run C6 -count=1` |
-| 4 | Start private stack | **Compose:** `docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build` **or** `./bin/dew devnet --http.addr 0.0.0.0 --http.port 8545` |
+| 4 | Start private stack | **Compose:** `cp deploy/soak.env.example deploy/soak.env` then `docker compose -f deploy/docker-compose.soak.yml --env-file deploy/soak.env up --build` **or** `./bin/dew devnet --http.addr 0.0.0.0 --http.port 8545` |
 | 5 | RPC smoke | `node scripts/smoke-rpc.mjs http://127.0.0.1:8545` → chainId `2026` |
 | 6 | App smoke | `node scripts/devnet-erc20.mjs http://127.0.0.1:8545` |
 | 7 | Soak | Keep process/containers up **24–48h**; restart once; re-run smoke |
@@ -38,7 +38,7 @@ Packaging: [deploy/](../../deploy/) · freeze table: [Public testnet](./public-t
 Multi-process layout (encrypted P2P mesh, independent auto-mine nodes):
 
 ```bash
-docker compose -f deploy/docker-compose.yml --profile multi up --build
+docker compose -f deploy/docker-compose.soak.yml --profile multi up --build
 # RPC: :8545 :8546 :8547   P2P: :30303 :30304 :30305
 ```
 
@@ -48,15 +48,25 @@ docker compose -f deploy/docker-compose.yml --profile multi up --build
 
 Full copy-paste runbook: [deploy/public-rpc-single-host.md](../../deploy/public-rpc-single-host.md).
 
+**Compose (recommended packaging):**
+
+```bash
+docker compose -f deploy/docker-compose.soak.yml down
+cp deploy/public.env.example deploy/public.env   # once
+docker compose -f deploy/docker-compose.yml --env-file deploy/public.env up --build
+# RPC via proxy: http://127.0.0.1  (TLS optional — see deploy/README.md)
+node scripts/smoke-rpc.mjs http://127.0.0.1
+```
+
 | # | Step | Notes |
 | -: | :--- | :---- |
-| 1 | Dew on loopback | `dew-rpc-public.service` → `127.0.0.1:8545` only |
-| 2 | TLS proxy | nginx + certbot (+ rate limit) — see `deploy/nginx/dew-rpc.conf` |
+| 1 | Dew not public | Compose: internal network only · systemd: `127.0.0.1:8545` only |
+| 2 | TLS proxy | Compose: `proxy` service · or host nginx + certbot (`deploy/nginx/dew-rpc.conf`) |
 | 3 | Firewall | Allow 22/80/443 only — **not** 8545 |
 | 4 | Feature flags | No `--staking`; Anvil keys **not** on public pages |
 | 5 | Publish | HTTPS RPC + chain ID `2026` (bootnodes n/a for path B) |
-| 6 | Smoke | `node scripts/smoke-rpc.mjs https://rpc.example.com` |
-| 7 | Emergency | Stop nginx first; node can stay on loopback |
+| 6 | Smoke | `node scripts/smoke-rpc.mjs https://rpc.example.com` (or `http://127.0.0.1` pre-TLS) |
+| 7 | Emergency | Stop proxy first (`docker compose stop proxy` / nginx); node can stay private |
 
 ### Path A — multi-host public (later)
 
@@ -83,7 +93,7 @@ Bootnodes:   n/a (single-host controlled RPC)
 
 ## C. Emergency stop
 
-1. Stop **public RPC** (and faucet) first — SIGTERM / `docker compose stop` / systemd stop  
+1. Stop **public RPC** (and faucet) first — `docker compose -f deploy/docker-compose.yml stop proxy` / nginx / systemd stop  
 2. Disable native / staking if module bug (validators may stay up)  
 3. Re-genesis only if wire freeze intentionally broken — coordinate publicly  
 
