@@ -96,6 +96,8 @@ pnpm web:preview
 Build landing + docs into one deployable folder (`dist/`):
 
 ```bash
+pnpm install
+pnpm --dir web install
 pnpm build         # or pnpm site:build
 pnpm site:preview  # http://localhost:4173  →  / landing, /docs docs
 ```
@@ -106,6 +108,27 @@ Layout after merge:
 | :--- | :--- |
 | `/` | Astro landing (`web/dist`) |
 | `/docs/` | VitePress docs (`docs/.vitepress/dist`, base `/docs/`) |
+
+### GitHub Pages
+
+CI deploys `dist/` on every push to `main` via [`.github/workflows/pages.yml`](./.github/workflows/pages.yml).
+
+| | |
+| :--- | :--- |
+| **URL** | https://dewnetwork.github.io/dew/ |
+| **Landing** | `/dew/` |
+| **Docs** | `/dew/docs/` |
+
+**One-time enable:** repo **Settings → Pages → Source: GitHub Actions**.
+
+Local build matching production base paths:
+
+```bash
+SITE_BASE=/dew/ SITE_URL=https://dewnetwork.github.io pnpm site:build
+pnpm site:preview
+```
+
+Custom domain later: set `SITE_BASE=/` and `SITE_URL=https://your.domain` in the workflow env (and add the CNAME in Pages settings).
 
 **Start here:**
 

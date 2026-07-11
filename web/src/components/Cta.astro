@@ -6,6 +6,9 @@ import {
   IconFlag,
 } from '@tabler/icons-react';
 import { Reveal } from './react/Reveal';
+import { withBase } from '../lib/paths';
+
+const docs = withBase('/docs');
 ---
 
 <section class="relative py-16 sm:py-24">
@@ -43,7 +46,7 @@ import { Reveal } from './react/Reveal';
             live in the same repo as the chain — one source of truth for builders.
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
-            <a href="/docs" class="btn-primary px-6 py-3">
+            <a href={docs} class="btn-primary px-6 py-3">
               <IconBook2 size={17} stroke={1.75} />
               Open documentation
               <IconArrowUpRight size={16} stroke={2} />

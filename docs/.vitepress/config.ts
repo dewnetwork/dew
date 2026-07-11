@@ -58,22 +58,28 @@ function titleFromSlug(slug: string): string {
 
 const sidebar = loadSidebar()
 
-// When merging with the landing site, set DOCS_BASE=/docs/ so assets/links
-// resolve under /docs. Standalone `docs:dev` / `docs:build` keep base at /.
-const docsBase = process.env.DOCS_BASE?.trim() || '/'
+// When merging with the landing site, set DOCS_BASE=/docs/ (or /dew/docs/ on
+// GitHub project pages) so assets/links resolve correctly. Standalone
+// `docs:dev` / `docs:build` keep base at /.
+const docsBaseRaw = process.env.DOCS_BASE?.trim() || '/'
+const docsBase = docsBaseRaw.endsWith('/') ? docsBaseRaw : `${docsBaseRaw}/`
 
 export default withMermaid({
   title: 'Dew',
   description:
     'High-performance, EVM-compatible Layer 1 — protocol docs for the Go + Node monorepo.',
   lang: 'en-US',
-  base: docsBase.endsWith('/') ? docsBase : `${docsBase}/`,
+  base: docsBase,
   cleanUrls: true,
   lastUpdated: true,
   ignoreDeadLinks: true,
 
   head: [
-    ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
+    // Head hrefs are not auto-prefixed by VitePress — include base explicitly.
+    [
+      'link',
+      { rel: 'icon', href: `${docsBase}favicon.svg`, type: 'image/svg+xml' },
+    ],
     [
       'link',
       {
@@ -95,6 +101,7 @@ export default withMermaid({
   ],
 
   themeConfig: {
+    // Logo path is relative to public/; VitePress applies `base` automatically.
     logo: { src: '/logo.svg', alt: 'Dew' },
     siteTitle: 'Dew',
 

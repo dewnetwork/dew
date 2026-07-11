@@ -42,4 +42,6 @@ src/
 public/                # favicon + logo
 ```
 
-Docs remain on VitePress under `docs/` (`pnpm docs:dev`). Wire reverse-proxy or deploy separately when both go public.
+Docs remain on VitePress under `docs/` (`pnpm docs:dev`). Production merges both via monorepo `pnpm site:build` (see root README — GitHub Pages at `/dew/` + `/dew/docs/`).
+
+When `SITE_BASE` is set (e.g. `/dew`), use `withBase()` from `src/lib/paths.ts` for site-absolute links and static assets so project pages resolve correctly.

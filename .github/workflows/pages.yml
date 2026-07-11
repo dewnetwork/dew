@@ -1,0 +1,73 @@
+# Build Astro landing + VitePress docs and deploy to GitHub Pages.
+#
+# Site URL (project pages): https://dewnetwork.github.io/dew/
+#   /       → landing
+#   /docs/  → documentation
+#
+# Required once (repo Settings → Pages):
+#   Build and deployment → Source: GitHub Actions
+#
+# Custom domain later: set SITE_BASE=/ and SITE_URL=https://your.domain below.
+
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege for Pages OIDC deploy
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  # Single job: build → upload artifact → deploy.
+  # Avoids multi-job environment/expression quirks some validators flag.
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install monorepo deps (docs / VitePress)
+        run: pnpm install --frozen-lockfile
+
+      - name: Install web deps (Astro landing)
+        run: pnpm install --frozen-lockfile
+        working-directory: web
+
+      - name: Build combined site
+        env:
+          # Project pages: https://<org>.github.io/<repo>/
+          SITE_BASE: /dew/
+          SITE_URL: https://dewnetwork.github.io
+        run: pnpm site:build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

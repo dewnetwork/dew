@@ -1,7 +1,11 @@
 ---
 import { IconBrandGithub, IconBook2 } from '@tabler/icons-react';
+import { withBase } from '../lib/paths';
 
 const year = new Date().getFullYear();
+const home = withBase('/');
+const docs = withBase('/docs');
+const logo = withBase('/logo.svg');
 
 const cols = [
   {
@@ -17,7 +21,7 @@ const cols = [
     links: [
       { href: '#builders', label: 'Developer path' },
       { href: '#phases', label: 'Build order' },
-      { href: '/docs', label: 'Docs' },
+      { href: docs, label: 'Docs' },
     ],
   },
 ];
@@ -27,9 +31,9 @@ const cols = [
   <div class="mx-auto max-w-6xl px-5 pt-14 sm:px-8">
     <div class="flex flex-col gap-10 sm:flex-row sm:justify-between">
       <div class="max-w-xs">
-        <a href="/" class="flex items-center gap-2.5">
+        <a href={home} class="flex items-center gap-2.5">
           <img
-            src="/logo.svg"
+            src={logo}
             alt=""
             width="28"
             height="28"
@@ -51,7 +55,7 @@ const cols = [
             <IconBrandGithub size={15} stroke={1.75} />
           </a>
           <a
-            href="/docs"
+            href={docs}
             class="icon-well-sm text-slate transition hover:border-cyan/40 hover:text-cyan"
             aria-label="Documentation"
           >
