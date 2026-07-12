@@ -3,7 +3,7 @@ package consensus
 import "time"
 
 const defaultRoundTimeout = 3 * time.Second
-const defaultMinBlockInterval = 200 * time.Millisecond
+const defaultMinBlockInterval = time.Second
 
 // Runner drives consensus rounds: starts the first round, restarts after each
 // commit, and optionally times out stuck propose steps for liveness.
@@ -12,7 +12,8 @@ type Runner struct {
 	OnCommit     func(CommitEvent) error
 	RoundTimeout time.Duration // default 3s if zero
 	// MinBlockInterval paces StartRound after commit (curbs empty-block storms).
-	MinBlockInterval time.Duration // default 50ms if zero; negative disables pacing
+	// Zero means defaultMinBlockInterval (1s); negative disables pacing.
+	MinBlockInterval time.Duration
 	stop             chan struct{}
 }
 

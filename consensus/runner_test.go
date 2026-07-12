@@ -7,6 +7,12 @@ import (
 	"github.com/dewnetwork/dew/core/types"
 )
 
+func TestDefaultMinBlockInterval(t *testing.T) {
+	if defaultMinBlockInterval != time.Second {
+		t.Fatalf("defaultMinBlockInterval=%v want 1s", defaultMinBlockInterval)
+	}
+}
+
 // TestRunner_AdvancesAfterCommit — Runner OnCommit hook starts the next round.
 func TestRunner_AdvancesAfterCommit(t *testing.T) {
 	root := types.Keccak256Hash([]byte("runner"))
