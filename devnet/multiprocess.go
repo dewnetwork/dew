@@ -158,21 +158,32 @@ func StartMultiProcessBFT(cfg MultiProcessConfig) (*MultiProcessNet, error) {
 }
 
 func catchUpFullNode(netw *MultiProcessNet) {
-	if netw == nil || netw.Full == nil || netw.Full.Host == nil {
+	if netw == nil {
 		return
 	}
+	full := netw.Full
+	if full == nil || full.Host == nil || full.Node == nil {
+		return
+	}
+	host := full.Host
 	deadline := time.Now().Add(8 * time.Second)
 	for time.Now().Before(deadline) {
-		for _, p := range netw.Full.Host.Store().Active() {
-			_ = netw.Full.Host.SyncMissingFromPeer(p)
+		if netw.Full == nil {
+			return
+		}
+		for _, p := range host.Store().Active() {
+			_ = host.SyncMissingFromPeer(p)
 		}
 		var target uint64
 		for _, v := range netw.Validators {
+			if v == nil || v.Node == nil {
+				continue
+			}
 			if h := v.Node.BlockNumber(); h > target {
 				target = h
 			}
 		}
-		if netw.Full.Node.BlockNumber() >= target {
+		if full.Node.BlockNumber() >= target {
 			return
 		}
 		time.Sleep(200 * time.Millisecond)

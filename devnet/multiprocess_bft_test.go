@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -30,10 +31,12 @@ func TestMultiProcessBFT_LongEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = netw.Stop() })
 
 	done := make(chan struct{})
+	var catchUpWG sync.WaitGroup
+	catchUpWG.Add(1)
 	go func() {
+		defer catchUpWG.Done()
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
 		for {
@@ -45,7 +48,11 @@ func TestMultiProcessBFT_LongEmpty(t *testing.T) {
 			}
 		}
 	}()
-	defer close(done)
+	t.Cleanup(func() {
+		close(done)
+		catchUpWG.Wait()
+		_ = netw.Stop()
+	})
 
 	tipHash, tipNum := waitUniformTip(t, netw, targetHeight, 4*time.Minute)
 	if tipNum < targetHeight {
@@ -74,8 +81,9 @@ func TestMultiProcessBFT_LongEmpty(t *testing.T) {
 func TestMultiProcessBFT_SharedChain(t *testing.T) {
 	enc := true
 	netw, err := StartMultiProcessBFT(MultiProcessConfig{
-		HTTPAddr:   "127.0.0.1:0",
-		EncryptP2P: &enc,
+		HTTPAddr:         "127.0.0.1:0",
+		EncryptP2P:       &enc,
+		MinBlockInterval: 50 * time.Millisecond, // keep light CI under default 1s production pace
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -370,7 +378,17 @@ func waitUniformTip(t *testing.T, netw *MultiProcessNet, minHeight uint64, timeo
 		}
 		return want, minHeight
 	}
-	t.Fatalf("timeout waiting for uniform block at height %d", minHeight)
+	vh := make([]uint64, len(netw.Validators))
+	for i, v := range netw.Validators {
+		if v != nil && v.Node != nil {
+			vh[i] = v.Node.BlockNumber()
+		}
+	}
+	fullH := uint64(0)
+	if netw.Full != nil && netw.Full.Node != nil {
+		fullH = netw.Full.Node.BlockNumber()
+	}
+	t.Fatalf("timeout waiting for uniform block at height %d (validators=%v full=%d)", minHeight, vh, fullH)
 	return types.Hash{}, 0
 }
 
