@@ -1,8 +1,0 @@
-# Copy to cloudflare.ini and chmod 600:
-#   cp deploy/certs/cloudflare.ini.example deploy/certs/cloudflare.ini
-#   chmod 600 deploy/certs/cloudflare.ini
-#
-# Token: https://dash.cloudflare.com/profile/api-tokens
-# Permission: Zone → DNS → Edit  (specific zone)
-
-dns_cloudflare_api_token = REPLACE_WITH_CLOUDFLARE_API_TOKEN

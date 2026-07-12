@@ -5,10 +5,10 @@
 #   webroot         — HTTP-01 via shared volume with edge (default)
 #   dns-cloudflare  — DNS-01 via Cloudflare API (works with orange-cloud proxy)
 #
-# Disable entirely when using host PEMs (Cloudflare Origin Cert):
-#   CERTBOT_DISABLE=1
+# DNS-01 credentials: CLOUDFLARE_API_TOKEN in deploy/.env (required for dns-cloudflare).
+# Disable: CERTBOT_DISABLE=1
 #
-# Env: see deploy/.env.example and deploy/certs/README.md
+# Env: see deploy/.env.example and deploy/README.md
 set -eu
 
 if [ "${CERTBOT_DISABLE:-}" = "1" ] || [ "${CERTBOT_DISABLE:-}" = "true" ]; then
@@ -26,10 +26,8 @@ EXPLORER_HOST="${EXPLORER_HOST:-explorer.dew.fadosoft.com}"
 CERT_PRIMARY="${CERT_PRIMARY:-${RPC_HOST}}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 CERTBOT_STAGING="${CERTBOT_STAGING:-}"
-# webroot | dns-cloudflare
 CERTBOT_AUTH="${CERTBOT_AUTH:-webroot}"
-# DNS-01 credentials (mounted from host); default path used with deploy/certs/
-CF_CREDS="${CLOUDFLARE_CREDENTIALS:-/etc/letsencrypt/cloudflare.ini}"
+CF_TOKEN="${CLOUDFLARE_API_TOKEN:-}"
 DNS_PROPAGATION="${CERTBOT_DNS_PROPAGATION_SECONDS:-30}"
 ISSUE_RETRY_SEC="${CERTBOT_ISSUE_RETRY_SEC:-120}"
 RENEW_INTERVAL_SEC="${CERTBOT_RENEW_INTERVAL_SEC:-43200}"
@@ -40,7 +38,21 @@ has_cert() {
   [ -f "${LE_LIVE}/fullchain.pem" ] && [ -f "${LE_LIVE}/privkey.pem" ]
 }
 
-# Append common certonly flags (email, staging) onto "$@" then run certbot.
+# Plugin needs a mode-600 ini file; build one from CLOUDFLARE_API_TOKEN.
+prepare_cloudflare_creds() {
+  if [ -z "${CF_TOKEN}" ]; then
+    echo "certbot: error: CLOUDFLARE_API_TOKEN is unset (required for CERTBOT_AUTH=dns-cloudflare)" >&2
+    echo "certbot: set it in deploy/.env — Cloudflare token with Zone → DNS → Edit" >&2
+    return 1
+  fi
+  CREDS_USE="/tmp/cloudflare.ini"
+  umask 077
+  printf 'dns_cloudflare_api_token = %s\n' "${CF_TOKEN}" >"${CREDS_USE}"
+  chmod 600 "${CREDS_USE}"
+  echo "certbot: using Cloudflare API token from CLOUDFLARE_API_TOKEN env"
+  return 0
+}
+
 run_certbot() {
   if [ -n "${CERTBOT_EMAIL}" ]; then
     set -- "$@" -m "${CERTBOT_EMAIL}"
@@ -71,24 +83,7 @@ issue_cert() {
         --keep-until-expiring
       ;;
     dns-cloudflare | cloudflare | dns)
-      if [ ! -f "${CF_CREDS}" ]; then
-        echo "certbot: error: Cloudflare credentials not found at ${CF_CREDS}" >&2
-        echo "certbot: create deploy/certs/cloudflare.ini (see deploy/certs/README.md)" >&2
-        return 1
-      fi
-      # Plugin requires mode 600; copy to a writable path if the mount is ro.
-      CREDS_USE="${CF_CREDS}"
-      if [ "$(uname -s 2>/dev/null || echo unknown)" != "Windows_NT" ]; then
-        mode="$(stat -c '%a' "${CF_CREDS}" 2>/dev/null || stat -f '%OLp' "${CF_CREDS}" 2>/dev/null || echo 644)"
-        case "${mode}" in
-          *600 | *400) ;;
-          *)
-            CREDS_USE="/tmp/cloudflare.ini"
-            cp "${CF_CREDS}" "${CREDS_USE}"
-            chmod 600 "${CREDS_USE}"
-            ;;
-        esac
-      fi
+      prepare_cloudflare_creds || return 1
       run_certbot certonly \
         --dns-cloudflare \
         --dns-cloudflare-credentials "${CREDS_USE}" \
@@ -112,10 +107,6 @@ renew_cert() {
   case "${CERTBOT_AUTH}" in
     webroot)
       certbot renew --webroot -w "${WEBROOT}" --quiet
-      ;;
-    dns-cloudflare | cloudflare | dns)
-      # Renew reuses the authenticator stored in the lineage renewal config.
-      certbot renew --quiet
       ;;
     *)
       certbot renew --quiet
@@ -144,7 +135,7 @@ else
       echo "certbot: requires DNS → this host and inbound :80 (or grey-cloud if behind Cloudflare)"
       ;;
     dns-cloudflare | cloudflare | dns)
-      echo "certbot: requires Cloudflare API token (Zone.DNS Edit) in ${CF_CREDS}"
+      echo "certbot: requires CLOUDFLARE_API_TOKEN in .env (Zone.DNS Edit)"
       ;;
   esac
   while ! has_cert; do

@@ -26,10 +26,9 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 | └── [nginx/](./explorer/nginx/) | SPA `try_files` for client routes |
 | **[nginx/](./nginx/)** | **Edge TLS configs** |
 | ├── [dew-edge.docker.conf](./nginx/dew-edge.docker.conf) | **Compose edge** — rpc/faucet/explorer by Host |
-| ├── [docker-entrypoint-edge.sh](./nginx/docker-entrypoint-edge.sh) | Origin / LE / bootstrap + reload |
+| ├── [docker-entrypoint-edge.sh](./nginx/docker-entrypoint-edge.sh) | LE / optional origin PEMs / bootstrap + reload |
 | ├── [certbot-entrypoint.sh](./nginx/certbot-entrypoint.sh) | webroot or DNS-01 Cloudflare + renew |
 | └── [dew-edge.conf](./nginx/dew-edge.conf) | Host nginx alternative (loopback backends) |
-| **[certs/](./certs/)** | `cloudflare.ini` / Origin PEMs (gitignored secrets) |
 | **[scripts/](./scripts/)** | **Certbot helpers** |
 | ├── [setup-certbot-docker.sh](./scripts/setup-certbot-docker.sh) | **Optional** force LE issue + reload edge |
 | ├── [install-edge-nginx.sh](./scripts/install-edge-nginx.sh) | Host nginx site install |
@@ -150,13 +149,13 @@ Full stack in one compose file: backends **internal** + `edge` on **:80/:443** +
 
 # 2) Firewall: 22, 80, 443 only (not 8545)
 
-# 3) TLS secrets + .env — see deploy/certs/README.md
+# 3) .env — TLS via env (no certs/ directory)
 cp deploy/.env.example deploy/.env
-# Example DNS-01 (recommended behind Cloudflare):
+# DNS-01 (recommended behind Cloudflare orange-cloud):
 #   CERTBOT_AUTH=dns-cloudflare
 #   CERTBOT_IMAGE=certbot/dns-cloudflare:v2.11.0
 #   CERTBOT_EMAIL=ops@…
-#   + deploy/certs/cloudflare.ini (Zone DNS Edit token, chmod 600)
+#   CLOUDFLARE_API_TOKEN=…   # Zone → DNS → Edit
 
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
 docker compose -f deploy/docker-compose.yml logs -f certbot edge
@@ -175,15 +174,22 @@ node scripts/smoke-rpc.mjs https://rpc.dew.fadosoft.com
 | **`edge`** | nginx reverse proxy + TLS | **`:80`, `:443`** |
 | **`certbot`** | LE issue/renew (`CERTBOT_AUTH`) or idle if disabled | none |
 
-Configs: [nginx/dew-edge.docker.conf](./nginx/dew-edge.docker.conf), [nginx/certbot-entrypoint.sh](./nginx/certbot-entrypoint.sh), [certs/README.md](./certs/README.md).
+Configs: [nginx/dew-edge.docker.conf](./nginx/dew-edge.docker.conf), [nginx/certbot-entrypoint.sh](./nginx/certbot-entrypoint.sh).
 
 | TLS mode | When | Key settings |
 | :--- | :--- | :--- |
-| **DNS-01 Cloudflare** | Orange-cloud, real LE on origin | `CERTBOT_AUTH=dns-cloudflare`, `CERTBOT_IMAGE=certbot/dns-cloudflare`, `cloudflare.ini` |
-| **Origin CA** | No LE on VPS | `deploy/certs/*.pem`, `CERTBOT_DISABLE=1`, CF **Full (strict)** |
+| **DNS-01 Cloudflare** ★ | Orange-cloud, real LE on origin | `CERTBOT_AUTH=dns-cloudflare`, `CERTBOT_IMAGE=certbot/dns-cloudflare`, `CLOUDFLARE_API_TOKEN` |
 | **HTTP-01 webroot** | No CF / grey-cloud | `CERTBOT_AUTH=webroot`, inbound `:80` |
+| **Origin CA** (optional) | No LE on VPS | `CERTBOT_DISABLE=1` + mount PEMs at `/etc/nginx/origin-certs` |
 
-**Edge cert priority:** host origin PEMs → Let's Encrypt → bootstrap self-signed. Edge reloads within ~60s when LE appears.
+**Edge cert priority:** optional origin PEMs (if you mount them) → Let's Encrypt → bootstrap self-signed. Edge reloads within ~60s when LE appears.
+
+**Optional Origin CA volume** (only if not using certbot LE):
+
+```yaml
+# under edge.volumes in a compose override, or edit docker-compose.yml:
+- /path/on/host/ssl:/etc/nginx/origin-certs:ro
+```
 
 ### Alternative: host nginx (no Compose edge)
 
@@ -252,7 +258,7 @@ Smoke:
 Full stack with **edge nginx** on `:80`/`:443`. Backends are not published on the host.
 
 ```bash
-cp deploy/.env.example deploy/.env   # TLS: DNS-01 CF recommended — see deploy/certs/README.md
+cp deploy/.env.example deploy/.env   # set CLOUDFLARE_API_TOKEN + CERTBOT_* for DNS-01
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
 docker compose -f deploy/docker-compose.yml logs -f certbot edge
 ```

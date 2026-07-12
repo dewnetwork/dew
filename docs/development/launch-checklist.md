@@ -61,7 +61,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | # | Step | Notes |
 | -: | :--- | :---- |
 | 1 | Dew not public | Compose: internal network only · systemd: `127.0.0.1:8545` only |
-| 2 | TLS proxy | **Compose edge:** DNS-01 CF (`CERTBOT_AUTH=dns-cloudflare` + `cloudflare.ini`) · or Origin PEMs + `CERTBOT_DISABLE=1` · or HTTP-01 webroot · see `deploy/certs/README.md` · host nginx: `setup-certbot.sh` |
+| 2 | TLS proxy | **Compose edge:** DNS-01 CF (`CERTBOT_AUTH=dns-cloudflare` + `CLOUDFLARE_API_TOKEN`) · or HTTP-01 webroot · or Origin PEMs + `CERTBOT_DISABLE=1` · see `deploy/README.md` · host nginx: `setup-certbot.sh` |
 | 3 | Firewall | Allow 22/80/443 only — **not** 8545 / 8081 / 8082 |
 | 4 | Feature flags | No `--staking`; Anvil keys **not** on public pages |
 | 5 | Publish | HTTPS RPC + chain ID `2205` (bootnodes n/a for path B) |

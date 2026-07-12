@@ -1,8 +1,0 @@
-# Secrets — never commit
-*.pem
-*.key
-*.crt
-*.p12
-cloudflare.ini
-*.ini
-!README.md
