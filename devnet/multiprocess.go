@@ -35,6 +35,8 @@ type MultiProcessConfig struct {
 	// DeferConsensus leaves validators idle until StartConsensus so tests can
 	// admit mempool txs before the first proposal (avoids empty-block races).
 	DeferConsensus bool
+	// MinBlockInterval applied to validator runners (0 = consensus default 1s).
+	MinBlockInterval time.Duration
 }
 
 // StartMultiProcessBFT boots 3 validator stacks and 1 full-node stack with HTTP RPC.
@@ -70,16 +72,17 @@ func StartMultiProcessBFT(cfg MultiProcessConfig) (*MultiProcessNet, error) {
 			return nil, fmt.Errorf("devnet: validator %d node: %w", i, err)
 		}
 		stack, err := node.StartStack(node.StackConfig{
-			Genesis:        g,
-			Node:           n,
-			Validator:      true,
-			ValidatorKey:   v.PrivateKey,
-			P2PListen:      "127.0.0.1:0",
-			P2PPrivateKey:  v.PrivateKey,
-			Bootnodes:      append([]string(nil), bootAddrs...),
-			Encrypt:        encrypt,
-			AllowCleartext: !encrypt,
-			DeferRunner:    true,
+			Genesis:          g,
+			Node:             n,
+			Validator:        true,
+			ValidatorKey:     v.PrivateKey,
+			P2PListen:        "127.0.0.1:0",
+			P2PPrivateKey:    v.PrivateKey,
+			Bootnodes:        append([]string(nil), bootAddrs...),
+			Encrypt:          encrypt,
+			AllowCleartext:   !encrypt,
+			DeferRunner:      true,
+			MinBlockInterval: cfg.MinBlockInterval,
 		})
 		if err != nil {
 			_ = netw.Stop()

@@ -18,6 +18,59 @@ import (
 	"github.com/dewnetwork/dew/core/vm"
 )
 
+func TestMultiProcessBFT_LongEmpty(t *testing.T) {
+	if os.Getenv("DEW_HEAVY_INTEGRATION") == "" {
+		t.Skip("set DEW_HEAVY_INTEGRATION=1 for multiproc empty soak ≥150 heights")
+	}
+	const targetHeight uint64 = 150
+	netw, err := StartMultiProcessBFT(MultiProcessConfig{
+		HTTPAddr:         "127.0.0.1:0",
+		MinBlockInterval: 200 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = netw.Stop() })
+
+	done := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				catchUpFullNode(netw)
+			}
+		}
+	}()
+	defer close(done)
+
+	tipHash, tipNum := waitUniformTip(t, netw, targetHeight, 4*time.Minute)
+	if tipNum < targetHeight {
+		t.Fatalf("height=%d want >= %d", tipNum, targetHeight)
+	}
+	for i, v := range netw.Validators {
+		blk := v.Node.GetBlockByNumber(tipNum)
+		if blk == nil || blk.Hash() != tipHash {
+			got := types.Hash{}
+			if blk != nil {
+				got = blk.Hash()
+			}
+			t.Fatalf("validator %d block %d %s != %s", i, tipNum, got.Hex(), tipHash.Hex())
+		}
+	}
+	fullBlk := netw.Full.Node.GetBlockByNumber(tipNum)
+	if fullBlk == nil || fullBlk.Hash() != tipHash {
+		got := types.Hash{}
+		if fullBlk != nil {
+			got = fullBlk.Hash()
+		}
+		t.Fatalf("full node block %d %s != %s", tipNum, got.Hex(), tipHash.Hex())
+	}
+}
+
 func TestMultiProcessBFT_SharedChain(t *testing.T) {
 	enc := true
 	netw, err := StartMultiProcessBFT(MultiProcessConfig{
