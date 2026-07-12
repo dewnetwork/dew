@@ -126,6 +126,59 @@ func TestThreeValidatorsCommitQuorum(t *testing.T) {
 	}
 }
 
+// TestApplySyncedBlock_CatchUp advances a lagging engine after P2P import.
+func TestApplySyncedBlock_CatchUp(t *testing.T) {
+	root := types.Keccak256Hash([]byte("sync-catchup"))
+	nodes, err := GenerateLocalNodes(1, 1, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parent := MakeGenesisHeader()
+	cluster, err := NewLocalCluster(parent, nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	eng := cluster.Engines()[0]
+	if eng.Height() != 1 {
+		t.Fatalf("height=%d want 1", eng.Height())
+	}
+
+	// Simulate a block committed by peers while this engine lagged at height 1.
+	blk := types.NewBlock(&types.Header{
+		ParentHash: parent.Hash(),
+		Number:     1,
+		Timestamp:  1,
+		GasLimit:   parent.GasLimit,
+		StateRoot:  root,
+		TxRoot:     types.EmptyTxRoot,
+		ReceiptRoot: types.EmptyReceiptRoot,
+		Proposer:   eng.Address(),
+	}, nil)
+
+	advanced, err := eng.ApplySyncedBlock(blk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !advanced {
+		t.Fatal("expected engine to advance")
+	}
+	if eng.Height() != 2 {
+		t.Fatalf("height=%d want 2", eng.Height())
+	}
+	if eng.Step() != StepNewRound {
+		t.Fatalf("step=%s want NewRound", eng.Step())
+	}
+
+	// Idempotent once past this height.
+	advanced, err = eng.ApplySyncedBlock(blk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if advanced {
+		t.Fatal("expected no-op after catch-up")
+	}
+}
+
 // TestInvalidRootPrevoteNil — Phase A5: invalid state root → prevote nil → no commit.
 func TestInvalidRootPrevoteNil(t *testing.T) {
 	goodRoot := types.Keccak256Hash([]byte("good"))

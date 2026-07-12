@@ -3,6 +3,7 @@ package consensus
 import "time"
 
 const defaultRoundTimeout = 3 * time.Second
+const defaultMinBlockInterval = 200 * time.Millisecond
 
 // Runner drives consensus rounds: starts the first round, restarts after each
 // commit, and optionally times out stuck propose steps for liveness.
@@ -10,7 +11,9 @@ type Runner struct {
 	Engine       *Engine
 	OnCommit     func(CommitEvent) error
 	RoundTimeout time.Duration // default 3s if zero
-	stop         chan struct{}
+	// MinBlockInterval paces StartRound after commit (curbs empty-block storms).
+	MinBlockInterval time.Duration // default 50ms if zero; negative disables pacing
+	stop             chan struct{}
 }
 
 // Start wires the engine commit hook, begins the timeout loop, and enters the
@@ -22,6 +25,21 @@ func (r *Runner) Start() error {
 	r.Engine.OnCommit = func(ev CommitEvent) {
 		if r.OnCommit != nil {
 			_ = r.OnCommit(ev)
+		}
+		interval := r.MinBlockInterval
+		if interval == 0 {
+			interval = defaultMinBlockInterval
+		}
+		if interval > 0 {
+			time.AfterFunc(interval, func() {
+				select {
+				case <-r.stop:
+					return
+				default:
+					_ = r.Engine.StartRound()
+				}
+			})
+			return
 		}
 		_ = r.Engine.StartRound()
 	}

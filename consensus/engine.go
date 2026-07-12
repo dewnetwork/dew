@@ -197,114 +197,154 @@ func (e *Engine) flush(box outbox) {
 
 // StartRound enters Propose for the current height/round and may propose.
 // Idempotent while a round is already in progress (step != NewRound).
+//
+// Block building runs without holding e.mu so it can take node locks without
+// deadlocking against P2P import / ApplySyncedBlock paths.
 func (e *Engine) StartRound() error {
 	e.mu.Lock()
-	var box outbox
-	var err error
-	if e.step == StepNewRound {
-		err = e.enterNewRoundLocked(&box)
-	}
-	e.mu.Unlock()
-	e.flush(box)
-	return err
-}
-
-func (e *Engine) enterNewRoundLocked(box *outbox) error {
-	e.step = StepNewRound
-	e.resetVotes()
-	e.step = StepPropose
-	return e.maybeProposeLocked(box)
-}
-
-func (e *Engine) maybeProposeLocked(box *outbox) error {
-	proposer := e.valSet.Proposer(e.height, e.round)
-	if !proposer.Equal(e.address) {
+	if e.step != StepNewRound {
+		e.mu.Unlock()
 		return nil
 	}
-	block, err := e.builder.BuildProposal(e.height, e.parent, e.address, e.proposeRoot)
-	if err != nil {
-		return err
+	e.resetVotes()
+	e.step = StepPropose
+	height, round := e.height, e.round
+	parent := e.parent.Copy()
+	addr := e.address
+	root := e.proposeRoot
+	isProposer := e.valSet.Proposer(height, round).Equal(addr)
+	builder := e.builder
+	key := e.key
+	e.mu.Unlock()
+
+	var block *types.Block
+	if isProposer {
+		var err error
+		block, err = builder.BuildProposal(height, parent, addr, root)
+		if err != nil {
+			return err
+		}
+	}
+
+	e.mu.Lock()
+	var box outbox
+	// Stale if height/round moved while building.
+	if e.height != height || e.round != round || e.step != StepPropose {
+		e.mu.Unlock()
+		return nil
+	}
+	if !isProposer {
+		// Non-proposer waits in Propose for HandleProposal.
+		e.mu.Unlock()
+		return nil
+	}
+	if block == nil {
+		e.mu.Unlock()
+		return fmt.Errorf("consensus: nil proposal block")
 	}
 	p := &Proposal{
-		Height:    e.height,
-		Round:     e.round,
+		Height:    height,
+		Round:     round,
 		BlockHash: block.Hash(),
 		Block:     block,
-		Proposer:  e.address,
+		Proposer:  addr,
 	}
-	if err := SignProposal(p, e.key); err != nil {
+	if err := SignProposal(p, key); err != nil {
+		e.mu.Unlock()
 		return err
 	}
 	e.proposal = p
 	box.proposal(p)
-	// Proposer also prevotes after proposing.
-	return e.enterPrevoteLocked(box)
-}
-
-// HandleProposal processes a proposal from the network.
-func (e *Engine) HandleProposal(p *Proposal) error {
-	e.mu.Lock()
-	var box outbox
-	err := e.handleProposalLocked(p, &box)
+	// enterPrevote releases and re-acquires e.mu for execution validation.
+	err := e.enterPrevoteLocked(&box)
 	e.mu.Unlock()
 	e.flush(box)
 	return err
 }
 
-func (e *Engine) handleProposalLocked(p *Proposal, box *outbox) error {
+// HandleProposal processes a proposal from the network.
+func (e *Engine) HandleProposal(p *Proposal) error {
 	if p == nil {
 		return fmt.Errorf("consensus: nil proposal")
-	}
-	if p.Height != e.height || p.Round != e.round {
-		return nil // stale
-	}
-	if e.proposal != nil {
-		return nil // already have one for this round
 	}
 	if err := VerifyProposal(p); err != nil {
 		return err
 	}
-	want := e.valSet.Proposer(e.height, e.round)
-	if !p.Proposer.Equal(want) {
-		return fmt.Errorf("consensus: proposal from non-proposer %s want %s", p.Proposer.Hex(), want.Hex())
-	}
 	if p.Block != nil && p.Block.Hash() != p.BlockHash {
 		return fmt.Errorf("consensus: proposal block hash mismatch")
 	}
-	e.proposal = cloneProposal(p)
 
-	if e.step == StepPropose || e.step == StepNewRound {
-		return e.enterPrevoteLocked(box)
+	e.mu.Lock()
+	var box outbox
+	if p.Height != e.height || p.Round != e.round {
+		e.mu.Unlock()
+		return nil // stale
 	}
-	return nil
+	if e.proposal != nil {
+		e.mu.Unlock()
+		return nil // already have one for this round
+	}
+	want := e.valSet.Proposer(e.height, e.round)
+	if !p.Proposer.Equal(want) {
+		e.mu.Unlock()
+		return fmt.Errorf("consensus: proposal from non-proposer %s want %s", p.Proposer.Hex(), want.Hex())
+	}
+	e.proposal = cloneProposal(p)
+	var err error
+	if e.step == StepPropose || e.step == StepNewRound {
+		err = e.enterPrevoteLocked(&box)
+	}
+	e.mu.Unlock()
+	e.flush(box)
+	return err
 }
 
+// enterPrevoteLocked transitions Propose → Prevote. Caller holds e.mu on entry;
+// this method releases e.mu while validating the proposal against execution
+// state (node locks), then re-acquires e.mu before recording the vote.
 func (e *Engine) enterPrevoteLocked(box *outbox) error {
 	if e.step != StepPropose && e.step != StepNewRound {
 		return nil
 	}
 	e.step = StepPrevote
 
+	height, round := e.height, e.round
+	parent := e.parent.Copy()
+	prop := cloneProposal(e.proposal)
+	lockedRound := e.lockedRound
+	lockedHash := e.lockedHash
+	addr := e.address
+	key := e.key
+	validator := e.validator
+	e.mu.Unlock()
+
 	hash := types.Hash{} // nil by default
-	if e.proposal != nil && e.proposal.Block != nil {
-		if err := e.validator.ValidateProposal(e.height, e.parent, e.proposal.Block); err == nil {
-			hash = e.proposal.BlockHash
+	if prop != nil && prop.Block != nil {
+		if err := validator.ValidateProposal(height, parent, prop.Block); err == nil {
+			hash = prop.BlockHash
 		}
 		// invalid root / linkage → nil prevote
 	}
-	if e.lockedRound >= 0 && !e.lockedHash.IsZero() {
-		hash = e.lockedHash
+	if lockedRound >= 0 && !lockedHash.IsZero() {
+		hash = lockedHash
 	}
 
 	v := &Vote{
 		Type:      VotePrevote,
-		Height:    e.height,
-		Round:     e.round,
+		Height:    height,
+		Round:     round,
 		BlockHash: hash,
-		Validator: e.address,
+		Validator: addr,
 	}
-	if err := SignVote(v, e.key); err != nil {
-		return err
+	signErr := SignVote(v, key)
+
+	e.mu.Lock()
+	if signErr != nil {
+		return signErr
+	}
+	// Stale if we moved on while validating.
+	if e.height != height || e.round != round || e.step != StepPrevote {
+		return nil
 	}
 	_ = e.addPrevoteLocked(v)
 	box.vote(v)
@@ -464,6 +504,51 @@ func (e *Engine) ForceTimeoutRound() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.enterNextRoundLocked()
+}
+
+// ApplySyncedBlock advances the engine after a block was imported from P2P
+// catch-up (validator missed the local BFT commit). Returns true when the
+// engine moved forward; the caller should StartRound for the new height.
+//
+// No-op when the engine is already past block.Number (local commit won the race).
+func (e *Engine) ApplySyncedBlock(block *types.Block) (bool, error) {
+	if block == nil {
+		return false, fmt.Errorf("consensus: nil block")
+	}
+	h := block.Header()
+	if h == nil {
+		return false, fmt.Errorf("consensus: nil header")
+	}
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	// Already committed this height (or later) via local BFT.
+	if e.height > h.Number {
+		return false, nil
+	}
+	if e.height != h.Number {
+		return false, fmt.Errorf("consensus: synced block height %d want %d", h.Number, e.height)
+	}
+	if e.parent == nil || h.ParentHash != e.parent.Hash() {
+		return false, fmt.Errorf("consensus: synced block parent mismatch")
+	}
+
+	e.parent = h.Copy()
+	e.height = h.Number + 1
+	e.round = 0
+	e.lockedRound = -1
+	e.lockedHash = types.Hash{}
+	e.committed = false
+	e.resetVotes()
+	e.step = StepNewRound
+	e.LastCommit = &CommitEvent{
+		Height:    h.Number,
+		Round:     0,
+		BlockHash: block.Hash(),
+		Block:     block,
+	}
+	return true, nil
 }
 
 func cloneProposal(p *Proposal) *Proposal {

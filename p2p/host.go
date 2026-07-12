@@ -279,7 +279,11 @@ func (h *Host) negotiate(conn net.Conn, inbound bool) (*Peer, error) {
 	}
 	h.store.Remember(p.ID, p.RemoteAddr)
 
-	h.wg.Add(1)
+	h.wg.Add(2)
+	go func() {
+		defer h.wg.Done()
+		p.writeLoop()
+	}()
 	go func() {
 		defer h.wg.Done()
 		p.runRead()

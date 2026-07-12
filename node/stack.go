@@ -35,6 +35,8 @@ type Stack struct {
 	Engine *consensus.Engine
 	Host   *p2p.Host
 	Runner *consensus.Runner
+
+	stopCh chan struct{}
 }
 
 // StartStack boots P2P and, when Validator=true, Dew-BFT engine + runner.
@@ -57,7 +59,7 @@ func StartStack(cfg StackConfig) (*Stack, error) {
 
 	cfg.Node.SetAutoMine(false)
 
-	stack := &Stack{Node: cfg.Node}
+	stack := &Stack{Node: cfg.Node, stopCh: make(chan struct{})}
 	backend := &P2PBackend{N: cfg.Node}
 
 	var engine *consensus.Engine
@@ -144,9 +146,34 @@ func StartStack(cfg StackConfig) (*Stack, error) {
 		}
 		go dialBootnode(host, addr)
 	}
+	// Full nodes (and lagging validators) periodically pull missing blocks when
+	// a peer tip is ahead. Avoids permanent lag from tip-only gossip.
+	go stack.syncLoop()
 	time.Sleep(50 * time.Millisecond)
 
 	return stack, nil
+}
+
+// syncLoop pulls missing blocks only when a peer reports a higher tip.
+func (s *Stack) syncLoop() {
+	if s == nil || s.Host == nil || s.stopCh == nil {
+		return
+	}
+	tick := time.NewTicker(500 * time.Millisecond)
+	defer tick.Stop()
+	for {
+		select {
+		case <-s.stopCh:
+			return
+		case <-tick.C:
+			local := s.Node.BlockNumber()
+			for _, p := range s.Host.Store().Active() {
+				if p.Height > local {
+					_ = s.Host.SyncMissingFromPeer(p)
+				}
+			}
+		}
+	}
 }
 
 // StartConsensus begins the BFT runner loop (no-op for full nodes).
@@ -170,6 +197,13 @@ func (s *Stack) Stop() error {
 	if s == nil {
 		return nil
 	}
+	if s.stopCh != nil {
+		select {
+		case <-s.stopCh:
+		default:
+			close(s.stopCh)
+		}
+	}
 	if s.Runner != nil {
 		s.Runner.Stop()
 	}
@@ -181,17 +215,30 @@ func (s *Stack) Stop() error {
 
 func appHandlers(stack *Stack, validator bool, engine **consensus.Engine) p2p.AppHandlers {
 	h := p2p.AppHandlers{
-		OnBlock: func(_ uint64, _ types.Hash, raw []byte, _ p2p.PeerID) error {
-			// Validators apply blocks via BFT OnCommit only; gossip import would
-			// advance the execution node ahead of the consensus engine.
-			if validator {
-				return nil
-			}
+		OnBlock: func(_ uint64, _ types.Hash, raw []byte, from p2p.PeerID) error {
 			blk, err := types.UnmarshalBlockBinary(raw)
 			if err != nil {
 				return err
 			}
-			return stack.Node.ImportCommittedBlock(blk)
+			if err := stack.Node.ImportCommittedBlock(blk); err != nil {
+				// Sequential gap: pull missing range from the announcing peer.
+				// Return err so the host can clear inventory "seen" and retry.
+				if stack.Host != nil {
+					if p, ok := stack.Host.Store().GetActive(from); ok {
+						go func() { _ = stack.Host.SyncMissingFromPeer(p) }()
+					}
+				}
+				return err
+			}
+			// Validators that missed local BFT commit catch up execution above;
+			// advance the engine so they rejoin the next height.
+			if validator && engine != nil && *engine != nil {
+				advanced, advErr := (*engine).ApplySyncedBlock(blk)
+				if advErr == nil && advanced {
+					_ = (*engine).StartRound()
+				}
+			}
+			return nil
 		},
 		OnTx: func(hash types.Hash, raw []byte, _ p2p.PeerID) error {
 			backend := &P2PBackend{N: stack.Node}

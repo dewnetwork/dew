@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 	"strconv"
@@ -180,6 +181,8 @@ func (h *Host) handleBlockPayload(p *Peer, payload []byte) error {
 	}
 	if h.handlers.OnBlock != nil {
 		if err := h.handlers.OnBlock(msg.Number, msg.Hash, msg.Raw, p.ID); err != nil {
+			// Import may fail when we are behind; allow inventory re-fetch.
+			h.unmarkSeen(msg.Hash)
 			return nil
 		}
 	}
@@ -243,14 +246,27 @@ func (h *Host) handleProposal(p *Peer, payload []byte) error {
 	if err != nil {
 		return err
 	}
-	if h.handlers.OnProposal == nil {
+	// Dedup proposals without colliding with block inventory seen keys.
+	propKey := proposalSeenHash(msg)
+	if h.alreadySeen(propKey) {
 		return nil
 	}
-	if err := h.handlers.OnProposal(msg, p.ID); err != nil {
-		return nil
+	h.markSeen(propKey)
+	if h.handlers.OnProposal != nil {
+		if err := h.handlers.OnProposal(msg, p.ID); err != nil {
+			return nil
+		}
 	}
 	h.Broadcast(MsgProposal, payload, p.ID)
 	return nil
+}
+
+func proposalSeenHash(msg *WireProposal) types.Hash {
+	var b [8 + 8 + 32]byte
+	binary.BigEndian.PutUint64(b[0:8], msg.Height)
+	binary.BigEndian.PutUint64(b[8:16], msg.Round)
+	copy(b[16:], msg.BlockHash[:])
+	return types.Keccak256Hash(b[:])
 }
 
 func (h *Host) handleVote(p *Peer, payload []byte, typ uint8) error {
@@ -258,14 +274,29 @@ func (h *Host) handleVote(p *Peer, payload []byte, typ uint8) error {
 	if err != nil {
 		return err
 	}
-	if h.handlers.OnVote == nil {
+	// Dedup votes by (type,height,round,validator) fingerprint.
+	voteKey := voteSeenHash(msg)
+	if h.alreadySeen(voteKey) {
 		return nil
 	}
-	if err := h.handlers.OnVote(msg, p.ID); err != nil {
-		return nil
+	h.markSeen(voteKey)
+	if h.handlers.OnVote != nil {
+		if err := h.handlers.OnVote(msg, p.ID); err != nil {
+			return nil
+		}
 	}
 	h.Broadcast(typ, payload, p.ID)
 	return nil
+}
+
+func voteSeenHash(msg *WireVote) types.Hash {
+	// Compact fingerprint for inventory-style seen set.
+	var b [1 + 8 + 8 + 20]byte
+	b[0] = msg.Type
+	binary.BigEndian.PutUint64(b[1:9], msg.Height)
+	binary.BigEndian.PutUint64(b[9:17], msg.Round)
+	copy(b[17:], msg.Validator[:])
+	return types.Keccak256Hash(b[:])
 }
 
 func (h *Host) alreadySeen(hash types.Hash) bool {
@@ -279,6 +310,12 @@ func (h *Host) markSeen(hash types.Hash) {
 	h.seenMu.Lock()
 	defer h.seenMu.Unlock()
 	h.seenInv[hash] = struct{}{}
+}
+
+func (h *Host) unmarkSeen(hash types.Hash) {
+	h.seenMu.Lock()
+	defer h.seenMu.Unlock()
+	delete(h.seenInv, hash)
 }
 
 func splitHostPort(addr string) (string, uint16, error) {

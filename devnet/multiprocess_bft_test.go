@@ -10,10 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/dewnetwork/dew/core/types"
+	"github.com/dewnetwork/dew/core/vm"
 )
 
 func TestMultiProcessBFT_SharedChain(t *testing.T) {
@@ -69,45 +71,156 @@ func TestMultiProcessBFT_ERC20(t *testing.T) {
 	if os.Getenv("DEW_HEAVY_INTEGRATION") == "" {
 		t.Skip("set DEW_HEAVY_INTEGRATION=1 for full ERC-20 multi-process test (see scripts/devnet-erc20.mjs against compose multi)")
 	}
+	// Defer BFT so the deploy tx sits in every mempool before the first proposal.
 	netw, err := StartMultiProcessBFT(MultiProcessConfig{
-		HTTPAddr: "127.0.0.1:0",
+		HTTPAddr:       "127.0.0.1:0",
+		DeferConsensus: true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = netw.Stop() })
 
-	catchUpFullNode(netw)
-	time.Sleep(300 * time.Millisecond)
-
 	supply := new(big.Int).Mul(big.NewInt(1_000_000), big.NewInt(1e18))
 	amount := big.NewInt(1000)
 	recipient := common.HexToAddress(User1().Address.Hex())
+	faucet := Faucet()
+
+	// Pre-build deploy raw (nonce 0) and admit before consensus starts.
+	deployRaw, err := signTokenDeploy(faucet, netw.Validators[0].Node.ChainID(), 0, supply)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range netw.Validators {
+		if _, err := v.Node.SendRawTransaction(deployRaw); err != nil {
+			t.Fatalf("pre-admit deploy: %v", err)
+		}
+	}
+	if _, err := netw.Full.Node.SendRawTransaction(deployRaw); err != nil {
+		t.Fatalf("pre-admit full: %v", err)
+	}
+
+	if err := netw.StartConsensus(); err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				catchUpFullNode(netw)
+			}
+		}
+	}()
+	defer close(done)
+
+	// Wait for deploy receipt on full RPC, then transfer.
+	client := &rpcClient{url: netw.RPCURL}
+	deployTx := new(ethtypes.Transaction)
+	if err := deployTx.UnmarshalBinary(deployRaw); err != nil {
+		t.Fatal(err)
+	}
+	deployHash := deployTx.Hash().Hex()
+	rc, err := client.waitReceipt(deployHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rc.Status != 1 || rc.ContractAddress == (common.Address{}) {
+		t.Fatalf("deploy status=%d addr=%s", rc.Status, rc.ContractAddress.Hex())
+	}
+	token := rc.ContractAddress
+
 	mesh := func(raw []byte) {
 		for _, v := range netw.Validators {
 			_, _ = v.Node.SendRawTransaction(raw)
 		}
 	}
-	token, err := DeployAndTransferERC20(netw.RPCURL, Faucet(), recipient, supply, amount, mesh)
+	// Second tx: transfer via helper path (nonce 1).
+	transferRaw, err := signTokenTransfer(faucet, netw.Validators[0].Node.ChainID(), 1, token, recipient, amount)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if token == (common.Address{}) {
-		t.Fatal("zero token address")
+	mesh(transferRaw)
+	txHash2, err := client.sendRaw(transferRaw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rc2, err := client.waitReceipt(txHash2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rc2.Status != 1 {
+		t.Fatalf("transfer status=%d", rc2.Status)
 	}
 
-	waitFullNodeSynced(t, netw, 120*time.Second)
+	catchUpFullNode(netw)
 	tipNum := netw.Full.Node.BlockNumber()
 	if tipNum < 1 {
 		t.Fatalf("block number=%d want >= 1 after ERC-20", tipNum)
 	}
-	tipHash, _ := waitUniformTip(t, netw, tipNum, 120*time.Second)
+	tipHash, _ := waitUniformTip(t, netw, tipNum, 60*time.Second)
 	for i, v := range netw.Validators {
 		blk := v.Node.GetBlockByNumber(tipNum)
 		if blk == nil || blk.Hash() != tipHash {
 			t.Fatalf("validator %d block %d mismatch after ERC-20", i, tipNum)
 		}
 	}
+	_ = token
+}
+
+func signTokenDeploy(deployer Account, chainID *big.Int, nonce uint64, supply *big.Int) ([]byte, error) {
+	parsed, err := abi.JSON(strings.NewReader(vm.TokenABI))
+	if err != nil {
+		return nil, err
+	}
+	bin, err := hex.DecodeString(vm.TokenCreationBytecode)
+	if err != nil {
+		return nil, err
+	}
+	ctor, err := parsed.Pack("", supply)
+	if err != nil {
+		return nil, err
+	}
+	data := append(append([]byte{}, bin...), ctor...)
+	tx := ethtypes.NewTx(&ethtypes.LegacyTx{
+		Nonce:    nonce,
+		GasPrice: big.NewInt(1_000_000_000),
+		Gas:      3_000_000,
+		Data:     data,
+	})
+	signed, err := ethtypes.SignTx(tx, ethtypes.LatestSignerForChainID(chainID), deployer.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	return signed.MarshalBinary()
+}
+
+func signTokenTransfer(from Account, chainID *big.Int, nonce uint64, token, recipient common.Address, amount *big.Int) ([]byte, error) {
+	parsed, err := abi.JSON(strings.NewReader(vm.TokenABI))
+	if err != nil {
+		return nil, err
+	}
+	calldata, err := parsed.Pack("transfer", recipient, amount)
+	if err != nil {
+		return nil, err
+	}
+	tx := ethtypes.NewTx(&ethtypes.LegacyTx{
+		Nonce:    nonce,
+		GasPrice: big.NewInt(1_000_000_000),
+		Gas:      100_000,
+		To:       &token,
+		Data:     calldata,
+	})
+	signed, err := ethtypes.SignTx(tx, ethtypes.LatestSignerForChainID(chainID), from.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	return signed.MarshalBinary()
 }
 
 func waitFullNodeSynced(t *testing.T, netw *MultiProcessNet, timeout time.Duration) {

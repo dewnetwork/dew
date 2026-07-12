@@ -10,6 +10,12 @@ import (
 	"github.com/dewnetwork/dew/core/types"
 )
 
+// outMsg is one queued outbound frame.
+type outMsg struct {
+	typ     uint8
+	payload []byte
+}
+
 // Peer is one authenticated TCP session after handshake.
 type Peer struct {
 	ID         PeerID
@@ -21,7 +27,8 @@ type Peer struct {
 
 	host    *Host
 	secure  *secureConn // non-nil when C2 encryption is active
-	sendMu  sync.Mutex
+	sendMu  sync.Mutex  // only used by writeLoop
+	outCh   chan outMsg
 	closed  atomic.Bool
 	closeCh chan struct{}
 }
@@ -34,17 +41,55 @@ func newPeer(h *Host, conn net.Conn, inbound bool) *Peer {
 		Conn:    conn,
 		Inbound: inbound,
 		host:    h,
+		outCh:   make(chan outMsg, 2048),
 		closeCh: make(chan struct{}),
 	}
 }
 
-// Send writes a framed message to the peer (serialized).
+// Send queues a framed message for the peer write loop (never blocks the
+// caller's lock path longer than WriteTimeout; readers stay unblocked).
 func (p *Peer) Send(typ uint8, payload []byte) error {
 	if p.closed.Load() {
 		return fmt.Errorf("p2p: peer closed")
 	}
+	// Copy payload so callers can reuse buffers.
+	msg := outMsg{typ: typ, payload: append([]byte(nil), payload...)}
+	timeout := p.host.cfg.WriteTimeout
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case p.outCh <- msg:
+		return nil
+	case <-p.closeCh:
+		return fmt.Errorf("p2p: peer closed")
+	case <-timer.C:
+		return fmt.Errorf("p2p: outbound queue timeout")
+	}
+}
+
+func (p *Peer) writeLoop() {
+	for {
+		select {
+		case <-p.closeCh:
+			return
+		case msg := <-p.outCh:
+			if err := p.writeFrame(msg.typ, msg.payload); err != nil {
+				_ = p.Close()
+				return
+			}
+		}
+	}
+}
+
+func (p *Peer) writeFrame(typ uint8, payload []byte) error {
 	p.sendMu.Lock()
 	defer p.sendMu.Unlock()
+	if p.closed.Load() {
+		return fmt.Errorf("p2p: peer closed")
+	}
 	_ = p.Conn.SetWriteDeadline(time.Now().Add(p.host.cfg.WriteTimeout))
 	if p.secure != nil {
 		return p.secure.WriteFrame(typ, payload)

@@ -22,8 +22,9 @@ func TestRunner_AdvancesAfterCommit(t *testing.T) {
 
 	var commitCount int
 	runner := &Runner{
-		Engine:       eng,
-		RoundTimeout: time.Hour, // disable timeout side-effects in this test
+		Engine:           eng,
+		RoundTimeout:     time.Hour, // disable timeout side-effects in this test
+		MinBlockInterval: -1,        // immediate next round for unit test
 		OnCommit: func(ev CommitEvent) error {
 			commitCount++
 			if ev.BlockHash.IsZero() {

@@ -51,21 +51,26 @@ func (n *Node) BuildBlockFromPool(height uint64, parent *dewtypes.Header, propos
 
 	txs := n.selectPendingTxsForBlockLocked(maxTxs)
 
+	// Drop txs that fail simulation so one bad pending entry cannot halt proposals.
 	if len(txs) > 0 {
 		root, totalGas, err := n.simulateBlockExecutionLocked(newHeader, txs)
 		if err != nil {
-			return nil, err
+			txs = nil
+		} else {
+			newHeader.StateRoot = root
+			newHeader.GasUsed = totalGas
 		}
-		newHeader.StateRoot = root
-		newHeader.GasUsed = totalGas
-	} else if n.header.Number == parent.Number && n.header.Hash() == parent.Hash() {
-		newHeader.StateRoot = n.header.StateRoot
-	} else {
-		root, err := n.statedb.IntermediateRoot()
-		if err != nil {
-			return nil, err
+	}
+	if len(txs) == 0 {
+		if n.header.Number == parent.Number && n.header.Hash() == parent.Hash() {
+			newHeader.StateRoot = n.header.StateRoot
+		} else {
+			root, err := n.statedb.IntermediateRoot()
+			if err != nil {
+				return nil, err
+			}
+			newHeader.StateRoot = root
 		}
-		newHeader.StateRoot = root
 	}
 
 	return dewtypes.NewBlock(newHeader, txs), nil

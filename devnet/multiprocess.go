@@ -32,6 +32,9 @@ type MultiProcessConfig struct {
 	Genesis    *config.Genesis
 	HTTPAddr   string // full-node RPC bind (default 127.0.0.1:0)
 	EncryptP2P *bool
+	// DeferConsensus leaves validators idle until StartConsensus so tests can
+	// admit mempool txs before the first proposal (avoids empty-block races).
+	DeferConsensus bool
 }
 
 // StartMultiProcessBFT boots 3 validator stacks and 1 full-node stack with HTTP RPC.
@@ -118,10 +121,10 @@ func StartMultiProcessBFT(cfg MultiProcessConfig) (*MultiProcessNet, error) {
 		_ = netw.Stop()
 		return nil, err
 	}
-	for _, v := range netw.Validators {
-		if err := v.StartConsensus(); err != nil {
+	if !cfg.DeferConsensus {
+		if err := netw.StartConsensus(); err != nil {
 			_ = netw.Stop()
-			return nil, fmt.Errorf("devnet: start consensus: %w", err)
+			return nil, err
 		}
 	}
 	for _, addr := range bootAddrs {
@@ -200,6 +203,19 @@ func dialBootnodeFull(host *p2p.Host, addr string) {
 		}
 		time.Sleep(time.Second)
 	}
+}
+
+// StartConsensus begins BFT on all validator stacks (no-op for full node).
+func (m *MultiProcessNet) StartConsensus() error {
+	if m == nil {
+		return nil
+	}
+	for i, v := range m.Validators {
+		if err := v.StartConsensus(); err != nil {
+			return fmt.Errorf("devnet: start consensus validator %d: %w", i, err)
+		}
+	}
+	return nil
 }
 
 // Stop shuts down RPC and all stacks.
