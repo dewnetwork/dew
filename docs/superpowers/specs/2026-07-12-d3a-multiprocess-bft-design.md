@@ -1,7 +1,7 @@
 # D3a — Multi-process Dew-BFT Design
 
 **Date:** 2026-07-12  
-**Status:** draft — pending user review  
+**Status:** approved (2026-07-12)  
 **Scope:** Full D3a (acceptance criteria in [d3-scale.md](../../development/d3-scale.md#d3a--multi-process-dew-bft))  
 **Wire freeze:** `public-testnet-v1` — no DewTx / fee / precompile changes
 
