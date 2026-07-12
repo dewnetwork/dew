@@ -12,9 +12,9 @@ services:
       context: ../..
       dockerfile: deploy/explorer/Dockerfile
       args:
-        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-https://rpc.dew.fadosoft.com}
+        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-https://rpc-dew.fadosoft.com}
         - PUBLIC_CHAIN_ID=${PUBLIC_CHAIN_ID:-2205}
-        - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-https://explorer.dew.fadosoft.com}
+        - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-https://explorer-dew.fadosoft.com}
         - PUBLIC_DEW_PRICE_USD=${PUBLIC_DEW_PRICE_USD:-}
         - PUBLIC_DEW_PRICE_BTC=${PUBLIC_DEW_PRICE_BTC:-}
         - PUBLIC_DEW_PRICE_CHANGE_24H=${PUBLIC_DEW_PRICE_CHANGE_24H:-}

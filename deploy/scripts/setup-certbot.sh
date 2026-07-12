@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Issue Let's Encrypt certs for Dew public edge (*.dew.fadosoft.com names) and
+# Issue Let's Encrypt certs for Dew public edge (*-dew.fadosoft.com names) and
 # enable certbot auto-renew. Requires host nginx already serving :80 for these
 # hostnames (install deploy/nginx/dew-edge.conf first).
 #
@@ -8,17 +8,18 @@
 #   sudo bash deploy/scripts/setup-certbot.sh
 #
 # DNS (before running):
-#   A/AAAA  rpc.dew.fadosoft.com       → this host
-#   A/AAAA  faucet.dew.fadosoft.com    → this host
-#   A/AAAA  explorer.dew.fadosoft.com  → this host
+#   A/AAAA  rpc-dew.fadosoft.com       → this host
+#   A/AAAA  faucet-dew.fadosoft.com    → this host
+#   A/AAAA  explorer-dew.fadosoft.com  → this host
 #
-# Wildcard (*.dew.fadosoft.com) needs DNS-01, not this script — see deploy/README.md.
+# Zone wildcard (*.fadosoft.com) needs DNS-01, not this script — see deploy/README.md.
+# Default here is a multi-name cert for the three *-dew hostnames above.
 
 set -euo pipefail
 
-RPC_HOST="${RPC_HOST:-rpc.dew.fadosoft.com}"
-FAUCET_HOST="${FAUCET_HOST:-faucet.dew.fadosoft.com}"
-EXPLORER_HOST="${EXPLORER_HOST:-explorer.dew.fadosoft.com}"
+RPC_HOST="${RPC_HOST:-rpc-dew.fadosoft.com}"
+FAUCET_HOST="${FAUCET_HOST:-faucet-dew.fadosoft.com}"
+EXPLORER_HOST="${EXPLORER_HOST:-explorer-dew.fadosoft.com}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 
 if [[ "$(id -u)" -ne 0 ]]; then

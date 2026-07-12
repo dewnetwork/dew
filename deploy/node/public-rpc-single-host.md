@@ -20,8 +20,8 @@ This is a **public demo RPC**, not a multi-host BFT network. Clients share one a
 | Item | Example |
 | :--- | :------ |
 | Host | Ubuntu 22.04/24.04, 1–2 vCPU, 2 GB RAM |
-| Domain (optional but recommended) | `rpc.dew.fadosoft.com` (+ faucet/explorer) → A-record to this host |
-| Public URL | `https://rpc.dew.fadosoft.com` (or `http://…` until TLS) |
+| Domain (optional but recommended) | `rpc-dew.fadosoft.com` (+ faucet/explorer) → A-record to this host |
+| Public URL | `https://rpc-dew.fadosoft.com` (or `http://…` until TLS) |
 | Dew RPC | internal only (Compose) or `http://127.0.0.1:8545` (systemd) |
 
 Firewall (ufw):
@@ -125,7 +125,7 @@ Unit runs `dew run` (single execution node, auto-mine per tx). For in-process 3-
 
 ### TLS reverse proxy + rate limit (host nginx + certbot)
 
-**Full public surface** (rpc + faucet + explorer under `*.dew.fadosoft.com`):
+**Full public surface** (rpc + faucet + explorer under `*-dew.fadosoft.com`):
 
 ```bash
 sudo bash deploy/scripts/install-edge-nginx.sh
@@ -143,7 +143,7 @@ sudo apt-get update && sudo apt-get install -y nginx certbot python3-certbot-ngi
 sudo install -m 644 deploy/node/nginx/dew-rpc.conf /etc/nginx/sites-available/dew-rpc
 sudo ln -sf /etc/nginx/sites-available/dew-rpc /etc/nginx/sites-enabled/dew-rpc
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d rpc.dew.fadosoft.com
+sudo certbot --nginx -d rpc-dew.fadosoft.com
 ```
 
 nginx samples include:
@@ -169,20 +169,20 @@ nginx samples include:
 ```text
 Network:     Dew public-testnet-v1
 Chain ID:    2205
-RPC:         https://rpc.dew.fadosoft.com
+RPC:         https://rpc-dew.fadosoft.com
 Symbol:      DEW
-Explorer:    https://explorer.dew.fadosoft.com
-Faucet:      https://faucet.dew.fadosoft.com   # allowlist or captcha
+Explorer:    https://explorer-dew.fadosoft.com
+Faucet:      https://faucet-dew.fadosoft.com   # allowlist or captcha
 Bootnodes:   (n/a — single RPC path B)
 ```
 
 MetaMask: Custom network → RPC URL HTTPS, chain ID **2205**, symbol **DEW**.  
-**Explorer:** MetaMask “Block explorer URL” = base only — `https://explorer.dew.fadosoft.com` (see [block-explorer.md](../docs/development/block-explorer.md)).
+**Explorer:** MetaMask “Block explorer URL” = base only — `https://explorer-dew.fadosoft.com` (see [block-explorer.md](../docs/development/block-explorer.md)).
 
 External smoke:
 
 ```bash
-node scripts/smoke-rpc.mjs https://rpc.dew.fadosoft.com
+node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com
 ```
 
 ---

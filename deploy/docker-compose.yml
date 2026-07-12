@@ -9,9 +9,9 @@
 #   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
 #
 # Public hostnames (DNS A/AAAA → this host):
-#   https://rpc.dew.fadosoft.com
-#   https://faucet.dew.fadosoft.com
-#   https://explorer.dew.fadosoft.com
+#   https://rpc-dew.fadosoft.com
+#   https://faucet-dew.fadosoft.com
+#   https://explorer-dew.fadosoft.com
 #
 # Only the edge service publishes host ports (80/443). Backends stay on dew_network.
 
@@ -32,7 +32,7 @@ services:
       - "8545"
       - --bft.heights
       - "1"
-    # Internal only — JSON-RPC via edge (rpc.dew.fadosoft.com).
+    # Internal only — JSON-RPC via edge (rpc-dew.fadosoft.com).
     # Debug from host: docker compose exec dew-node … or temporary ports: mapping.
     expose:
       - "8545"
@@ -75,7 +75,7 @@ services:
       dockerfile: deploy/faucet/Dockerfile.web
       args:
         - PUBLIC_FAUCET_API_URL=${PUBLIC_FAUCET_API_URL:-/api}
-        - PUBLIC_EXPLORER_URL=${PUBLIC_EXPLORER_URL:-https://explorer.dew.fadosoft.com}
+        - PUBLIC_EXPLORER_URL=${PUBLIC_EXPLORER_URL:-https://explorer-dew.fadosoft.com}
         - PUBLIC_CAPTCHA_PROVIDER=${PUBLIC_CAPTCHA_PROVIDER:-}
         - PUBLIC_CAPTCHA_SITE_KEY=${PUBLIC_CAPTCHA_SITE_KEY:-}
     container_name: dew-faucet-frontend
@@ -93,9 +93,9 @@ services:
       context: ..
       dockerfile: deploy/explorer/Dockerfile
       args:
-        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-https://rpc.dew.fadosoft.com}
+        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-https://rpc-dew.fadosoft.com}
         - PUBLIC_CHAIN_ID=${PUBLIC_CHAIN_ID:-2205}
-        - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-https://explorer.dew.fadosoft.com}
+        - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-https://explorer-dew.fadosoft.com}
         - PUBLIC_DEW_PRICE_USD=${PUBLIC_DEW_PRICE_USD:-}
         - PUBLIC_DEW_PRICE_BTC=${PUBLIC_DEW_PRICE_BTC:-}
         - PUBLIC_DEW_PRICE_CHANGE_24H=${PUBLIC_DEW_PRICE_CHANGE_24H:-}
@@ -119,7 +119,7 @@ services:
       - faucet-frontend
       - explorer
     environment:
-      - CERT_PRIMARY=${CERT_PRIMARY:-rpc.dew.fadosoft.com}
+      - CERT_PRIMARY=${CERT_PRIMARY:-rpc-dew.fadosoft.com}
       # Optional host PEMs: mount a dir at /etc/nginx/origin-certs (see deploy/README.md)
       - ORIGIN_CERT_DIR=/etc/nginx/origin-certs
     ports:
@@ -148,10 +148,10 @@ services:
       - CERTBOT_AUTH=${CERTBOT_AUTH:-webroot}
       - CERTBOT_EMAIL=${CERTBOT_EMAIL:-}
       - CERTBOT_STAGING=${CERTBOT_STAGING:-}
-      - CERT_PRIMARY=${CERT_PRIMARY:-rpc.dew.fadosoft.com}
-      - RPC_HOST=${RPC_HOST:-rpc.dew.fadosoft.com}
-      - FAUCET_HOST=${FAUCET_HOST:-faucet.dew.fadosoft.com}
-      - EXPLORER_HOST=${EXPLORER_HOST:-explorer.dew.fadosoft.com}
+      - CERT_PRIMARY=${CERT_PRIMARY:-rpc-dew.fadosoft.com}
+      - RPC_HOST=${RPC_HOST:-rpc-dew.fadosoft.com}
+      - FAUCET_HOST=${FAUCET_HOST:-faucet-dew.fadosoft.com}
+      - EXPLORER_HOST=${EXPLORER_HOST:-explorer-dew.fadosoft.com}
       - CERTBOT_ISSUE_RETRY_SEC=${CERTBOT_ISSUE_RETRY_SEC:-120}
       - CERTBOT_RENEW_INTERVAL_SEC=${CERTBOT_RENEW_INTERVAL_SEC:-43200}
       - CERTBOT_DNS_PROPAGATION_SECONDS=${CERTBOT_DNS_PROPAGATION_SECONDS:-30}

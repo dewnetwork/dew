@@ -169,10 +169,10 @@ Env sample: [faucet.env.example](../../deploy/faucet/faucet.env.example). Unit: 
 ```text
 Network:     Dew public-testnet-v1
 Chain ID:    2205
-RPC:         https://rpc.dew.fadosoft.com
+RPC:         https://rpc-dew.fadosoft.com
 Symbol:      DEW
-Explorer:    https://explorer.dew.fadosoft.com
-Faucet:      https://faucet.dew.fadosoft.com   # or: none / allowlist only
+Explorer:    https://explorer-dew.fadosoft.com
+Faucet:      https://faucet-dew.fadosoft.com   # or: none / allowlist only
              # rules: 1 DEW / address / 24h · 10 / IP / hour · captcha|allowlist
 Bootnodes:   …
 ```

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install host nginx edge config for *.dew.fadosoft.com public surfaces.
+# Install host nginx edge config for *-dew.fadosoft.com public surfaces.
 # Run from repo root on the public host:
 #   sudo bash deploy/scripts/install-edge-nginx.sh
 # Then issue certs:

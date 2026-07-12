@@ -7,7 +7,7 @@
 #   3) Short-lived bootstrap self-signed so :443 can bind before first cert
 set -eu
 
-CERT_PRIMARY="${CERT_PRIMARY:-rpc.dew.fadosoft.com}"
+CERT_PRIMARY="${CERT_PRIMARY:-rpc-dew.fadosoft.com}"
 ORIGIN_DIR="${ORIGIN_CERT_DIR:-/etc/nginx/origin-certs}"
 LE_DIR="/etc/letsencrypt/live/${CERT_PRIMARY}"
 SSL_DIR=/etc/nginx/ssl

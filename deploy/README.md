@@ -132,7 +132,7 @@ Firewall: allow 22/80/443 only — **never** publish container `:8545` on `0.0.0
 
 See [public-rpc-single-host.md](./node/public-rpc-single-host.md) — Dew on `127.0.0.1:8545`, host nginx on `:443`.
 
-## Public edge: nginx :443 + certbot (`*.dew.fadosoft.com`)
+## Public edge: nginx :443 + certbot (`*-dew.fadosoft.com`)
 
 ### Recommended: Docker Compose edge
 
@@ -140,9 +140,9 @@ Full stack in one compose file: backends **internal** + `edge` on **:80/:443** +
 
 | Hostname | Upstream (compose) | Role |
 | :--- | :--- | :--- |
-| `rpc.dew.fadosoft.com` | `dew-node:8545` | JSON-RPC (rate limit, POST/OPTIONS) |
-| `faucet.dew.fadosoft.com` | `faucet-frontend:80` | Faucet SPA + `/api` |
-| `explorer.dew.fadosoft.com` | `explorer:80` | Block explorer SPA |
+| `rpc-dew.fadosoft.com` | `dew-node:8545` | JSON-RPC (rate limit, POST/OPTIONS) |
+| `faucet-dew.fadosoft.com` | `faucet-frontend:80` | Faucet SPA + `/api` |
+| `explorer-dew.fadosoft.com` | `explorer:80` | Block explorer SPA |
 
 ```bash
 # 1) DNS A/AAAA: rpc / faucet / explorer → this host (orange-cloud OK with DNS-01)
@@ -161,8 +161,8 @@ docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
 docker compose -f deploy/docker-compose.yml logs -f certbot edge
 
 # 4) Verify
-curl -sI https://faucet.dew.fadosoft.com | head -5
-node scripts/smoke-rpc.mjs https://rpc.dew.fadosoft.com
+curl -sI https://faucet-dew.fadosoft.com | head -5
+node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com
 ```
 
 | Service | Role | Host ports |
@@ -204,9 +204,9 @@ sudo -E bash deploy/scripts/setup-certbot.sh
 
 Do **not** run host nginx and Compose `edge` on the same host ports at once.
 
-### Wildcard cert note
+### Wildcard / multi-name cert note
 
-A single cert for `*.dew.fadosoft.com` needs **DNS-01** (not HTTP-01). Default is a multi-name cert for the three hostnames above.
+Hostnames follow the `*-dew.fadosoft.com` naming convention (`rpc-dew`, `faucet-dew`, `explorer-dew`). That is **not** a DNS wildcard label — Let's Encrypt covers them via a **multi-name (SAN)** cert (default). A true zone wildcard (`*.fadosoft.com`) needs **DNS-01**.
 
 ## systemd (binary install)
 
@@ -265,20 +265,20 @@ docker compose -f deploy/docker-compose.yml logs -f certbot edge
 
 | Surface | Public URL |
 | :--- | :--- |
-| JSON-RPC | `https://rpc.dew.fadosoft.com` |
-| Faucet web | `https://faucet.dew.fadosoft.com` |
-| Faucet API | `https://faucet.dew.fadosoft.com/api` |
-| Explorer | `https://explorer.dew.fadosoft.com` |
+| JSON-RPC | `https://rpc-dew.fadosoft.com` |
+| Faucet web | `https://faucet-dew.fadosoft.com` |
+| Faucet API | `https://faucet-dew.fadosoft.com/api` |
+| Explorer | `https://explorer-dew.fadosoft.com` |
 
 Local smoke **before** DNS/TLS (Host header + edge :80; HTTPS redirects until real certs):
 
 ```bash
-curl -sk -X POST https://127.0.0.1/ -H 'Host: rpc.dew.fadosoft.com' \
+curl -sk -X POST https://127.0.0.1/ -H 'Host: rpc-dew.fadosoft.com' \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}'
 ```
 
-`PUBLIC_RPC_URL` must be **browser-reachable** (`https://rpc.dew.fadosoft.com`), not Docker-internal `http://dew-node:8545`.
+`PUBLIC_RPC_URL` must be **browser-reachable** (`https://rpc-dew.fadosoft.com`), not Docker-internal `http://dew-node:8545`.
 
 ## Related residual
 

@@ -22,9 +22,9 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-${ROOT}/deploy/docker-compose.yml}"
 ENV_FILE="${ENV_FILE:-${ROOT}/deploy/.env}"
 
-RPC_HOST="${RPC_HOST:-rpc.dew.fadosoft.com}"
-FAUCET_HOST="${FAUCET_HOST:-faucet.dew.fadosoft.com}"
-EXPLORER_HOST="${EXPLORER_HOST:-explorer.dew.fadosoft.com}"
+RPC_HOST="${RPC_HOST:-rpc-dew.fadosoft.com}"
+FAUCET_HOST="${FAUCET_HOST:-faucet-dew.fadosoft.com}"
+EXPLORER_HOST="${EXPLORER_HOST:-explorer-dew.fadosoft.com}"
 CERT_PRIMARY="${CERT_PRIMARY:-${RPC_HOST}}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 
@@ -77,7 +77,7 @@ echo "Requesting certificates for ${RPC_HOST}, ${FAUCET_HOST}, ${EXPLORER_HOST}â
 # Force edge to re-copy LE material and reload
 echo "Reloading edge nginxâ€¦"
 "${COMPOSE[@]}" exec -T edge /bin/sh -c '
-  CERT_PRIMARY="${CERT_PRIMARY:-rpc.dew.fadosoft.com}"
+  CERT_PRIMARY="${CERT_PRIMARY:-rpc-dew.fadosoft.com}"
   LE_DIR="/etc/letsencrypt/live/'"${CERT_PRIMARY}"'"
   SSL_DIR=/etc/nginx/ssl
   if [ -f "$LE_DIR/fullchain.pem" ] && [ -f "$LE_DIR/privkey.pem" ]; then

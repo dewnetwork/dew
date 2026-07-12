@@ -373,10 +373,10 @@ When a network goes public, operators publish an **Explorer base URL** next to R
 ```text
 Network:     Dew public-testnet-v1
 Chain ID:    2205
-RPC:         https://rpc.dew.fadosoft.com
+RPC:         https://rpc-dew.fadosoft.com
 Symbol:      DEW
-Explorer:    https://explorer.dew.fadosoft.com
-Faucet:      https://faucet.dew.fadosoft.com   # or none / allowlist only — see faucet.md
+Explorer:    https://explorer-dew.fadosoft.com
+Faucet:      https://faucet-dew.fadosoft.com   # or none / allowlist only — see faucet.md
 Bootnodes:   … (path A) or n/a (path B single-host RPC)
 ```
 
@@ -392,7 +392,7 @@ Do **not** invent a URL in public channels. Prefer `(none)` over a broken link.
 
 | Shape | Example | When to use |
 | :--- | :--- | :--- |
-| Dedicated host | `https://explorer.dew.fadosoft.com` | Production / public testnet (recommended) |
+| Dedicated host | `https://explorer-dew.fadosoft.com` | Production / public testnet (recommended) |
 | Path on marketing site | `https://example.com/explorer/` | Small staging; shares TLS with landing |
 | GitHub Pages path | `https://dewnetwork.github.io/dew/explorer/` | Static demo against a public RPC only |
 
@@ -404,9 +404,9 @@ Host edge TLS for the Fadosoft zone: [deploy/nginx/dew-edge.conf](../../deploy/n
 
 | Variable | Role | Example |
 | :--- | :--- | :--- |
-| `PUBLIC_RPC_URL` | JSON-RPC HTTP(S) endpoint the browser (or BFF) calls | `https://rpc.dew.fadosoft.com` |
+| `PUBLIC_RPC_URL` | JSON-RPC HTTP(S) endpoint the browser (or BFF) calls | `https://rpc-dew.fadosoft.com` |
 | `PUBLIC_CHAIN_ID` | Must match network | `2205` |
-| `PUBLIC_EXPLORER_BASE` | Canonical origin + path for share links | `https://explorer.dew.fadosoft.com` |
+| `PUBLIC_EXPLORER_BASE` | Canonical origin + path for share links | `https://explorer-dew.fadosoft.com` |
 
 Local dev against [devnet](./devnet.md):
 
@@ -429,14 +429,14 @@ Canonical **path** suffixes under the explorer base. Clients should join `PUBLIC
 | Address | `/address/{addr}` | `0x`-prefixed 20-byte account |
 | Token (optional later) | `/token/{addr}` | ERC-20 metadata when indexed |
 
-Examples (base `https://explorer.dew.fadosoft.com`):
+Examples (base `https://explorer-dew.fadosoft.com`):
 
 ```text
-https://explorer.dew.fadosoft.com/
-https://explorer.dew.fadosoft.com/block/100
-https://explorer.dew.fadosoft.com/block/0xabc…
-https://explorer.dew.fadosoft.com/tx/0xdef…
-https://explorer.dew.fadosoft.com/address/0x1234…
+https://explorer-dew.fadosoft.com/
+https://explorer-dew.fadosoft.com/block/100
+https://explorer-dew.fadosoft.com/block/0xabc…
+https://explorer-dew.fadosoft.com/tx/0xdef…
+https://explorer-dew.fadosoft.com/address/0x1234…
 ```
 
 ### Share-link rules

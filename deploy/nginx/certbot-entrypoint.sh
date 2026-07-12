@@ -20,9 +20,9 @@ if [ "${CERTBOT_DISABLE:-}" = "1" ] || [ "${CERTBOT_DISABLE:-}" = "true" ]; then
 fi
 
 WEBROOT="${CERTBOT_WEBROOT:-/var/www/certbot}"
-RPC_HOST="${RPC_HOST:-rpc.dew.fadosoft.com}"
-FAUCET_HOST="${FAUCET_HOST:-faucet.dew.fadosoft.com}"
-EXPLORER_HOST="${EXPLORER_HOST:-explorer.dew.fadosoft.com}"
+RPC_HOST="${RPC_HOST:-rpc-dew.fadosoft.com}"
+FAUCET_HOST="${FAUCET_HOST:-faucet-dew.fadosoft.com}"
+EXPLORER_HOST="${EXPLORER_HOST:-explorer-dew.fadosoft.com}"
 CERT_PRIMARY="${CERT_PRIMARY:-${RPC_HOST}}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 CERTBOT_STAGING="${CERTBOT_STAGING:-}"

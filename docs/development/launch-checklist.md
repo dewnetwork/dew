@@ -65,7 +65,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | 3 | Firewall | Allow 22/80/443 only — **not** 8545 / 8081 / 8082 |
 | 4 | Feature flags | No `--staking`; Anvil keys **not** on public pages |
 | 5 | Publish | HTTPS RPC + chain ID `2205` (bootnodes n/a for path B) |
-| 6 | Smoke | `node scripts/smoke-rpc.mjs https://rpc.dew.fadosoft.com` (or `http://127.0.0.1` pre-TLS) |
+| 6 | Smoke | `node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com` (or `http://127.0.0.1` pre-TLS) |
 | 7 | Emergency | Stop proxy first (`docker compose stop proxy` / nginx); node can stay private |
 
 ### Path A — multi-host public (later)
@@ -85,10 +85,10 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 ```text
 Network:     Dew public-testnet-v1
 Chain ID:    2205
-RPC:         https://rpc.dew.fadosoft.com
+RPC:         https://rpc-dew.fadosoft.com
 Symbol:      DEW
-Explorer:    https://explorer.dew.fadosoft.com   # or (none) — see block-explorer.md
-Faucet:      https://faucet.dew.fadosoft.com     # allowlist or captcha — see faucet.md
+Explorer:    https://explorer-dew.fadosoft.com   # or (none) — see block-explorer.md
+Faucet:      https://faucet-dew.fadosoft.com     # allowlist or captcha — see faucet.md
 Bootnodes:   n/a (single-host controlled RPC)
 ```
 
