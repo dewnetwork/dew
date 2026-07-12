@@ -1,10 +1,11 @@
 # Combined public stack: Dew + faucet + explorer + nginx edge (:80/:443) + certbot.
 #
 # From repo root:
-#   cp deploy/.env.example deploy/.env   # edit keys / PUBLIC_*
+#   cp deploy/.env.example deploy/.env   # edit keys / PUBLIC_* / CERTBOT_EMAIL
+#   # DNS A/AAAA for rpc|faucet|explorer → this host; open 80/443
 #   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
-#   export CERTBOT_EMAIL=ops@fadosoft.com
-#   bash deploy/scripts/setup-certbot-docker.sh
+#   # TLS: certbot service auto-issues LE (HTTP-01) then renews every 12h
+#   # Manual force re-issue: bash deploy/scripts/setup-certbot-docker.sh
 #
 # Public hostnames (DNS A/AAAA → this host):
 #   https://rpc.dew.fadosoft.com
@@ -131,15 +132,28 @@ services:
     networks:
       - dew_network
 
-  # 6. Certbot auto-renew (initial issue: deploy/scripts/setup-certbot-docker.sh)
+  # 6. Certbot — auto-issue (if missing) + renew every 12h
+  # Edge serves ACME on :80; after issue, edge polls LE volume and reloads (~60s).
+  # Manual force: bash deploy/scripts/setup-certbot-docker.sh
   certbot:
     image: ${CERTBOT_IMAGE:-certbot/certbot:v2.11.0}
     container_name: dew-certbot
+    depends_on:
+      - edge
+    environment:
+      - CERTBOT_EMAIL=${CERTBOT_EMAIL:-}
+      - CERTBOT_STAGING=${CERTBOT_STAGING:-}
+      - CERT_PRIMARY=${CERT_PRIMARY:-rpc.dew.fadosoft.com}
+      - RPC_HOST=${RPC_HOST:-rpc.dew.fadosoft.com}
+      - FAUCET_HOST=${FAUCET_HOST:-faucet.dew.fadosoft.com}
+      - EXPLORER_HOST=${EXPLORER_HOST:-explorer.dew.fadosoft.com}
+      - CERTBOT_ISSUE_RETRY_SEC=${CERTBOT_ISSUE_RETRY_SEC:-120}
+      - CERTBOT_RENEW_INTERVAL_SEC=${CERTBOT_RENEW_INTERVAL_SEC:-43200}
     volumes:
       - dew_letsencrypt:/etc/letsencrypt
       - dew_certbot_www:/var/www/certbot
-    # Renew twice a day; edge entrypoint reloads nginx when cert files change.
-    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done;'
+      - ./nginx/certbot-entrypoint.sh:/certbot-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/certbot-entrypoint.sh"]
     restart: unless-stopped
     networks:
       - dew_network

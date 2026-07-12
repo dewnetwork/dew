@@ -44,10 +44,11 @@ certs_hash() {
 materialize_certs
 certs_hash >"${HASH_FILE}"
 
-# Pick up renewed LE certs without docker socket (certbot runs in sibling container).
+# Pick up new/renewed LE certs without docker socket (certbot runs in sibling container).
+# Poll often so the first auto-issue lands within ~1 minute after certbot succeeds.
 (
   while true; do
-    sleep 3600
+    sleep 60
     materialize_certs || true
     new_hash="$(certs_hash)"
     old_hash="$(cat "${HASH_FILE}" 2>/dev/null || echo none)"

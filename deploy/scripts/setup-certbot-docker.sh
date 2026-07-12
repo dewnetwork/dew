@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Issue / renew Let's Encrypt certs for the Compose edge stack and reload nginx.
+# Manual force issue / renew for the Compose edge stack, then reload nginx.
+#
+# Normal path: the `certbot` service in deploy/docker-compose.yml auto-issues on
+# first boot (when no lineage exists) and renews every 12h. Use this script to
+# force a certonly run without waiting for the container retry loop.
 #
 # Prerequisites:
 #   - DNS A/AAAA for the three hostnames → this host
@@ -93,6 +97,6 @@ echo "  https://${RPC_HOST}"
 echo "  https://${FAUCET_HOST}"
 echo "  https://${EXPLORER_HOST}"
 echo
-echo "Auto-renew: certbot service in compose (every 12h)."
-echo "Manual renew:  ${COMPOSE[*]} run --rm certbot renew --webroot -w /var/www/certbot"
+echo "Auto-issue + renew: certbot service in compose (issue if missing; renew every 12h)."
+echo "Logs:          ${COMPOSE[*]} logs -f certbot edge"
 echo "Smoke RPC:     node scripts/smoke-rpc.mjs https://${RPC_HOST}"

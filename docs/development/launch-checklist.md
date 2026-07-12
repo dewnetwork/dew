@@ -61,7 +61,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | # | Step | Notes |
 | -: | :--- | :---- |
 | 1 | Dew not public | Compose: internal network only · systemd: `127.0.0.1:8545` only |
-| 2 | TLS proxy | **Compose edge:** `deploy/docker-compose.yml` + `setup-certbot-docker.sh` · or host nginx: `install-edge-nginx.sh` + `setup-certbot.sh` · or path-B `deploy/node` proxy |
+| 2 | TLS proxy | **Compose edge:** `deploy/docker-compose.yml` + `CERTBOT_EMAIL` in `.env` (auto-issue/renew) · force: `setup-certbot-docker.sh` · or host nginx: `install-edge-nginx.sh` + `setup-certbot.sh` · or path-B `deploy/node` proxy |
 | 3 | Firewall | Allow 22/80/443 only — **not** 8545 / 8081 / 8082 |
 | 4 | Feature flags | No `--staking`; Anvil keys **not** on public pages |
 | 5 | Publish | HTTPS RPC + chain ID `2205` (bootnodes n/a for path B) |
