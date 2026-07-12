@@ -26,9 +26,10 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 | └── [nginx/](./explorer/nginx/) | SPA `try_files` for client routes |
 | **[nginx/](./nginx/)** | **Edge TLS configs** |
 | ├── [dew-edge.docker.conf](./nginx/dew-edge.docker.conf) | **Compose edge** — rpc/faucet/explorer by Host |
-| ├── [docker-entrypoint-edge.sh](./nginx/docker-entrypoint-edge.sh) | Bootstrap TLS + reload when LE appears |
-| ├── [certbot-entrypoint.sh](./nginx/certbot-entrypoint.sh) | Compose certbot: auto-issue + renew |
+| ├── [docker-entrypoint-edge.sh](./nginx/docker-entrypoint-edge.sh) | Origin / LE / bootstrap + reload |
+| ├── [certbot-entrypoint.sh](./nginx/certbot-entrypoint.sh) | webroot or DNS-01 Cloudflare + renew |
 | └── [dew-edge.conf](./nginx/dew-edge.conf) | Host nginx alternative (loopback backends) |
+| **[certs/](./certs/)** | `cloudflare.ini` / Origin PEMs (gitignored secrets) |
 | **[scripts/](./scripts/)** | **Certbot helpers** |
 | ├── [setup-certbot-docker.sh](./scripts/setup-certbot-docker.sh) | **Optional** force LE issue + reload edge |
 | ├── [install-edge-nginx.sh](./scripts/install-edge-nginx.sh) | Host nginx site install |
@@ -145,19 +146,22 @@ Full stack in one compose file: backends **internal** + `edge` on **:80/:443** +
 | `explorer.dew.fadosoft.com` | `explorer:80` | Block explorer SPA |
 
 ```bash
-# 1) DNS A/AAAA: rpc / faucet / explorer.dew.fadosoft.com → this host
-#    (If Cloudflare orange-cloud: use DNS only for first issue, or allow HTTP-01)
+# 1) DNS A/AAAA: rpc / faucet / explorer → this host (orange-cloud OK with DNS-01)
 
 # 2) Firewall: 22, 80, 443 only (not 8545)
 
-# 3) Start stack — certbot issues LE automatically when DNS/:80 are ready
-cp deploy/.env.example deploy/.env   # set CERTBOT_EMAIL; edit keys / PUBLIC_*
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
+# 3) TLS secrets + .env — see deploy/certs/README.md
+cp deploy/.env.example deploy/.env
+# Example DNS-01 (recommended behind Cloudflare):
+#   CERTBOT_AUTH=dns-cloudflare
+#   CERTBOT_IMAGE=certbot/dns-cloudflare:v2.11.0
+#   CERTBOT_EMAIL=ops@…
+#   + deploy/certs/cloudflare.ini (Zone DNS Edit token, chmod 600)
 
-# 4) Watch TLS (issue retries every 2m until success; edge reloads within ~60s)
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
 docker compose -f deploy/docker-compose.yml logs -f certbot edge
 
-# 5) Verify
+# 4) Verify
 curl -sI https://faucet.dew.fadosoft.com | head -5
 node scripts/smoke-rpc.mjs https://rpc.dew.fadosoft.com
 ```
@@ -169,13 +173,17 @@ node scripts/smoke-rpc.mjs https://rpc.dew.fadosoft.com
 | `faucet-frontend` | Faucet SPA | none |
 | `explorer` | Explorer SPA | none |
 | **`edge`** | nginx reverse proxy + TLS | **`:80`, `:443`** |
-| **`certbot`** | auto-issue if missing + renew every 12h | none |
+| **`certbot`** | LE issue/renew (`CERTBOT_AUTH`) or idle if disabled | none |
 
-Configs: [nginx/dew-edge.docker.conf](./nginx/dew-edge.docker.conf), [nginx/certbot-entrypoint.sh](./nginx/certbot-entrypoint.sh). Manual force re-issue: [scripts/setup-certbot-docker.sh](./scripts/setup-certbot-docker.sh).
+Configs: [nginx/dew-edge.docker.conf](./nginx/dew-edge.docker.conf), [nginx/certbot-entrypoint.sh](./nginx/certbot-entrypoint.sh), [certs/README.md](./certs/README.md).
 
-**TLS flow:** edge starts with a short-lived **self-signed** bootstrap so `:443` binds immediately. The `certbot` service runs `certonly --webroot` when no lineage exists (retries on failure), then `renew` every 12h. Edge polls the LE volume every **60s** and reloads nginx when material changes.
+| TLS mode | When | Key settings |
+| :--- | :--- | :--- |
+| **DNS-01 Cloudflare** | Orange-cloud, real LE on origin | `CERTBOT_AUTH=dns-cloudflare`, `CERTBOT_IMAGE=certbot/dns-cloudflare`, `cloudflare.ini` |
+| **Origin CA** | No LE on VPS | `deploy/certs/*.pem`, `CERTBOT_DISABLE=1`, CF **Full (strict)** |
+| **HTTP-01 webroot** | No CF / grey-cloud | `CERTBOT_AUTH=webroot`, inbound `:80` |
 
-**Cloudflare:** set SSL/TLS mode **Full (strict)** after a real LE cert is active. Prefer grey-cloud (DNS only) for the first issue if HTTP-01 fails through the proxy.
+**Edge cert priority:** host origin PEMs → Let's Encrypt → bootstrap self-signed. Edge reloads within ~60s when LE appears.
 
 ### Alternative: host nginx (no Compose edge)
 
@@ -244,10 +252,9 @@ Smoke:
 Full stack with **edge nginx** on `:80`/`:443`. Backends are not published on the host.
 
 ```bash
-cp deploy/.env.example deploy/.env   # set CERTBOT_EMAIL; Anvil #0 only for private
+cp deploy/.env.example deploy/.env   # TLS: DNS-01 CF recommended — see deploy/certs/README.md
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
-# certbot auto-issues LE (see logs: docker compose … logs -f certbot)
-# force re-issue if needed: bash deploy/scripts/setup-certbot-docker.sh
+docker compose -f deploy/docker-compose.yml logs -f certbot edge
 ```
 
 | Surface | Public URL |

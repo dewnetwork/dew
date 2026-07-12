@@ -1,11 +1,12 @@
 # Combined public stack: Dew + faucet + explorer + nginx edge (:80/:443) + certbot.
 #
 # From repo root:
-#   cp deploy/.env.example deploy/.env   # edit keys / PUBLIC_* / CERTBOT_EMAIL
-#   # DNS A/AAAA for rpc|faucet|explorer → this host; open 80/443
+#   cp deploy/.env.example deploy/.env   # edit keys / PUBLIC_* / TLS
+#   # TLS (see deploy/certs/README.md):
+#   #   DNS-01 CF: CERTBOT_AUTH=dns-cloudflare + cloudflare.ini + CERTBOT_IMAGE=certbot/dns-cloudflare
+#   #   Origin CA: deploy/certs/*.pem + CERTBOT_DISABLE=1
+#   #   HTTP-01:   CERTBOT_AUTH=webroot + CERTBOT_EMAIL (grey-cloud if needed)
 #   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
-#   # TLS: certbot service auto-issues LE (HTTP-01) then renews every 12h
-#   # Manual force re-issue: bash deploy/scripts/setup-certbot-docker.sh
 #
 # Public hostnames (DNS A/AAAA → this host):
 #   https://rpc.dew.fadosoft.com
@@ -119,12 +120,15 @@ services:
       - explorer
     environment:
       - CERT_PRIMARY=${CERT_PRIMARY:-rpc.dew.fadosoft.com}
+      - ORIGIN_CERT_DIR=/etc/nginx/origin-certs
     ports:
       - "${EDGE_HTTP_PORT:-80}:80"
       - "${EDGE_HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx/dew-edge.docker.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/docker-entrypoint-edge.sh:/docker-entrypoint-edge.sh:ro
+      # Optional host PEMs (Cloudflare Origin CA). See deploy/certs/README.md
+      - ${EDGE_ORIGIN_CERTS_PATH:-./certs}:/etc/nginx/origin-certs:ro
       - dew_letsencrypt:/etc/letsencrypt:ro
       - dew_certbot_www:/var/www/certbot:ro
     entrypoint: ["/bin/sh", "/docker-entrypoint-edge.sh"]
@@ -133,14 +137,16 @@ services:
       - dew_network
 
   # 6. Certbot — auto-issue (if missing) + renew every 12h
-  # Edge serves ACME on :80; after issue, edge polls LE volume and reloads (~60s).
-  # Manual force: bash deploy/scripts/setup-certbot-docker.sh
+  # CERTBOT_AUTH=webroot | dns-cloudflare  ·  CERTBOT_DISABLE=1 to idle
+  # DNS-01: CERTBOT_IMAGE=certbot/dns-cloudflare + deploy/certs/cloudflare.ini
   certbot:
     image: ${CERTBOT_IMAGE:-certbot/certbot:v2.11.0}
     container_name: dew-certbot
     depends_on:
       - edge
     environment:
+      - CERTBOT_DISABLE=${CERTBOT_DISABLE:-}
+      - CERTBOT_AUTH=${CERTBOT_AUTH:-webroot}
       - CERTBOT_EMAIL=${CERTBOT_EMAIL:-}
       - CERTBOT_STAGING=${CERTBOT_STAGING:-}
       - CERT_PRIMARY=${CERT_PRIMARY:-rpc.dew.fadosoft.com}
@@ -149,10 +155,15 @@ services:
       - EXPLORER_HOST=${EXPLORER_HOST:-explorer.dew.fadosoft.com}
       - CERTBOT_ISSUE_RETRY_SEC=${CERTBOT_ISSUE_RETRY_SEC:-120}
       - CERTBOT_RENEW_INTERVAL_SEC=${CERTBOT_RENEW_INTERVAL_SEC:-43200}
+      - CERTBOT_DNS_PROPAGATION_SECONDS=${CERTBOT_DNS_PROPAGATION_SECONDS:-30}
+      # cloudflare.ini lives under the mounted certs dir (see deploy/certs/)
+      - CLOUDFLARE_CREDENTIALS=/cloudflare-secrets/cloudflare.ini
     volumes:
       - dew_letsencrypt:/etc/letsencrypt
       - dew_certbot_www:/var/www/certbot
       - ./nginx/certbot-entrypoint.sh:/certbot-entrypoint.sh:ro
+      # Directory mount (always valid); DNS-01 reads cloudflare.ini inside
+      - ${EDGE_ORIGIN_CERTS_PATH:-./certs}:/cloudflare-secrets:ro
     entrypoint: ["/bin/sh", "/certbot-entrypoint.sh"]
     restart: unless-stopped
     networks:

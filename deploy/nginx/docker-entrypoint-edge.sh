@@ -1,21 +1,36 @@
 #!/bin/sh
 # Edge nginx entrypoint: materialize TLS certs then start nginx.
-# Prefer Let's Encrypt lineage; otherwise bootstrap a short-lived self-signed cert
-# so :443 can bind before the first certbot run.
+#
+# Priority:
+#   1) Host-mounted origin certs (/etc/nginx/origin-certs) — e.g. Cloudflare Origin CA
+#   2) Let's Encrypt lineage (/etc/letsencrypt/live/$CERT_PRIMARY) — webroot or DNS-01
+#   3) Short-lived bootstrap self-signed so :443 can bind before first cert
 set -eu
 
 CERT_PRIMARY="${CERT_PRIMARY:-rpc.dew.fadosoft.com}"
+ORIGIN_DIR="${ORIGIN_CERT_DIR:-/etc/nginx/origin-certs}"
 LE_DIR="/etc/letsencrypt/live/${CERT_PRIMARY}"
 SSL_DIR=/etc/nginx/ssl
 HASH_FILE="${SSL_DIR}/.materialized.hash"
 
 mkdir -p "${SSL_DIR}" /var/www/certbot
 
+copy_pair() {
+  src_dir="$1"
+  label="$2"
+  cp -L "${src_dir}/fullchain.pem" "${SSL_DIR}/fullchain.pem"
+  cp -L "${src_dir}/privkey.pem" "${SSL_DIR}/privkey.pem"
+  echo "edge: using ${label} from ${src_dir}"
+}
+
 materialize_certs() {
+  if [ -f "${ORIGIN_DIR}/fullchain.pem" ] && [ -f "${ORIGIN_DIR}/privkey.pem" ]; then
+    copy_pair "${ORIGIN_DIR}" "origin certs"
+    return 0
+  fi
+
   if [ -f "${LE_DIR}/fullchain.pem" ] && [ -f "${LE_DIR}/privkey.pem" ]; then
-    # -L: follow certbot archive symlinks
-    cp -L "${LE_DIR}/fullchain.pem" "${SSL_DIR}/fullchain.pem"
-    cp -L "${LE_DIR}/privkey.pem" "${SSL_DIR}/privkey.pem"
+    copy_pair "${LE_DIR}" "Let's Encrypt"
     return 0
   fi
 
@@ -23,7 +38,7 @@ materialize_certs() {
     return 0
   fi
 
-  echo "edge: no Let's Encrypt cert yet — generating bootstrap self-signed for ${CERT_PRIMARY}"
+  echo "edge: no origin/LE cert yet — generating bootstrap self-signed for ${CERT_PRIMARY}"
   if ! command -v openssl >/dev/null 2>&1; then
     apk add --no-cache openssl >/dev/null
   fi
@@ -44,8 +59,6 @@ certs_hash() {
 materialize_certs
 certs_hash >"${HASH_FILE}"
 
-# Pick up new/renewed LE certs without docker socket (certbot runs in sibling container).
-# Poll often so the first auto-issue lands within ~1 minute after certbot succeeds.
 (
   while true; do
     sleep 60
