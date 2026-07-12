@@ -52,6 +52,9 @@ type Node struct {
 
 	// Phase C1: unified mempool admission (EVM + DewTx)
 	pool *mempool.Pool
+
+	// Dev auto-mine: seal one block per accepted tx (default true).
+	autoMine bool
 }
 
 // TxLookup links a transaction hash to its block placement.
@@ -99,6 +102,7 @@ func NewFromGenesis(g *config.Genesis) (*Node, error) {
 		enablePrecompiles: params.DefaultEnableDewPrecompiles,
 		enableStaking:     params.DefaultEnableStaking,
 		pool:              mempool.New(mempool.DefaultConfig()),
+		autoMine:          true,
 	}
 	if n.baseFee == nil {
 		n.baseFee = big.NewInt(1_000_000_000)
@@ -173,6 +177,20 @@ func (n *Node) StakingEnabled() bool {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.enableStaking
+}
+
+// SetAutoMine toggles dev per-tx sealing (default true in NewFromGenesis).
+func (n *Node) SetAutoMine(v bool) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.autoMine = v
+}
+
+// AutoMine reports whether accepted txs are executed and sealed locally.
+func (n *Node) AutoMine() bool {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.autoMine
 }
 
 // ExecutionStats returns Dew-PE / operational metrics.
@@ -305,6 +323,9 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	if err != nil {
 		return dewtypes.Hash{}, err
 	}
+	if !n.autoMine {
+		return hash, nil
+	}
 	// Dev auto-mine path: drop from pool once we attempt inclusion.
 	defer n.pool.Remove(hash)
 
@@ -406,6 +427,9 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 		return dewtypes.Hash{}, err
 	}
 	txHash := dewtypes.BytesToHash(tx.Hash().Bytes())
+	if !n.autoMine {
+		return txHash, nil
+	}
 	defer n.pool.Remove(txHash)
 
 	gasPrice := effectiveGasPrice(tx, n.baseFee)
