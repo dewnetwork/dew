@@ -31,7 +31,7 @@ Owned by D3 — see [d3-scale.md](../docs/development/d3-scale.md) (D3a / D3b).
 - [x] **D3a** Multi-process Dew-BFT shared block production (`--validator`, `node.Stack`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`)
 - [x] **D3a** Multi-process ERC-20 integration (`DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -run MultiProcessBFT_ERC20`) — pre-admit before BFT; validator catch-up + outbound write queue
 - [ ] **D3a residual:** long empty-block multiproc runs can still stall (~100+ heights) under vote/proposal load; needs paced block production and/or gossip backpressure beyond MinBlockInterval
-- [ ] **D3b** Persistent peer store / auto-redial after restart (manual RedialMesh in chaos test today; `dew run` has dial retry only at start)
+- [x] **D3b** Persistent peer store / auto-redial (`peers.json`, Host maintain loop, `--datadir`; compose multi volumes) — chaos `RedialHost` still used for ephemeral-port restart tests
 
 ## C6 residuals (ops, not freeze blockers)
 

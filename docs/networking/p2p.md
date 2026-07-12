@@ -51,12 +51,15 @@ Handshake authenticates the peer’s key after the encrypted session is establis
 
 ## Discovery
 
-1. **Bootstrap seeds** from config
+1. **Bootstrap seeds** from config (`--p2p.bootnodes`)
 2. **PEX**: `GetPeers` / `Peers` exchange (up to 256 addresses)
-3. Maintain target **~25** active peers (_tentative_)
+3. **Durable peer store (D3b):** `<datadir>/peers.json` when `--datadir` is set
+4. **Auto-redial:** background maintain loop redials known + bootnode addrs after disconnect (backoff 1s…5 min; 7d TTL eviction; ban score ≥ 100 skips dial)
+5. Maintain target **~25** active peers (_tentative_)
 
 ```
 Bootstrap → Handshake → GetPeers → Dial more → Maintain peer count
+         ↘ load peers.json ↗          ↘ on disconnect: schedule redial
 ```
 
 ## Message type IDs (_draft allocation_)

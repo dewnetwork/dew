@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -64,6 +65,7 @@ func cmdRun(args []string) error {
 	p2pBoot := fs.String("p2p.bootnodes", "", "comma-separated host:port peers to dial")
 	p2pEncrypt := fs.Bool("p2p.encrypt", true, "encrypted P2P sessions (C2 default)")
 	p2pCleartext := fs.Bool("p2p.allow-cleartext", false, "permit cleartext when --p2p.encrypt=false")
+	dataDir := fs.String("datadir", "", "data directory (peers.json under here when P2P enabled)")
 	validator := fs.Bool("validator", false, "enable Dew-BFT validator mode")
 	validatorKey := fs.String("validator.key", "", "hex secp256k1 key for --validator")
 	noAutoMine := fs.Bool("no-auto-mine", false, "admit txs to mempool only (no local seal)")
@@ -119,6 +121,7 @@ func cmdRun(args []string) error {
 				Bootnodes:      splitCSV(*p2pBoot),
 				Encrypt:        *p2pEncrypt,
 				AllowCleartext: *p2pCleartext,
+				DataDir:        *dataDir,
 			},
 		})
 	}
@@ -141,13 +144,14 @@ func cmdRun(args []string) error {
 				Bootnodes:      splitCSV(*p2pBoot),
 				Encrypt:        *p2pEncrypt,
 				AllowCleartext: *p2pCleartext,
+				DataDir:        *dataDir,
 			},
 		})
 	}
 
 	var p2pHost *p2p.Host
 	if *p2pListen != "" {
-		h, err := startP2PHost(n, *p2pListen, *p2pKeyHex, *p2pBoot, *p2pEncrypt, *p2pCleartext)
+		h, err := startP2PHost(n, *p2pListen, *p2pKeyHex, *p2pBoot, *p2pEncrypt, *p2pCleartext, *dataDir)
 		if err != nil {
 			return err
 		}
@@ -172,7 +176,7 @@ func cmdRun(args []string) error {
 
 // startP2PHost binds an encrypted (default) P2P listener and dials bootnodes.
 // Uses a MemoryChain snapshot of genesis tip — multi-process BFT production is residual.
-func startP2PHost(n *node.Node, listen, keyHex, bootCSV string, encrypt, allowCleartext bool) (*p2p.Host, error) {
+func startP2PHost(n *node.Node, listen, keyHex, bootCSV string, encrypt, allowCleartext bool, dataDir string) (*p2p.Host, error) {
 	keyHex = strings.TrimPrefix(strings.TrimSpace(keyHex), "0x")
 	if keyHex == "" {
 		return nil, fmt.Errorf("p2p: --p2p.key required when --p2p.listen is set")
@@ -191,6 +195,11 @@ func startP2PHost(n *node.Node, listen, keyHex, bootCSV string, encrypt, allowCl
 		return nil, fmt.Errorf("p2p: missing genesis header")
 	}
 	mc := p2p.NewMemoryChain(h.Hash(), []byte("genesis"))
+	boot := splitCSV(bootCSV)
+	peerPath := ""
+	if strings.TrimSpace(dataDir) != "" {
+		peerPath = filepath.Join(dataDir, "peers.json")
+	}
 	cfg := p2p.Config{
 		PrivateKey:     priv,
 		ChainID:        n.ChainID(),
@@ -198,6 +207,8 @@ func startP2PHost(n *node.Node, listen, keyHex, bootCSV string, encrypt, allowCl
 		MaxPeers:       25,
 		Encrypt:        encrypt,
 		AllowCleartext: allowCleartext,
+		PeerStorePath:  peerPath,
+		Bootnodes:      boot,
 	}
 	host, err := p2p.NewHost(cfg, mc, mc, p2p.AppHandlers{})
 	if err != nil {
@@ -207,8 +218,9 @@ func startP2PHost(n *node.Node, listen, keyHex, bootCSV string, encrypt, allowCl
 		return nil, err
 	}
 
-	// Dial bootnodes with short retries (containers may start out of order).
-	for _, addr := range splitCSV(bootCSV) {
+	// One-shot retries still help when peers start out of order (compose).
+	// Continuous redial is owned by Host (D3b).
+	for _, addr := range boot {
 		addr := strings.TrimSpace(addr)
 		if addr == "" {
 			continue
@@ -327,7 +339,7 @@ Usage:
   dew init [--out genesis.json]
   dew devnet [--http.addr 127.0.0.1] [--http.port 8545] [--no-p2p] [--bft.heights 1]
   dew run [--genesis genesis.json] [--http.addr 127.0.0.1] [--http.port 8545] [--staking]
-          [--validator] [--validator.key HEX] [--no-auto-mine]
+          [--validator] [--validator.key HEX] [--no-auto-mine] [--datadir DIR]
           [--p2p.listen host:port] [--p2p.key HEX] [--p2p.bootnodes a:port,b:port]
           [--p2p.encrypt] [--p2p.allow-cleartext]
   dew version

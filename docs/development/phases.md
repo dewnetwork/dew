@@ -369,11 +369,11 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 | Workstream | Done when |
 | :--- | :--- |
 | **D3a — C5 multi-process BFT** | ≥3 `dew run --validator` processes share one canonical chain; optional full RPC syncs commits; compose `multi` + ERC-20 smoke ([d3-scale](./d3-scale.md#d3a--multi-process-dew-bft)) |
-| **D3b — peer store / redial** | Restart recovery without manual redial; documented data dir ([d3-scale](./d3-scale.md#d3b--peer-store-and-auto-redial)) |
+| **D3b — peer store / redial** | Restart recovery without manual redial; documented data dir ([d3-scale](./d3-scale.md#d3b--peer-store-and-auto-redial)) — **done** July 2026 (`peers.json`, Host redial loop, `--datadir`) |
 | **D3c — C4 staking residuals** | Unbonding enforced; double-sign evidence; ActiveSet → BFT epoch rotation ([d3-scale](./d3-scale.md#d3c--staking-residuals-c4), [debt](../../agents/debt.md) C4) |
 | **D3d — Path A multi-host public** | ≥3 validators + optional RPC; new keys; bootnodes published ([launch-checklist](./launch-checklist.md) path A, [d3-scale](./d3-scale.md#d3d--path-a-multi-host-public)) |
 | **D3e — external audit** | Scoped audit pack before mainnet ([phase-b-audit](../security/phase-b-audit.md), [d3-scale](./d3-scale.md#d3e--external-audit-prep)) |
 
 **Packages:** `consensus/`, `p2p/`, `node/`, `core/native`, `cmd/dew`, `deploy/`, `devnet/`, operator docs
 
-**Notes:** **D3a done** (July 2026) — `node.Stack`, `--validator` / `--no-auto-mine`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`. ERC-20 compose smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548`. Prefer config/genesis changes over wire churn under `public-testnet-v1`. Path B auto-mine deployment stays valid until operators migrate. Tokenomics issuance numbers may stay draft until mainnet.
+**Notes:** **D3a done** (July 2026) — `node.Stack`, `--validator` / `--no-auto-mine`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`. ERC-20 compose smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548`. **D3b done** (July 2026) — durable `peers.json`, auto-redial with backoff, `--datadir`; tests `./p2p/ -run AutoRedial`. Prefer config/genesis changes over wire churn under `public-testnet-v1`. Path B auto-mine deployment stays valid until operators migrate. Tokenomics issuance numbers may stay draft until mainnet.

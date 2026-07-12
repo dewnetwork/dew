@@ -3,6 +3,7 @@ package node
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/dewnetwork/dew/config"
@@ -25,6 +26,10 @@ type StackConfig struct {
 	Bootnodes      []string
 	Encrypt        bool
 	AllowCleartext bool
+	// DataDir, when set, persists known peers at <DataDir>/peers.json (D3b).
+	DataDir string
+	// PeerStorePath overrides DataDir/peers.json when non-empty.
+	PeerStorePath string
 	// DeferRunner delays Runner.Start until Stack.StartConsensus (for test harness mesh setup).
 	DeferRunner bool
 }
@@ -65,6 +70,10 @@ func StartStack(cfg StackConfig) (*Stack, error) {
 	var engine *consensus.Engine
 	handlers := appHandlers(stack, cfg.Validator, &engine)
 
+	peerPath := cfg.PeerStorePath
+	if peerPath == "" && cfg.DataDir != "" {
+		peerPath = filepath.Join(cfg.DataDir, "peers.json")
+	}
 	p2pCfg := p2p.Config{
 		PrivateKey:     cfg.P2PPrivateKey,
 		ChainID:        cfg.Genesis.ChainID(),
@@ -72,6 +81,8 @@ func StartStack(cfg StackConfig) (*Stack, error) {
 		MaxPeers:       25,
 		Encrypt:        cfg.Encrypt,
 		AllowCleartext: cfg.AllowCleartext,
+		PeerStorePath:  peerPath,
+		Bootnodes:      cfg.Bootnodes,
 	}
 	host, err := p2p.NewHost(p2pCfg, backend, backend, handlers)
 	if err != nil {
@@ -139,6 +150,8 @@ func StartStack(cfg StackConfig) (*Stack, error) {
 		}
 	}
 
+	// Bootnodes are dialed by Host redial loop (D3b). Keep a short one-shot
+	// boost for compose startup ordering when redial tick has not fired yet.
 	for _, addr := range cfg.Bootnodes {
 		addr := addr
 		if addr == "" {

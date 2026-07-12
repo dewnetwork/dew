@@ -12,6 +12,7 @@ type KnownPeer struct {
 	ID       PeerID
 	Addr     string // host:port
 	LastSeen time.Time
+	BanScore int
 }
 
 // PeerStore tracks known and active peers.
@@ -34,11 +35,17 @@ func NewPeerStore(maxActive int) *PeerStore {
 	}
 }
 
-// Remember records or refreshes a known address.
+// Remember records or refreshes a known address (preserves ban score).
 func (s *PeerStore) Remember(id PeerID, addr string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.known[id] = KnownPeer{ID: id, Addr: addr, LastSeen: time.Now()}
+	k := s.known[id]
+	k.ID = id
+	if addr != "" {
+		k.Addr = addr
+	}
+	k.LastSeen = time.Now()
+	s.known[id] = k
 }
 
 // Forget removes a known peer entry.
@@ -79,7 +86,11 @@ func (s *PeerStore) AddActive(p *Peer) error {
 	}
 	s.active[p.ID] = p
 	if p.RemoteAddr != "" {
-		s.known[p.ID] = KnownPeer{ID: p.ID, Addr: p.RemoteAddr, LastSeen: time.Now()}
+		k := s.known[p.ID]
+		k.ID = p.ID
+		k.Addr = p.RemoteAddr
+		k.LastSeen = time.Now()
+		s.known[p.ID] = k
 	}
 	return nil
 }

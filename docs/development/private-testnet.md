@@ -59,6 +59,7 @@ Manual multi-process sketch (same genesis on every host):
 
 ```bash
 dew run --genesis genesis.json \
+  --datadir ./data/node0 \
   --http.addr 0.0.0.0 --http.port 8545 \
   --p2p.listen 0.0.0.0:30303 \
   --p2p.key <32-byte-hex> \
@@ -70,7 +71,16 @@ dew run --genesis genesis.json \
 
 **Note:** Compose profile `multi` runs **3 BFT validators** (`--validator`) + **`node-rpc`** full node (`--no-auto-mine`) on a shared canonical chain (D3a). Default `dew run` without `--validator` remains dev auto-mine (path B compatible). ERC-20 smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548` after `docker compose … --profile multi up`. In-process BFT demo: `dew devnet`.
 
-Minimum private bar (security principles): multi-validator + chaos restart — covered by `go test ./devnet/ -run Chaos`.
+### Data directory layout (D3b)
+
+| Path | Contents |
+| :--- | :------- |
+| `<datadir>/peers.json` | Known P2P peers (id, addr, lastSeen, banScore); loaded on start, flushed on change/close |
+| `--p2p.bootnodes` | Always redialed; never TTL-evicted (not required to appear in the file) |
+
+When `--datadir` is set, the host auto-redials last-known peers after disconnect or process restart (exponential backoff, cap 5 minutes). Entries idle longer than **7 days** are dropped unless they are bootnodes or currently active. Compose `multi` mounts a per-node volume at `/var/lib/dew`.
+
+Minimum private bar (security principles): multi-validator + chaos restart — covered by `go test ./devnet/ -run Chaos`. Auto-redial without manual mesh helper: `go test ./p2p/ -run 'AutoRedial|ReloadAndRedial'`.
 
 ## Chaos expectations
 

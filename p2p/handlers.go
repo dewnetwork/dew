@@ -71,6 +71,7 @@ func (h *Host) handlePeers(payload []byte) error {
 			continue
 		}
 		h.store.Remember(pa.ID, FormatAddr(pa.Host, pa.Port))
+		h.markPeersDirty()
 	}
 	return nil
 }

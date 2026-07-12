@@ -8,10 +8,10 @@ status: draft
 
 # D3 scale (design spec)
 
-**Status:** D3a implemented (July 2026); D3b–D3e pending.  
+**Status:** D3a + D3b implemented (July 2026); D3c–D3e pending.  
 **Freeze:** `public-testnet-v1` wire formats stay frozen — D3 changes **packaging, ops, and consensus wiring**, not DewTx / fee floors / precompile addresses. See [Public testnet freeze](./public-testnet.md).
 
-**Context:** Path B is live (single-host controlled RPC). Bands A–C and D1–D2 are done. This document is the **implementation spec** for Phase D3 before code lands. Acceptance summaries remain in [Phases](./phases.md#d3--scale-when-needed-path-a--c4--audit); residuals are tracked in [agents/debt.md](../../agents/debt.md).
+**Context:** Path B is live (single-host controlled RPC). Bands A–C and D1–D2 are done. This document is the **implementation spec** for Phase D3. Acceptance summaries remain in [Phases](./phases.md#d3--scale-when-needed-path-a--c4--audit); residuals are tracked in [agents/debt.md](../../agents/debt.md).
 
 ---
 
@@ -220,28 +220,28 @@ Consensus messages use a **dedicated queue** priority over bulk sync (see [P2P](
 
 ## D3b — Peer store and auto-redial
 
+**Status:** implemented (July 2026). Spec detail: [d3b design](../superpowers/specs/2026-07-12-d3b-peer-store-redial-design.md).
+
 ### Goals
 
-After validator/RPC process restart, nodes **reconnect** to last-known peers without manual `RedialMesh` (today: chaos test helper in `devnet/`).
+After validator/RPC process restart, nodes **reconnect** to last-known peers without manual `RedialMesh` (chaos helper in `devnet/` remains for ephemeral-port tests).
 
-### Design
+### Design (shipped)
 
 | Piece | Spec |
 | :--- | :--- |
-| Storage | Small KV under data dir (e.g. `peers.json` or `db/` bucket) — addresses, last seen, ban score |
+| Storage | `<datadir>/peers.json` — id, addr, lastSeen, banScore (`p2p.PeerStore` load/save) |
 | Load on start | Merge with `--p2p.bootnodes`; bootnodes always retried |
-| On disconnect | Background redial with exponential backoff (cap e.g. 5 min) |
-| PEX | Continue `GetPeers` / `Peers` to enrich store |
-| Eviction | Drop entries older than 7d unless still in active set |
+| On disconnect | Host maintain loop; exponential backoff 1s…5 min |
+| PEX | `GetPeers` / `Peers` still enrich store |
+| Eviction | Drop known entries older than 7d unless bootnode or active |
+| CLI | `dew run --datadir DIR` → `DIR/peers.json` |
 
 ### Acceptance
 
-- Kill one container in compose `multi`; within 2 min without operator action, peer count recovers and sync resumes.
-- Document data dir layout in [Private testnet](./private-testnet.md).
-
-### Scope note
-
-D3b can land in parallel with PR 5–6 of D3a but is not a blocker for first BFT integration tests on loopback.
+- `go test ./p2p/ -run 'AutoRedial|ReloadAndRedial|PeerStore_'` — disconnect/reload redial without helper.
+- Kill one container in compose `multi` (fixed ports + volume); within 2 min without operator action, peer count recovers and sync resumes.
+- Data dir layout: [Private testnet](./private-testnet.md#data-directory-layout-d3b).
 
 ---
 
@@ -268,7 +268,7 @@ Only required when operators enable `--staking` on a network. Public-testnet-v1 
 
 ## D3d — Path A multi-host public
 
-**Prerequisite:** D3a done (shared BFT); D3b recommended.
+**Prerequisite:** D3a done (shared BFT); D3b done (peer store / auto-redial).
 
 ### Topology
 

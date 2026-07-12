@@ -32,6 +32,20 @@ type Config struct {
 	// AllowCleartext permits Encrypt=false. Without this flag, NewHost
 	// rejects cleartext config so public/multi-host nets fail closed.
 	AllowCleartext bool
+	// PeerStorePath is the path to peers.json (empty = memory-only).
+	PeerStorePath string
+	// Bootnodes are always dialed / redialed and exempt from TTL eviction.
+	Bootnodes []string
+	// Redial enables the background maintain/redial loop. When nil, redial
+	// is on if PeerStorePath or Bootnodes is set.
+	Redial *bool
+}
+
+func (c Config) redialEnabled() bool {
+	if c.Redial != nil {
+		return *c.Redial
+	}
+	return c.PeerStorePath != "" || len(c.Bootnodes) > 0
 }
 
 // Host is a P2P node: listen, dial, handshake, gossip, sync, consensus fan-out.
@@ -53,6 +67,15 @@ type Host struct {
 	// seenInv avoids re-requesting the same inventory item.
 	seenMu sync.Mutex
 	seenInv map[types.Hash]struct{}
+
+	// D3b: durable peers + auto-redial
+	bootMu     sync.Mutex
+	bootnodes  map[string]struct{}
+	redial     *redialState
+	redialStop chan struct{}
+	saveMu     sync.Mutex
+	peersDirty bool
+	lastSave   time.Time
 }
 
 // NewHost builds a host. Call Start to listen.
@@ -95,15 +118,26 @@ func NewHost(cfg Config, chain ChainBackend, txs TxBackend, handlers AppHandlers
 	if !cfg.Encrypt && !cfg.AllowCleartext {
 		return nil, fmt.Errorf("p2p: cleartext requires AllowCleartext=true")
 	}
-	return &Host{
-		cfg:     cfg,
-		nodeID:  crypto.PubkeyToAddress(&cfg.PrivateKey.PublicKey),
-		store:   NewPeerStore(cfg.MaxPeers),
-		chain:   chain,
-		txs:     txs,
-		handlers: handlers,
-		seenInv: make(map[types.Hash]struct{}),
-	}, nil
+	h := &Host{
+		cfg:        cfg,
+		nodeID:     crypto.PubkeyToAddress(&cfg.PrivateKey.PublicKey),
+		store:      NewPeerStore(cfg.MaxPeers),
+		chain:      chain,
+		txs:        txs,
+		handlers:   handlers,
+		seenInv:    make(map[types.Hash]struct{}),
+		bootnodes:  make(map[string]struct{}),
+		redial:     newRedialState(),
+		redialStop: make(chan struct{}),
+	}
+	h.SetBootnodes(cfg.Bootnodes)
+	if cfg.PeerStorePath != "" {
+		if err := h.store.LoadFromFile(cfg.PeerStorePath); err != nil {
+			return nil, err
+		}
+		_ = h.store.EvictOlderThan(DefaultPeerTTL, h.bootnodeSet())
+	}
+	return h, nil
 }
 
 // EncryptEnabled reports whether new sessions use encrypted transport.
@@ -147,6 +181,7 @@ func (h *Host) Start() error {
 	}
 	h.wg.Add(1)
 	go h.acceptLoop()
+	h.startRedialLoop()
 	return nil
 }
 
@@ -155,6 +190,12 @@ func (h *Host) Close() error {
 	if h.closed.Swap(true) {
 		return nil
 	}
+	// Stop redial before closing peers so we do not re-dial during shutdown.
+	select {
+	case <-h.redialStop:
+	default:
+		close(h.redialStop)
+	}
 	if h.ln != nil {
 		_ = h.ln.Close()
 	}
@@ -162,6 +203,7 @@ func (h *Host) Close() error {
 		_ = p.Close()
 	}
 	h.wg.Wait()
+	h.maybeSavePeers(true)
 	return nil
 }
 
@@ -262,6 +304,11 @@ func (h *Host) negotiate(conn net.Conn, inbound bool) (*Peer, error) {
 	if remote.NodeID.Equal(h.nodeID) {
 		return nil, fmt.Errorf("p2p: connected to self")
 	}
+	// Idempotent: concurrent dial/redial may race; keep the existing session.
+	if existing, ok := h.store.GetActive(remote.NodeID); ok {
+		_ = conn.Close()
+		return existing, nil
+	}
 
 	p := newPeer(h, conn, inbound)
 	p.secure = sec
@@ -275,9 +322,17 @@ func (h *Host) negotiate(conn net.Conn, inbound bool) (*Peer, error) {
 	}
 
 	if err := h.store.AddActive(p); err != nil {
+		_ = conn.Close()
+		if existing, ok := h.store.GetActive(remote.NodeID); ok {
+			return existing, nil
+		}
 		return nil, err
 	}
 	h.store.Remember(p.ID, p.RemoteAddr)
+	h.markPeersDirty()
+	if p.RemoteAddr != "" {
+		h.redial.success(p.RemoteAddr)
+	}
 
 	h.wg.Add(2)
 	go func() {
@@ -349,6 +404,12 @@ func (h *Host) verifyHandshake(hs *Handshake) error {
 
 func (h *Host) onPeerClosed(p *Peer) {
 	h.store.RemoveActive(p.ID)
+	// Keep known entry; schedule redial when we have a dialable address.
+	if p.RemoteAddr != "" && !h.closed.Load() {
+		h.store.Remember(p.ID, p.RemoteAddr)
+		h.redial.scheduleSoon(p.RemoteAddr, time.Now())
+		h.markPeersDirty()
+	}
 }
 
 // Broadcast sends a framed message to all active peers except exclude (zero = none).

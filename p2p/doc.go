@@ -1,6 +1,6 @@
-// Package p2p implements Dew networking (Phase A6 + C2): TCP transport, framed
-// messages, optional encrypted sessions, handshake, peer store, inventory
-// gossip for txs/blocks, catch-up sync, and delivery of Dew-BFT consensus messages.
+// Package p2p implements Dew networking (Phase A6 + C2 + D3b): TCP transport, framed
+// messages, optional encrypted sessions, handshake, durable peer store + auto-redial,
+// inventory gossip for txs/blocks, catch-up sync, and delivery of Dew-BFT consensus messages.
 //
 // Wire framing (docs/networking/p2p.md):
 //
