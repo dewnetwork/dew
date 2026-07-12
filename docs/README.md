@@ -111,7 +111,7 @@ Category folders also include `_category.md` for sidebar labels and ordering. Na
 
 ## Spec status
 
-Phase **C6** freezes **public-testnet-v1** wire and fee surfaces (see [Public testnet freeze](./development/public-testnet.md) and `params/freeze.go`). Many pages remain `status: draft` for prose polish; numbers in the freeze table should not churn without a documented re-genesis / hardfork note. Residual `_tentative_` (e.g. tokenomics issuance) is mainnet- or economics-review scope.
+Phase **C6** freezes **public-testnet-v1** wire and fee surfaces (see [Public testnet freeze](./development/public-testnet.md) and `params/freeze.go`). **public-testnet-v1 is live** on path B (July 2026): RPC `https://rpc-dew.fadosoft.com`, explorer `https://explorer-dew.fadosoft.com`, faucet `https://faucet-dew.fadosoft.com`. Many pages remain `status: draft` for prose polish; numbers in the freeze table should not churn without a documented re-genesis / hardfork note. Residual `_tentative_` (e.g. tokenomics issuance) is mainnet- or economics-review scope.
 
 ## Repository layout
 

@@ -19,7 +19,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 
 High-level order: [Roadmap](./roadmap.md).
 
-**Ops note:** Private soak and public RPC path B (launch checklist A–B) are complete for operators who have already launched; Phase D assumes a live or local RPC (`chainId` **2205**) and does **not** re-open the C6 wire freeze.
+**Ops note:** **public-testnet-v1 is live** on path B (July 2026) — see [Public testnet freeze](./public-testnet.md#live-network-path-b). Private soak and launch checklist A–B remain the operator runbook for new hosts. Phase D assumes a live or local RPC (`chainId` **2205`) and does **not** re-open the C6 wire freeze.
 
 ---
 
@@ -302,7 +302,7 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Packages:** `params/`, `rpc/`, `tests/security/`, `docs/development/public-testnet.md`
 
-**Notes:** Freeze tag **`public-testnet-v1`**. C6 is a **release gate**, not a large feature dump. Mainnet still requires external audit of consensus + VM bridge + crypto (not C6 acceptance). After C6, prefer config/parameter changes over wire-format churn. RPC limits: 1 MiB body, 100 batch items.
+**Notes:** Freeze tag **`public-testnet-v1`**. C6 is a **release gate**, not a large feature dump. Path B public surface deployed July 2026 ([live endpoints](./public-testnet.md#live-network-path-b)). Mainnet still requires external audit of consensus + VM bridge + crypto (not C6 acceptance). After C6, prefer config/parameter changes over wire-format churn. RPC limits: 1 MiB body, 100 batch items.
 
 ---
 
@@ -336,7 +336,7 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 
 **Packages:** `explorer/`, root `package.json` scripts; docs only under `docs/development/block-explorer.md`
 
-**Notes:** JSON-RPC only for MVP (no indexer). Do not reimplement state transition in Node. Deploy packaging: `deploy/explorer/` (Dockerfile + compose) and combined `deploy/docker-compose.yml`. MetaMask base URL and publish template: launch checklist + explorer operator snippet.
+**Notes:** JSON-RPC only for MVP (no indexer). Do not reimplement state transition in Node. Deploy packaging: `deploy/explorer/` (Dockerfile + compose) and combined `deploy/docker-compose.yml`. Live at `https://explorer-dew.fadosoft.com`. MetaMask base URL and publish template: launch checklist + explorer operator snippet.
 
 ---
 
@@ -354,7 +354,7 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 
 **Packages:** `faucet/`, `cmd/dewfaucet`, `deploy/faucet.env.example`, `deploy/systemd/dewfaucet.service`; operator guide [Production faucet](./faucet.md)
 
-**Notes:** Default public mode **allowlist**; **captcha** (Turnstile/hCaptcha) for open mint; **dev** rate-limit-only for private nets. Default drip **1 DEW**; per-address **1/24h**, per-IP **10/h**. Anvil #0 key refused unless `-allow-anvil-key`. C6 residual “Production faucet service” closed by this package.
+**Notes:** Default public mode **allowlist**; **captcha** (Turnstile/hCaptcha) for open mint; **dev** rate-limit-only for private nets. Live deployment uses **captcha** at `https://faucet-dew.fadosoft.com`. Default drip **1 DEW**; per-address **1/24h**, per-IP **10/h**. Anvil #0 key refused unless `-allow-anvil-key`. C6 residual “Production faucet service” closed by this package.
 
 ---
 

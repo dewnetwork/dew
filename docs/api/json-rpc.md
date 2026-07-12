@@ -17,6 +17,16 @@ status: draft
 
 Content-Type: `application/json`. JSON-RPC 2.0.
 
+### Public testnet RPC (live)
+
+| Item | Value |
+| :--- | :--- |
+| URL | `https://rpc-dew.fadosoft.com` |
+| Chain ID | `2205` (`eth_chainId` → `0x89d`) |
+| Smoke | `node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com` |
+
+See [Public testnet freeze](../development/public-testnet.md#live-network-path-b) for explorer, faucet, and MetaMask fields.
+
 ### Public testnet resource limits (C6)
 
 | Limit | Value |

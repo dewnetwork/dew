@@ -3,7 +3,7 @@ title: Production faucet
 description: Phase D2 ops faucet — rate limits, allowlist/captcha, dewfaucet CLI, publish template.
 category: development
 order: 53
-status: draft
+status: stable
 ---
 
 # Production faucet (Phase D2)
@@ -13,8 +13,9 @@ The **faucet** is an ops HTTP service that drips a **small fixed amount** of tes
 | Item | Status |
 | :--- | :--- |
 | In-repo service | **Shipped** — `faucet/` + `cmd/dewfaucet` |
+| Live URL (path B) | `https://faucet-dew.fadosoft.com` — mode **captcha** |
 | Wire / genesis impact | **None** — signs normal EVM value transfers via JSON-RPC |
-| Public publish field `Faucet:` | URL, or `none` / `allowlist only` |
+| Public publish field `Faucet:` | Live URL above, or `none` / `allowlist only` |
 
 Policy baseline: [Public testnet freeze](./public-testnet.md) · Launch: [Launch checklist](./launch-checklist.md).
 
@@ -172,9 +173,8 @@ Chain ID:    2205
 RPC:         https://rpc-dew.fadosoft.com
 Symbol:      DEW
 Explorer:    https://explorer-dew.fadosoft.com
-Faucet:      https://faucet-dew.fadosoft.com   # or: none / allowlist only
-             # rules: 1 DEW / address / 24h · 10 / IP / hour · captcha|allowlist
-Bootnodes:   …
+Faucet:      https://faucet-dew.fadosoft.com   # captcha · 1 DEW/address/24h · 10/IP/hour
+Bootnodes:   n/a (path B single-host RPC)
 ```
 
 ## Packages

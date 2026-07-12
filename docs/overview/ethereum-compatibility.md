@@ -38,6 +38,19 @@ Dew should feel like a **custom EVM chain** to developers: same keys, same contr
 
 “EVM compatible” means **contracts and tooling**, not identical consensus or economics.
 
+### Public testnet (live)
+
+| Field | Value |
+| :---- | :---- |
+| Network | Dew public-testnet-v1 |
+| Chain ID | `2205` |
+| RPC URL | `https://rpc-dew.fadosoft.com` |
+| Symbol | DEW |
+| Block explorer | `https://explorer-dew.fadosoft.com` |
+| Faucet | `https://faucet-dew.fadosoft.com` |
+
+MetaMask: add custom network with the RPC URL above; block explorer URL = explorer base only. Full publish template: [Launch checklist](../development/launch-checklist.md).
+
 ## Deferred to Phase B (not required for first devnet)
 
 - `DewTx` binary transactions and `dew_sendRawTransaction`

@@ -3,16 +3,36 @@ title: Public testnet freeze
 description: public-testnet-v1 freeze surface, faucet policy, bootnodes, and feature flags.
 category: development
 order: 50
-status: draft
+status: stable
 ---
 
 # Public testnet freeze (Phase C6)
 
 Tag: **`public-testnet-v1`** (`params.PublicTestnetFreezeTag`).
 
-C6 is a **release gate**, not a feature dump. Wire formats, fee floors, precompile addresses, and mempool/RPC abuse limits below are **freeze candidates** for the first public testnet. After this freeze, prefer genesis/config changes over wire churn. Mainnet still requires an **external** audit of consensus + VM bridge + crypto (see `agents/debt.md`).
+C6 is a **release gate**, not a feature dump. Wire formats, fee floors, precompile addresses, and mempool/RPC abuse limits below are **frozen** for the first public testnet. After this freeze, prefer genesis/config changes over wire churn. Mainnet still requires an **external** audit of consensus + VM bridge + crypto (see `agents/debt.md`).
 
 Private multi-host ops remain in [Private multi-host testnet](./private-testnet.md). Local DX: [Devnet](./devnet.md).
+
+## Live network (path B)
+
+**Status:** **public-testnet-v1** is live on controlled single-host RPC (path B), deployed July 2026.
+
+| Surface | URL |
+| :------ | :---- |
+| JSON-RPC | `https://rpc-dew.fadosoft.com` |
+| Block explorer | `https://explorer-dew.fadosoft.com` |
+| Faucet | `https://faucet-dew.fadosoft.com` |
+| Bootnodes | **n/a** (path B — no public P2P dial list) |
+
+| Item | Value |
+| :--- | :---- |
+| Chain ID | `2205` (`0x89d`) |
+| Symbol | DEW |
+| Faucet mode | **captcha** — 1 DEW / address / 24h · 10 / IP / hour |
+| Smoke | `node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com` |
+
+MetaMask: custom network RPC = JSON-RPC URL above; block explorer URL = explorer base only (no path suffix). Path A (multi-host validators + bootnodes) is [D3](./phases.md#d3--scale-when-needed-path-a--c4--audit), not required for the current deployment.
 
 ## Freeze table
 
@@ -70,10 +90,12 @@ Faucet is **ops**, not consensus. Disable faucet independently of validators.
 
 ## Bootnodes
 
-Publish a short list of stable dial addresses for public peers:
+**Current deployment (path B):** bootnodes are **n/a** — operators expose JSON-RPC via TLS edge only; there is no public P2P dial list.
+
+**Path A (future):** publish a short list of stable dial addresses for public peers:
 
 ```
-# Example shape (replace at launch)
+# Example shape (replace when Path A launches)
 enode-style or dew multiaddr — host:port + node identity
 bootnode-0.example:30303
 bootnode-1.example:30304
@@ -86,7 +108,7 @@ Requirements:
 3. At least one public non-validator RPC (or documented RPC providers)  
 4. Rotate bootnodes without changing chain ID  
 
-Exact hostnames are **not** frozen in-repo until launch; this runbook freezes the **process**.
+Path A hostnames are operator-owned; this runbook freezes the **process**, not a specific multi-host topology.
 
 ## Abuse bar (C6)
 

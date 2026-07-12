@@ -3,13 +3,22 @@ title: Launch checklist
 description: One-page private soak and public-testnet-v1 operator checklist.
 category: development
 order: 55
-status: draft
+status: stable
 ---
 
 # Launch checklist
 
 Freeze tag: **`public-testnet-v1`** · chain ID **`2205`**.  
 Packaging: [deploy/](../../deploy/) · freeze table: [Public testnet](./public-testnet.md) · private ops: [Private testnet](./private-testnet.md).
+
+## Live deployment
+
+Path B (**single-host controlled RPC**) is **live** (July 2026). Use the [publish template](#public-publish-template-path-b) for MetaMask, faucet pages, and builder docs. Path A (multi-host validators + bootnodes) remains [D3](./phases.md#d3--scale-when-needed-path-a--c4--audit).
+
+```bash
+node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com
+# chainId 0x89d (2205) · net_version 2205
+```
 
 ## A. Private staging (do this first)
 
@@ -80,15 +89,15 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | 6 | Faucet | Optional `dewfaucet` ([faucet.md](./faucet.md)): allowlist or captcha; rate limits; never Anvil keys |
 | 7 | Monitor | RPC 4xx/5xx, mempool rejects, peer count; ready to stop RPC only |
 
-### Public publish template (path B)
+### Public publish template (path B) — live
 
 ```text
 Network:     Dew public-testnet-v1
 Chain ID:    2205
 RPC:         https://rpc-dew.fadosoft.com
 Symbol:      DEW
-Explorer:    https://explorer-dew.fadosoft.com   # or (none) — see block-explorer.md
-Faucet:      https://faucet-dew.fadosoft.com     # allowlist or captcha — see faucet.md
+Explorer:    https://explorer-dew.fadosoft.com
+Faucet:      https://faucet-dew.fadosoft.com     # captcha · 1 DEW/address/24h · 10/IP/hour
 Bootnodes:   n/a (single-host controlled RPC)
 ```
 

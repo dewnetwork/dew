@@ -3,7 +3,7 @@ title: Block explorer (web)
 description: Public block-explorer URL surface, Etherscan-class UI detail, deep-link routes, RPC dependency, and publish template.
 category: development
 order: 52
-status: draft
+status: stable
 ---
 
 # Block explorer (web)
@@ -12,8 +12,9 @@ The **block explorer** is the public, read-only web UI for browsing Dew chain da
 
 | Item | Status |
 | :--- | :--- |
-| In-repo explorer app | **MVP shipped** (`explorer/`; deploy URL still operator-owned) |
-| Publish field `Explorer:` | Use `(none)` until a live URL exists |
+| In-repo explorer app | **MVP shipped** (`explorer/`) |
+| Live URL (path B) | `https://explorer-dew.fadosoft.com` |
+| Publish field `Explorer:` | Live URL above, or `(none)` until an operator deploys |
 | Wire / genesis impact | **None** — explorer only consumes JSON-RPC |
 | UI bar | **Readable + dense detail** — IA and light theme inspired by [Etherscan](https://etherscan.io/); **not** required to match Dew marketing (`web/`) brand tokens |
 
@@ -376,17 +377,17 @@ Chain ID:    2205
 RPC:         https://rpc-dew.fadosoft.com
 Symbol:      DEW
 Explorer:    https://explorer-dew.fadosoft.com
-Faucet:      https://faucet-dew.fadosoft.com   # or none / allowlist only — see faucet.md
-Bootnodes:   … (path A) or n/a (path B single-host RPC)
+Faucet:      https://faucet-dew.fadosoft.com   # captcha · see faucet.md
+Bootnodes:   n/a (path B single-host RPC)
 ```
 
-Until an explorer is deployed:
+For networks without a deployed explorer:
 
 ```text
 Explorer:    (none)
 ```
 
-Do **not** invent a URL in public channels. Prefer `(none)` over a broken link.
+Do **not** invent a URL in public channels. Prefer `(none)` over a broken link. The live path B deployment uses `https://explorer-dew.fadosoft.com` (see [Public testnet freeze](./public-testnet.md#live-network-path-b)).
 
 ### Hostname shapes
 

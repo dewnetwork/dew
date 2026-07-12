@@ -10,6 +10,8 @@ status: draft
 
 All phases land in the **same monorepo** (Go core + Node for **web docs build**, explorer, and tooling). See [Monorepo layout](./go-project-layout.md).
 
+**Current:** **public-testnet-v1** is live on path B (July 2026) — [live endpoints](./public-testnet.md#live-network-path-b). Bands A–C and D1–D2 are done; **D3** (path A multi-host, C4/C5 residuals, external audit) is on demand.
+
 ## Strategy
 
 ```mermaid
