@@ -71,6 +71,19 @@ dew run --genesis genesis.json \
 
 **Note:** Compose profile `multi` runs **3 BFT validators** (`--validator`) + **`node-rpc`** full node (`--no-auto-mine`) on a shared canonical chain (D3a). Default `dew run` without `--validator` remains dev auto-mine (path B compatible). ERC-20 smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548` after `docker compose … --profile multi up`. In-process BFT demo: `dew devnet`.
 
+### Multi-process BFT soak (Compose `multi`)
+
+Private multi-validator staging on **one machine** (pre–Path A):
+
+1. From repo root: `docker compose -f deploy/node/docker-compose.soak.yml --profile multi up --build`
+2. Smoke RPC on the full node: `node scripts/smoke-rpc.mjs http://127.0.0.1:8548` — confirm `eth_blockNumber` advances.
+3. App smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548`
+4. Chaos: stop one validator container (`docker stop dew-node-1`); within ~2 minutes peer count recovers via D3b redial and tip continues on survivors + RPC.
+5. Pace: default empty-block interval is **1s** (`--bft.min-block-interval`); raise if load tests show P2P pressure.
+6. In-process gate: `DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -run MultiProcessBFT_LongEmpty -timeout 5m` (≥150 empty heights).
+
+Manual multi-host uses the same flags with real hostnames in `--p2p.bootnodes` and unique `--datadir` / keys per host. Path A public publish is [D3d](./d3-scale.md#d3d--path-a-multi-host-public).
+
 ### Data directory layout (D3b)
 
 | Path | Contents |

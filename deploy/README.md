@@ -76,19 +76,27 @@ docker compose -f deploy/node/docker-compose.soak.yml --profile devnet down
 docker compose -f deploy/node/docker-compose.soak.yml --profile multi up --build
 ```
 
-| Container | JSON-RPC (host) | P2P (host) |
-| :--- | :--- | :--- |
-| `dew-node-0` | `:8545` | `:30303` |
-| `dew-node-1` | `:8546` | `:30304` |
-| `dew-node-2` | `:8547` | `:30305` |
+| Container | Role | JSON-RPC (host) | P2P (host) |
+| :--- | :--- | :--- | :--- |
+| `dew-node-0` | BFT validator (`--validator`) | `:8545` | `:30303` |
+| `dew-node-1` | BFT validator | `:8546` | `:30304` |
+| `dew-node-2` | BFT validator | `:8547` | `:30305` |
+| `dew-node-rpc` | Full node (`--no-auto-mine`) | `:8548` | (internal) |
 
 Each process:
 
 - Loads the same genesis (`chainId` 2205)
-- Listens for encrypted P2P and dials the other containers
-- Serves JSON-RPC with **dev auto-mine** per accepted tx
+- Listens for encrypted P2P and dials bootnodes (D3b: `peers.json` under `/var/lib/dew`)
+- Validators share one canonical chain via Dew-BFT (D3a); RPC node syncs commits (no local seal)
 
-**Limits (honest):** multi-process **Dew-BFT shared block production** is not fully wired yet; each node seals its own chain from the shared genesis. Implementation spec: [docs/development/d3-scale.md](../docs/development/d3-scale.md) (D3a). Use `multi` for packaging, ports, bootnode wiring, and encrypted transport practice. Use default soak `devnet` for consensus + RPC application smoke.
+Smoke after `up`:
+
+```bash
+node scripts/smoke-rpc.mjs http://127.0.0.1:8548
+node scripts/devnet-erc20.mjs http://127.0.0.1:8548
+```
+
+Optional pace: `--bft.min-block-interval 1s` (default when unset). Use in-process soak profile `devnet` for the lightest 24–48h staging path. Spec: [docs/development/d3-scale.md](../docs/development/d3-scale.md).
 
 Compose uses **Anvil #0–#2** keys for private packaging only. **Never** reuse on a public net.
 

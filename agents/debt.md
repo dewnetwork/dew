@@ -6,7 +6,7 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 
 **Phase C (C1–C6) complete** — freeze tag `public-testnet-v1`. See [public-testnet.md](../docs/development/public-testnet.md).
 
-**Phase D** — D1 explorer + D2 faucet done → D3 scale (Path A / C4 / audit) when needed. Design spec: [d3-scale.md](../docs/development/d3-scale.md). Acceptance in [phases.md](../docs/development/phases.md).
+**Phase D** — D1 explorer + D2 faucet done; D3a + D3b + D3a residual done → D3d Path A / D3c / D3e when needed. Design spec: [d3-scale.md](../docs/development/d3-scale.md). Acceptance in [phases.md](../docs/development/phases.md).
 
 ## C1 residuals
 
@@ -30,7 +30,7 @@ Owned by D3 — see [d3-scale.md](../docs/development/d3-scale.md) (D3a / D3b).
 - [x] Multi-process binary packaging (systemd/docker compose samples) — `deploy/` (Dockerfile; `docker-compose.soak.yml` devnet/`multi`; `docker-compose.yml` public path B + nginx; systemd units); `dew run --p2p.*` for encrypted mesh packaging
 - [x] **D3a** Multi-process Dew-BFT shared block production (`--validator`, `node.Stack`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`)
 - [x] **D3a** Multi-process ERC-20 integration (`DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -run MultiProcessBFT_ERC20`) — pre-admit before BFT; validator catch-up + outbound write queue
-- [ ] **D3a residual:** long empty-block multiproc runs can still stall (~100+ heights) under vote/proposal load; needs paced block production and/or gossip backpressure beyond MinBlockInterval
+- [x] **D3a residual:** multiproc empty-block pace (default `MinBlockInterval` 1s, `--bft.min-block-interval`) + bulk outbound drop under queue pressure; soak `DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -run MultiProcessBFT_LongEmpty`
 - [x] **D3b** Persistent peer store / auto-redial (`peers.json`, Host maintain loop, `--datadir`; compose multi volumes) — chaos `RedialHost` still used for ephemeral-port restart tests
 
 ## C6 residuals (ops, not freeze blockers)

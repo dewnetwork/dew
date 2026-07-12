@@ -8,7 +8,7 @@ status: draft
 
 # D3 scale (design spec)
 
-**Status:** D3a + D3b implemented (July 2026); D3c–D3e pending.  
+**Status:** D3a + D3b + D3a residual (pace + bulk backpressure) implemented (July 2026); D3c–D3e pending.  
 **Freeze:** `public-testnet-v1` wire formats stay frozen — D3 changes **packaging, ops, and consensus wiring**, not DewTx / fee floors / precompile addresses. See [Public testnet freeze](./public-testnet.md).
 
 **Context:** Path B is live (single-host controlled RPC). Bands A–C and D1–D2 are done. This document is the **implementation spec** for Phase D3. Acceptance summaries remain in [Phases](./phases.md#d3--scale-when-needed-path-a--c4--audit); residuals are tracked in [agents/debt.md](../../agents/debt.md).

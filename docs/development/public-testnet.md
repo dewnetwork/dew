@@ -154,7 +154,7 @@ Full one-page checklist (ports, env, compose, publish template): [Launch checkli
 
 ## Residual (not C6 blockers)
 
-Tracked in `agents/debt.md`; D3 implementation spec: [D3 scale](./d3-scale.md). Items: fee auction, nonce-gap queue, D3a residual (multiproc long-run stall), D3c staking residuals, D3d Path A bootnodes, external mainnet audit.
+Tracked in `agents/debt.md`; D3 implementation spec: [D3 scale](./d3-scale.md). Items: fee auction, nonce-gap queue, D3c staking residuals, D3d Path A bootnodes, external mainnet audit. (D3a multiproc long-run residual closed July 2026.)
 
 ## Related
 

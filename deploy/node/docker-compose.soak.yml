@@ -65,6 +65,8 @@ services:
       - ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
       - --p2p.bootnodes
       - "node-1:30303,node-2:30303"
+      - --bft.min-block-interval
+      - "1s"
     volumes:
       - node0-data:/var/lib/dew
     ports:
@@ -98,6 +100,8 @@ services:
       - 59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
       - --p2p.bootnodes
       - "node-0:30303,node-2:30303"
+      - --bft.min-block-interval
+      - "1s"
     volumes:
       - node1-data:/var/lib/dew
     ports:
@@ -131,6 +135,8 @@ services:
       - 5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
       - --p2p.bootnodes
       - "node-0:30303,node-1:30303"
+      - --bft.min-block-interval
+      - "1s"
     volumes:
       - node2-data:/var/lib/dew
     ports:
