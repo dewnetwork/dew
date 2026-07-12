@@ -32,6 +32,8 @@ type StackConfig struct {
 	PeerStorePath string
 	// DeferRunner delays Runner.Start until Stack.StartConsensus (for test harness mesh setup).
 	DeferRunner bool
+	// MinBlockInterval paces BFT StartRound after commit (0 = consensus default 1s; negative disables).
+	MinBlockInterval time.Duration
 }
 
 // Stack is a running node with optional consensus engine, P2P host, and runner.
@@ -123,7 +125,8 @@ func StartStack(cfg StackConfig) (*Stack, error) {
 		stack.Engine = engine
 
 		runner := &consensus.Runner{
-			Engine: engine,
+			Engine:           engine,
+			MinBlockInterval: cfg.MinBlockInterval,
 			OnCommit: func(ev consensus.CommitEvent) error {
 				if ev.Block != nil {
 					if err := cfg.Node.ImportCommittedBlock(ev.Block); err != nil {

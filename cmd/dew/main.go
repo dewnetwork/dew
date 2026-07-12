@@ -69,8 +69,18 @@ func cmdRun(args []string) error {
 	validator := fs.Bool("validator", false, "enable Dew-BFT validator mode")
 	validatorKey := fs.String("validator.key", "", "hex secp256k1 key for --validator")
 	noAutoMine := fs.Bool("no-auto-mine", false, "admit txs to mempool only (no local seal)")
+	minBlockInterval := fs.String("bft.min-block-interval", "", "min time between committed heights (Go duration; empty=default 1s; negative disables e.g. -1ns)")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+
+	var minBlock time.Duration
+	if s := strings.TrimSpace(*minBlockInterval); s != "" {
+		d, err := time.ParseDuration(s)
+		if err != nil {
+			return fmt.Errorf("bft.min-block-interval: %w", err)
+		}
+		minBlock = d
 	}
 
 	g, err := config.LoadGenesisFile(*genesisPath)
@@ -114,14 +124,15 @@ func cmdRun(args []string) error {
 			HTTPPort:    *httpPort,
 			HTTPEnabled: *httpEnabled,
 			Stack: &node.StackConfig{
-				Validator:      true,
-				ValidatorKey:   valKey,
-				P2PListen:      *p2pListen,
-				P2PPrivateKey:  p2pKey,
-				Bootnodes:      splitCSV(*p2pBoot),
-				Encrypt:        *p2pEncrypt,
-				AllowCleartext: *p2pCleartext,
-				DataDir:        *dataDir,
+				Validator:        true,
+				ValidatorKey:     valKey,
+				P2PListen:        *p2pListen,
+				P2PPrivateKey:    p2pKey,
+				Bootnodes:        splitCSV(*p2pBoot),
+				Encrypt:          *p2pEncrypt,
+				AllowCleartext:   *p2pCleartext,
+				DataDir:          *dataDir,
+				MinBlockInterval: minBlock,
 			},
 		})
 	}
@@ -138,13 +149,14 @@ func cmdRun(args []string) error {
 			HTTPPort:    *httpPort,
 			HTTPEnabled: *httpEnabled,
 			Stack: &node.StackConfig{
-				Validator:      false,
-				P2PListen:      *p2pListen,
-				P2PPrivateKey:  p2pKey,
-				Bootnodes:      splitCSV(*p2pBoot),
-				Encrypt:        *p2pEncrypt,
-				AllowCleartext: *p2pCleartext,
-				DataDir:        *dataDir,
+				Validator:        false,
+				P2PListen:        *p2pListen,
+				P2PPrivateKey:    p2pKey,
+				Bootnodes:        splitCSV(*p2pBoot),
+				Encrypt:          *p2pEncrypt,
+				AllowCleartext:   *p2pCleartext,
+				DataDir:          *dataDir,
+				MinBlockInterval: minBlock,
 			},
 		})
 	}
