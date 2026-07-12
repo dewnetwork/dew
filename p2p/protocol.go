@@ -29,6 +29,11 @@ const (
 	MsgPrecommit uint8 = 0x12
 )
 
+// IsConsensusMsg reports Dew-BFT wire types that must not be dropped under load.
+func IsConsensusMsg(typ uint8) bool {
+	return typ == MsgProposal || typ == MsgPrevote || typ == MsgPrecommit
+}
+
 // Inventory kinds.
 const (
 	InvTx    uint8 = 1

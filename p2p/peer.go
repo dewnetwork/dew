@@ -46,17 +46,35 @@ func newPeer(h *Host, conn net.Conn, inbound bool) *Peer {
 	}
 }
 
-// Send queues a framed message for the peer write loop (never blocks the
-// caller's lock path longer than WriteTimeout; readers stay unblocked).
+// Send queues a framed message for the peer write loop. Consensus types wait
+// up to WriteTimeout; bulk types drop immediately if the outbound queue is full.
 func (p *Peer) Send(typ uint8, payload []byte) error {
 	if p.closed.Load() {
 		return fmt.Errorf("p2p: peer closed")
 	}
 	// Copy payload so callers can reuse buffers.
 	msg := outMsg{typ: typ, payload: append([]byte(nil), payload...)}
-	timeout := p.host.cfg.WriteTimeout
-	if timeout <= 0 {
-		timeout = 30 * time.Second
+	if IsConsensusMsg(typ) {
+		return p.enqueueBlocking(msg)
+	}
+	return p.enqueueDrop(msg)
+}
+
+func (p *Peer) enqueueDrop(msg outMsg) error {
+	select {
+	case p.outCh <- msg:
+		return nil
+	case <-p.closeCh:
+		return fmt.Errorf("p2p: peer closed")
+	default:
+		return nil // drop bulk under pressure
+	}
+}
+
+func (p *Peer) enqueueBlocking(msg outMsg) error {
+	timeout := 30 * time.Second
+	if p.host != nil && p.host.cfg.WriteTimeout > 0 {
+		timeout = p.host.cfg.WriteTimeout
 	}
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
