@@ -88,7 +88,7 @@ Each process:
 - Listens for encrypted P2P and dials the other containers
 - Serves JSON-RPC with **dev auto-mine** per accepted tx
 
-**Limits (honest):** multi-process **Dew-BFT shared block production** is not fully wired yet; each node seals its own chain from the shared genesis. Use `multi` for packaging, ports, bootnode wiring, and encrypted transport practice. Use default soak `devnet` for consensus + RPC application smoke.
+**Limits (honest):** multi-process **Dew-BFT shared block production** is not fully wired yet; each node seals its own chain from the shared genesis. Implementation spec: [docs/development/d3-scale.md](../docs/development/d3-scale.md) (D3a). Use `multi` for packaging, ports, bootnode wiring, and encrypted transport practice. Use default soak `devnet` for consensus + RPC application smoke.
 
 Compose uses **Anvil #0–#2** keys for private packaging only. **Never** reuse on a public net.
 

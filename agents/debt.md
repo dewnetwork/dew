@@ -6,7 +6,7 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 
 **Phase C (C1–C6) complete** — freeze tag `public-testnet-v1`. See [public-testnet.md](../docs/development/public-testnet.md).
 
-**Phase D** — D1 explorer + D2 faucet done → D3 scale (Path A / C4 / audit) when needed. Acceptance in [phases.md](../docs/development/phases.md).
+**Phase D** — D1 explorer + D2 faucet done → D3 scale (Path A / C4 / audit) when needed. Design spec: [d3-scale.md](../docs/development/d3-scale.md). Acceptance in [phases.md](../docs/development/phases.md).
 
 ## C1 residuals
 
@@ -14,6 +14,8 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 - [ ] Pending nonce-gap queue without immediate execute (dev node still auto-mines on admit)
 
 ## C4 residuals
+
+Owned by D3c — see [d3-scale.md](../docs/development/d3-scale.md#d3c--staking-residuals-c4).
 
 - [ ] Enforce unbonding period (time/height) before stake withdrawal
 - [ ] Full double-sign evidence verification (not only non-zero hash placeholder)
@@ -23,9 +25,11 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 
 ## C5 residuals
 
+Owned by D3 — see [d3-scale.md](../docs/development/d3-scale.md) (D3a / D3b).
+
 - [x] Multi-process binary packaging (systemd/docker compose samples) — `deploy/` (Dockerfile; `docker-compose.soak.yml` devnet/`multi`; `docker-compose.yml` public path B + nginx; systemd units); `dew run --p2p.*` for encrypted mesh packaging
-- [ ] Multi-process Dew-BFT shared block production (compose `multi` still auto-mines per process; use `dew devnet` for in-process BFT)
-- [ ] Persistent peer store / auto-redial after restart (manual RedialMesh in chaos test today; `dew run` has dial retry only at start)
+- [ ] **D3a** Multi-process Dew-BFT shared block production (compose `multi` still auto-mines per process; use `dew devnet` for in-process BFT)
+- [ ] **D3b** Persistent peer store / auto-redial after restart (manual RedialMesh in chaos test today; `dew run` has dial retry only at start)
 
 ## C6 residuals (ops, not freeze blockers)
 

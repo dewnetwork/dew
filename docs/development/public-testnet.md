@@ -32,7 +32,7 @@ Private multi-host ops remain in [Private multi-host testnet](./private-testnet.
 | Faucet mode | **captcha** — 1 DEW / address / 24h · 10 / IP / hour |
 | Smoke | `node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com` |
 
-MetaMask: custom network RPC = JSON-RPC URL above; block explorer URL = explorer base only (no path suffix). Path A (multi-host validators + bootnodes) is [D3](./phases.md#d3--scale-when-needed-path-a--c4--audit), not required for the current deployment.
+MetaMask: custom network RPC = JSON-RPC URL above; block explorer URL = explorer base only (no path suffix). Path A (multi-host validators + bootnodes) is [D3](./phases.md#d3--scale-when-needed-path-a--c4--audit) — see [D3 scale](./d3-scale.md) — not required for the current deployment.
 
 ## Freeze table
 
@@ -154,7 +154,7 @@ Full one-page checklist (ports, env, compose, publish template): [Launch checkli
 
 ## Residual (not C6 blockers)
 
-Tracked in `agents/debt.md`: fee auction, nonce-gap queue, full unbonding, double-sign verify, ActiveSet → live BFT rotation, multi-host packaging, external mainnet audit.
+Tracked in `agents/debt.md`; D3 implementation spec: [D3 scale](./d3-scale.md). Items: fee auction, nonce-gap queue, D3a multi-process BFT, D3c staking residuals, D3d Path A bootnodes, external mainnet audit.
 
 ## Related
 
@@ -162,6 +162,7 @@ Tracked in `agents/debt.md`: fee auction, nonce-gap queue, full unbonding, doubl
 - [Block explorer (web)](./block-explorer.md) — public Explorer URL, deep links  
 - [Production faucet](./faucet.md) — D2 `dewfaucet`  
 - [Phases](./phases.md) — C6 acceptance  
+- [D3 scale](./d3-scale.md) — post-freeze technical workstreams
 - [Genesis](../economics/genesis.md)  
 - [Gas and fees](../execution/gas-and-fees.md)  
 - [Security principles](../security/security-principles.md) — public testnet bar  

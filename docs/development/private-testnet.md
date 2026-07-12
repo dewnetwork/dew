@@ -68,7 +68,7 @@ dew run --genesis genesis.json \
 3. Point wallets at one RPC (`http://<rpc-host>:8545`).
 4. Feature flags (native path, precompiles, staking) must match operator policy across hosts.
 
-**Note:** `dew run` multi-process currently shares genesis + encrypted P2P; each process **auto-mines** its own execution chain. Full multi-process Dew-BFT shared production remains residual (`agents/debt.md`). For consensus + ERC-20 smoke, use `dew devnet` or the default Compose service.
+**Note:** `dew run` multi-process currently shares genesis + encrypted P2P; each process **auto-mines** its own execution chain. Shared multi-process Dew-BFT is specified in [D3 scale — D3a](./d3-scale.md#d3a--multi-process-dew-bft) (pre-implementation). For consensus + ERC-20 smoke today, use `dew devnet` or the default Compose service.
 
 Minimum private bar (security principles): multi-validator + chaos restart — covered by `go test ./devnet/ -run Chaos`.
 

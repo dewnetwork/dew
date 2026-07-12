@@ -81,6 +81,7 @@ The docs site renders [Mermaid](https://mermaid.js.org/) fenced blocks (` ```mer
 | [Tokenomics](./economics/tokenomics.md) | Reward pie; supply flow |
 | [Threat model](./security/threat-model.md) | Assets mindmap; adversary map |
 | [Roadmap](./development/roadmap.md) | Phase A / B dependency graphs |
+| [D3 scale](./development/d3-scale.md) | Post–testnet BFT, staking, Path A design spec |
 | [Monorepo layout](./development/go-project-layout.md) | Docs web build flow |
 
 **Author tip:** keep ASCII only when a one-liner is clearer; otherwise use Mermaid so the web site can render interactively. Theme colors follow Dew brand via VitePress config.

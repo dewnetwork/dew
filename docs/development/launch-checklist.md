@@ -13,7 +13,7 @@ Packaging: [deploy/](../../deploy/) · freeze table: [Public testnet](./public-t
 
 ## Live deployment
 
-Path B (**single-host controlled RPC**) is **live** (July 2026). Use the [publish template](#public-publish-template-path-b) for MetaMask, faucet pages, and builder docs. Path A (multi-host validators + bootnodes) remains [D3](./phases.md#d3--scale-when-needed-path-a--c4--audit).
+Path B (**single-host controlled RPC**) is **live** (July 2026). Use the [publish template](#public-publish-template-path-b) for MetaMask, faucet pages, and builder docs. Path A (multi-host validators + bootnodes) is [D3](./phases.md#d3--scale-when-needed-path-a--c4--audit) — design spec: [D3 scale](./d3-scale.md#d3d--path-a-multi-host-public).
 
 ```bash
 node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com
@@ -78,6 +78,8 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | 7 | Emergency | Stop proxy first (`docker compose stop proxy` / nginx); node can stay private |
 
 ### Path A — multi-host public (later)
+
+**Prerequisite:** [D3a multi-process BFT](./d3-scale.md#d3a--multi-process-dew-bft) implemented. Full operator spec: [D3d Path A](./d3-scale.md#d3d--path-a-multi-host-public).
 
 | # | Step | Notes |
 | -: | :--- | :---- |

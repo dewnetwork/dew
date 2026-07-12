@@ -65,6 +65,7 @@
     - go-project-layout.md   # monorepo layout (Go + Node)
     - roadmap.md
     - phases.md
+    - d3-scale.md
     - devnet.md
     - private-testnet.md
     - public-testnet.md

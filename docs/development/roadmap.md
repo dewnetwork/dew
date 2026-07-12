@@ -10,7 +10,7 @@ status: draft
 
 All phases land in the **same monorepo** (Go core + Node for **web docs build**, explorer, and tooling). See [Monorepo layout](./go-project-layout.md).
 
-**Current:** **public-testnet-v1** is live on path B (July 2026) — [live endpoints](./public-testnet.md#live-network-path-b). Bands A–C and D1–D2 are done; **D3** (path A multi-host, C4/C5 residuals, external audit) is on demand.
+**Current:** **public-testnet-v1** is live on path B (July 2026) — [live endpoints](./public-testnet.md#live-network-path-b). Bands A–C and D1–D2 are done; **D3** design spec is in [D3 scale](./d3-scale.md) (implementation on demand: multi-process BFT → Path A / staking / audit).
 
 ## Strategy
 
@@ -118,7 +118,7 @@ Out of Phase C / into D3 or mainnet debt: full multi-version Block-STM upgrade, 
 | C5–C6 | [Devnet](./devnet.md), [Private testnet](./private-testnet.md), [Public testnet freeze](./public-testnet.md), [Genesis](../economics/genesis.md) |
 | D1    | [Block explorer](./block-explorer.md), [Launch checklist](./launch-checklist.md) |
 | D2    | [Production faucet](./faucet.md), [Public testnet freeze](./public-testnet.md) (faucet policy) |
-| D3    | [Launch checklist](./launch-checklist.md) path A, [Validators](../consensus/validators.md), [debt](../../agents/debt.md) |
+| D3    | [D3 scale](./d3-scale.md), [Launch checklist](./launch-checklist.md) path A, [Validators](../consensus/validators.md), [debt](../../agents/debt.md) |
 
 ## Milestone definition of done
 
