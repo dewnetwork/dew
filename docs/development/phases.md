@@ -376,4 +376,4 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 
 **Packages:** `consensus/`, `p2p/`, `node/`, `core/native`, `cmd/dew`, `deploy/`, `devnet/`, operator docs
 
-**Notes:** Prefer config/genesis changes over wire churn under `public-testnet-v1`. Path B auto-mine deployment stays valid until operators migrate. Tokenomics issuance numbers may stay draft until mainnet.
+**Notes:** **D3a done** (July 2026) — `node.Stack`, `--validator` / `--no-auto-mine`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`. ERC-20 compose smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548`. Prefer config/genesis changes over wire churn under `public-testnet-v1`. Path B auto-mine deployment stays valid until operators migrate. Tokenomics issuance numbers may stay draft until mainnet.
