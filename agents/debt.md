@@ -28,7 +28,7 @@ Owned by D3c — see [d3-scale.md](../docs/development/d3-scale.md#d3c--staking-
 Owned by D3 — see [d3-scale.md](../docs/development/d3-scale.md) (D3a / D3b).
 
 - [x] Multi-process binary packaging (systemd/docker compose samples) — `deploy/` (Dockerfile; `docker-compose.soak.yml` devnet/`multi`; `docker-compose.yml` public path B + nginx; systemd units); `dew run --p2p.*` for encrypted mesh packaging
-- [ ] **D3a** Multi-process Dew-BFT shared block production (compose `multi` still auto-mines per process; use `dew devnet` for in-process BFT)
+- [x] **D3a** Multi-process Dew-BFT shared block production (`--validator`, `node.Stack`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`)
 - [ ] **D3b** Persistent peer store / auto-redial after restart (manual RedialMesh in chaos test today; `dew run` has dial retry only at start)
 
 ## C6 residuals (ops, not freeze blockers)

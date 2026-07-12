@@ -68,7 +68,7 @@ dew run --genesis genesis.json \
 3. Point wallets at one RPC (`http://<rpc-host>:8545`).
 4. Feature flags (native path, precompiles, staking) must match operator policy across hosts.
 
-**Note:** `dew run` multi-process currently shares genesis + encrypted P2P; each process **auto-mines** its own execution chain. Shared multi-process Dew-BFT is specified in [D3 scale — D3a](./d3-scale.md#d3a--multi-process-dew-bft) (pre-implementation). For consensus + ERC-20 smoke today, use `dew devnet` or the default Compose service.
+**Note:** Compose profile `multi` runs **3 BFT validators** (`--validator`) + **`node-rpc`** full node (`--no-auto-mine`) on a shared canonical chain (D3a). Default `dew run` without `--validator` remains dev auto-mine (path B compatible). ERC-20 smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548` after `docker compose … --profile multi up`. In-process BFT demo: `dew devnet`.
 
 Minimum private bar (security principles): multi-validator + chaos restart — covered by `go test ./devnet/ -run Chaos`.
 
