@@ -18,20 +18,23 @@
 name: dew
 
 services:
-  # 1. Dew Blockchain Node (Devnet Mode)
+  # 1. Dew Blockchain Node (public path B — single auto-mine RPC)
+  # Uses genesis.public.json: faucet funded only; Anvil validators have no alloc (not drainable).
   dew-node:
     build:
       context: ..
       dockerfile: deploy/node/Dockerfile
+      args:
+        GENESIS_FILE: ${DEW_GENESIS_FILE:-genesis.public.json}
     container_name: dew-node
     command:
-      - devnet
+      - run
+      - --genesis
+      - /etc/dew/genesis.json
       - --http.addr
       - "0.0.0.0"
       - --http.port
       - "8545"
-      - --bft.heights
-      - "1"
     # Internal only — JSON-RPC via edge (rpc-dew.fadosoft.com).
     # Debug from host: docker compose exec dew-node … or temporary ports: mapping.
     expose:
@@ -52,6 +55,8 @@ services:
       - FAUCET_CHAIN_ID=${FAUCET_CHAIN_ID:-2205}
       - FAUCET_PRIVATE_KEY=${FAUCET_PRIVATE_KEY:-ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
       - FAUCET_MODE=${FAUCET_MODE:-dev}
+      - FAUCET_CAPTCHA_PROVIDER=${FAUCET_CAPTCHA_PROVIDER:-}
+      - FAUCET_CAPTCHA_SECRET=${FAUCET_CAPTCHA_SECRET:-}
       - FAUCET_ALLOWLIST=/etc/dew/faucet-allowlist.txt
       - FAUCET_AMOUNT_WEI=${FAUCET_AMOUNT_WEI:-1000000000000000000}
       - FAUCET_LIMIT_ADDRESS=${FAUCET_LIMIT_ADDRESS:-1}

@@ -65,8 +65,9 @@ out/
 web/dist/
 web/.astro/
 
-# --- Faucet web ---
+# --- Faucet ---
 faucet-web/dist/
+faucet/allowlist.production.txt
 
 # --- Env & secrets ---
 .env

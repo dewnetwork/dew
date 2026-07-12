@@ -17,8 +17,9 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /out/dew /usr/local/bin/dew
-# Default genesis (override with volume mount for custom nets).
-COPY genesis.json /etc/dew/genesis.json
+# Select genesis at build time: genesis.json (dev) or genesis.public.json (public stack).
+ARG GENESIS_FILE=genesis.json
+COPY ${GENESIS_FILE} /etc/dew/genesis.json
 
 EXPOSE 8545 30303
 ENTRYPOINT ["dew"]
