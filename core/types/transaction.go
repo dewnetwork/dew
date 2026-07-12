@@ -88,6 +88,54 @@ func (tx *Transaction) Hash() Hash {
 	return tx.hash
 }
 
+// UnmarshalBinary decodes a signed transaction wire encoding.
+func (tx *Transaction) UnmarshalBinary(data []byte) error {
+	if len(data) == 0 {
+		return fmt.Errorf("types: empty tx binary")
+	}
+	if data[0] == DynamicFeeTxType {
+		var raw dynamicFeeRLP
+		if err := rlp.DecodeBytes(data[1:], &raw); err != nil {
+			return err
+		}
+		*tx = Transaction{
+			Type:       DynamicFeeTxType,
+			ChainID:    copyBig(raw.ChainID),
+			Nonce:      raw.Nonce,
+			GasTipCap:  copyBig(raw.GasTipCap),
+			GasFeeCap:  copyBig(raw.GasFeeCap),
+			Gas:        raw.Gas,
+			To:         bytesToAddr(raw.To),
+			Value:      copyBig(raw.Value),
+			Data:       append([]byte(nil), raw.Data...),
+			AccessList: decodeAccessList(raw.AccessList),
+			V:          copyBig(raw.YParity),
+			R:          copyBig(raw.R),
+			S:          copyBig(raw.S),
+		}
+		return nil
+	}
+	var raw legacyRLP
+	if err := rlp.DecodeBytes(data, &raw); err != nil {
+		return err
+	}
+	gasPrice := copyBig(raw.GasPrice)
+	*tx = Transaction{
+		Type:      LegacyTxType,
+		Nonce:     raw.Nonce,
+		GasTipCap: gasPrice,
+		GasFeeCap: gasPrice,
+		Gas:       raw.Gas,
+		To:        bytesToAddr(raw.To),
+		Value:     copyBig(raw.Value),
+		Data:      append([]byte(nil), raw.Data...),
+		V:         copyBig(raw.V),
+		R:         copyBig(raw.R),
+		S:         copyBig(raw.S),
+	}
+	return nil
+}
+
 // MarshalBinary returns the signed wire encoding (type byte || RLP payload for typed txs).
 func (tx *Transaction) MarshalBinary() ([]byte, error) {
 	switch tx.Type {
@@ -225,4 +273,39 @@ func addrBytes(a *crypto.Address) []byte {
 		return []byte{}
 	}
 	return a.Bytes()
+}
+
+func bytesToAddr(b []byte) *crypto.Address {
+	if len(b) == 0 {
+		return nil
+	}
+	if len(b) != 20 {
+		return nil
+	}
+	var a crypto.Address
+	copy(a[:], b)
+	return &a
+}
+
+func decodeAccessList(raw []accessTupleRLP) AccessList {
+	if len(raw) == 0 {
+		return nil
+	}
+	out := make(AccessList, len(raw))
+	for i, t := range raw {
+		keys := make([]Hash, len(t.StorageKeys))
+		for j, k := range t.StorageKeys {
+			keys[j] = BytesToHash(k)
+		}
+		addr := bytesToAddr(t.Address)
+		var address crypto.Address
+		if addr != nil {
+			address = *addr
+		}
+		out[i] = AccessTuple{
+			Address:     address,
+			StorageKeys: keys,
+		}
+	}
+	return out
 }
