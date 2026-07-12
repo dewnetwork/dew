@@ -99,14 +99,14 @@ type receipt struct {
 }
 
 func (c *rpcClient) waitReceipt(txHash string) (*receipt, error) {
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(120 * time.Second)
 	for time.Now().Before(deadline) {
 		raw, err := c.call("eth_getTransactionReceipt", []interface{}{txHash})
 		if err != nil {
 			return nil, err
 		}
-		if string(raw) == "null" {
-			time.Sleep(20 * time.Millisecond)
+		if len(raw) == 0 || string(raw) == "null" {
+			time.Sleep(50 * time.Millisecond)
 			continue
 		}
 		var obj struct {

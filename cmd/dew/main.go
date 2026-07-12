@@ -19,7 +19,6 @@ import (
 	"github.com/dewnetwork/dew/devnet"
 	"github.com/dewnetwork/dew/node"
 	"github.com/dewnetwork/dew/p2p"
-	"github.com/dewnetwork/dew/rpc"
 )
 
 func main() {
@@ -65,6 +64,9 @@ func cmdRun(args []string) error {
 	p2pBoot := fs.String("p2p.bootnodes", "", "comma-separated host:port peers to dial")
 	p2pEncrypt := fs.Bool("p2p.encrypt", true, "encrypted P2P sessions (C2 default)")
 	p2pCleartext := fs.Bool("p2p.allow-cleartext", false, "permit cleartext when --p2p.encrypt=false")
+	validator := fs.Bool("validator", false, "enable Dew-BFT validator mode")
+	validatorKey := fs.String("validator.key", "", "hex secp256k1 key for --validator")
+	noAutoMine := fs.Bool("no-auto-mine", false, "admit txs to mempool only (no local seal)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -79,6 +81,68 @@ func cmdRun(args []string) error {
 	}
 	if *staking {
 		n.SetStakingEnabled(true)
+	}
+
+	if *validator {
+		*noAutoMine = true
+	}
+	if *noAutoMine {
+		n.SetAutoMine(false)
+	}
+
+	if *validator {
+		if *p2pListen == "" {
+			return fmt.Errorf("validator mode requires --p2p.listen")
+		}
+		if strings.TrimSpace(*validatorKey) == "" {
+			return fmt.Errorf("validator mode requires --validator.key")
+		}
+		valKey, err := parsePrivateKeyHex(*validatorKey)
+		if err != nil {
+			return fmt.Errorf("validator key: %w", err)
+		}
+		p2pKey, err := parsePrivateKeyHex(*p2pKeyHex)
+		if err != nil {
+			return fmt.Errorf("p2p key: %w", err)
+		}
+		return runBFTStack(bftRunConfig{
+			Genesis:     g,
+			Node:        n,
+			HTTPAddr:    *httpAddr,
+			HTTPPort:    *httpPort,
+			HTTPEnabled: *httpEnabled,
+			Stack: &node.StackConfig{
+				Validator:      true,
+				ValidatorKey:   valKey,
+				P2PListen:      *p2pListen,
+				P2PPrivateKey:  p2pKey,
+				Bootnodes:      splitCSV(*p2pBoot),
+				Encrypt:        *p2pEncrypt,
+				AllowCleartext: *p2pCleartext,
+			},
+		})
+	}
+
+	if *noAutoMine && *p2pListen != "" {
+		p2pKey, err := parsePrivateKeyHex(*p2pKeyHex)
+		if err != nil {
+			return fmt.Errorf("p2p key: %w", err)
+		}
+		return runBFTStack(bftRunConfig{
+			Genesis:     g,
+			Node:        n,
+			HTTPAddr:    *httpAddr,
+			HTTPPort:    *httpPort,
+			HTTPEnabled: *httpEnabled,
+			Stack: &node.StackConfig{
+				Validator:      false,
+				P2PListen:      *p2pListen,
+				P2PPrivateKey:  p2pKey,
+				Bootnodes:      splitCSV(*p2pBoot),
+				Encrypt:        *p2pEncrypt,
+				AllowCleartext: *p2pCleartext,
+			},
+		})
 	}
 
 	var p2pHost *p2p.Host
@@ -103,26 +167,7 @@ func cmdRun(args []string) error {
 		return nil
 	}
 
-	srv := rpc.NewServer()
-	api := rpc.NewAPI(n)
-	srv.RegisterAll(api.Handlers())
-
-	addr := fmt.Sprintf("%s:%d", *httpAddr, *httpPort)
-	errCh := make(chan error, 1)
-	go func() {
-		errCh <- srv.ListenAndServe(addr)
-	}()
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-sig:
-		fmt.Println("shutting down…")
-		_ = srv.Close()
-		return nil
-	case err := <-errCh:
-		return err
-	}
+	return serveHTTP(n, nil, *httpAddr, *httpPort)
 }
 
 // startP2PHost binds an encrypted (default) P2P listener and dials bootnodes.
@@ -282,6 +327,7 @@ Usage:
   dew init [--out genesis.json]
   dew devnet [--http.addr 127.0.0.1] [--http.port 8545] [--no-p2p] [--bft.heights 1]
   dew run [--genesis genesis.json] [--http.addr 127.0.0.1] [--http.port 8545] [--staking]
+          [--validator] [--validator.key HEX] [--no-auto-mine]
           [--p2p.listen host:port] [--p2p.key HEX] [--p2p.bootnodes a:port,b:port]
           [--p2p.encrypt] [--p2p.allow-cleartext]
   dew version

@@ -243,10 +243,11 @@ func (h *Host) handleProposal(p *Peer, payload []byte) error {
 	if err != nil {
 		return err
 	}
-	if h.handlers.OnProposal != nil {
-		if err := h.handlers.OnProposal(msg, p.ID); err != nil {
-			return nil
-		}
+	if h.handlers.OnProposal == nil {
+		return nil
+	}
+	if err := h.handlers.OnProposal(msg, p.ID); err != nil {
+		return nil
 	}
 	h.Broadcast(MsgProposal, payload, p.ID)
 	return nil
@@ -257,10 +258,11 @@ func (h *Host) handleVote(p *Peer, payload []byte, typ uint8) error {
 	if err != nil {
 		return err
 	}
-	if h.handlers.OnVote != nil {
-		if err := h.handlers.OnVote(msg, p.ID); err != nil {
-			return nil
-		}
+	if h.handlers.OnVote == nil {
+		return nil
+	}
+	if err := h.handlers.OnVote(msg, p.ID); err != nil {
+		return nil
 	}
 	h.Broadcast(typ, payload, p.ID)
 	return nil

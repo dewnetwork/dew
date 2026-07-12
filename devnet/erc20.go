@@ -14,11 +14,23 @@ import (
 	"github.com/dewnetwork/dew/core/vm"
 )
 
+// MeshAdmit is invoked with signed raw tx bytes on each submission so BFT
+// validators can include txs admitted only on the RPC full node.
+type MeshAdmit func(raw []byte)
+
+func admitMesh(mesh []MeshAdmit, raw []byte) {
+	for _, m := range mesh {
+		if m != nil {
+			m(raw)
+		}
+	}
+}
+
 // DeployAndTransferERC20 deploys the fixture Token via signed txs on the given
 // JSON-RPC URL and transfers `amount` to recipient. Returns contract address.
 //
 // Used by integration tests and can be called from tooling.
-func DeployAndTransferERC20(rpcURL string, deployer Account, recipient common.Address, supply, amount *big.Int) (common.Address, error) {
+func DeployAndTransferERC20(rpcURL string, deployer Account, recipient common.Address, supply, amount *big.Int, mesh ...MeshAdmit) (common.Address, error) {
 	client := &rpcClient{url: rpcURL}
 	chainID, err := client.chainID()
 	if err != nil {
@@ -61,6 +73,7 @@ func DeployAndTransferERC20(rpcURL string, deployer Account, recipient common.Ad
 	if err != nil {
 		return common.Address{}, err
 	}
+	admitMesh(mesh, raw)
 	txHash, err := client.sendRaw(raw)
 	if err != nil {
 		return common.Address{}, fmt.Errorf("deploy send: %w", err)
@@ -98,6 +111,7 @@ func DeployAndTransferERC20(rpcURL string, deployer Account, recipient common.Ad
 	if err != nil {
 		return common.Address{}, err
 	}
+	admitMesh(mesh, raw2)
 	txHash2, err := client.sendRaw(raw2)
 	if err != nil {
 		return common.Address{}, fmt.Errorf("transfer send: %w", err)

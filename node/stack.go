@@ -1,0 +1,237 @@
+package node
+
+import (
+	"crypto/ecdsa"
+	"fmt"
+	"time"
+
+	"github.com/dewnetwork/dew/config"
+	"github.com/dewnetwork/dew/consensus"
+	"github.com/dewnetwork/dew/core/types"
+	"github.com/dewnetwork/dew/crypto"
+	"github.com/dewnetwork/dew/p2p"
+)
+
+// StackConfig wires a Dew node with optional BFT validator mode and P2P.
+type StackConfig struct {
+	Genesis *config.Genesis
+	Node    *Node
+
+	ValidatorKey *ecdsa.PrivateKey // required if Validator=true
+	Validator    bool
+
+	P2PListen      string
+	P2PPrivateKey  *ecdsa.PrivateKey
+	Bootnodes      []string
+	Encrypt        bool
+	AllowCleartext bool
+	// DeferRunner delays Runner.Start until Stack.StartConsensus (for test harness mesh setup).
+	DeferRunner bool
+}
+
+// Stack is a running node with optional consensus engine, P2P host, and runner.
+type Stack struct {
+	Node   *Node
+	Engine *consensus.Engine
+	Host   *p2p.Host
+	Runner *consensus.Runner
+}
+
+// StartStack boots P2P and, when Validator=true, Dew-BFT engine + runner.
+func StartStack(cfg StackConfig) (*Stack, error) {
+	if cfg.Node == nil {
+		return nil, fmt.Errorf("node: missing node")
+	}
+	if cfg.Genesis == nil {
+		return nil, fmt.Errorf("node: missing genesis")
+	}
+	if cfg.P2PListen == "" {
+		return nil, fmt.Errorf("node: missing p2p listen address")
+	}
+	if cfg.P2PPrivateKey == nil {
+		return nil, fmt.Errorf("node: missing p2p private key")
+	}
+	if cfg.Validator && cfg.ValidatorKey == nil {
+		return nil, fmt.Errorf("node: validator mode requires validator key")
+	}
+
+	cfg.Node.SetAutoMine(false)
+
+	stack := &Stack{Node: cfg.Node}
+	backend := &P2PBackend{N: cfg.Node}
+
+	var engine *consensus.Engine
+	handlers := appHandlers(stack, cfg.Validator, &engine)
+
+	p2pCfg := p2p.Config{
+		PrivateKey:     cfg.P2PPrivateKey,
+		ChainID:        cfg.Genesis.ChainID(),
+		ListenAddr:     cfg.P2PListen,
+		MaxPeers:       25,
+		Encrypt:        cfg.Encrypt,
+		AllowCleartext: cfg.AllowCleartext,
+	}
+	host, err := p2p.NewHost(p2pCfg, backend, backend, handlers)
+	if err != nil {
+		return nil, err
+	}
+	stack.Host = host
+
+	if cfg.Validator {
+		valSet, err := consensus.ValidatorSetFromGenesis(cfg.Genesis)
+		if err != nil {
+			return nil, err
+		}
+		addr := crypto.PubkeyToAddress(&cfg.ValidatorKey.PublicKey)
+		if _, ok := valSet.Get(addr); !ok {
+			return nil, fmt.Errorf("node: validator key %s not in genesis validator set", addr.Hex())
+		}
+
+		parent := cfg.Node.CurrentHeader()
+		if parent == nil {
+			return nil, fmt.Errorf("node: missing genesis header")
+		}
+
+		engine, err = consensus.NewEngine(consensus.EngineConfig{
+			PrivateKey: cfg.ValidatorKey,
+			ValSet:     valSet,
+			Parent:     parent,
+			Builder: &consensus.MempoolBlockBuilder{
+				Exec:   cfg.Node,
+				MaxTxs: 1,
+			},
+			Validator:   &consensus.ExecutionValidator{Exec: cfg.Node},
+			ProposeRoot: parent.StateRoot,
+			Broadcast:   p2p.NewBroadcaster(host),
+		})
+		if err != nil {
+			return nil, err
+		}
+		stack.Engine = engine
+
+		runner := &consensus.Runner{
+			Engine: engine,
+			OnCommit: func(ev consensus.CommitEvent) error {
+				if ev.Block != nil {
+					if err := cfg.Node.ImportCommittedBlock(ev.Block); err != nil {
+						return err
+					}
+				}
+				if stack.Host != nil {
+					_ = stack.Host.GossipBlock(ev.BlockHash)
+				}
+				return nil
+			},
+		}
+		stack.Runner = runner
+	}
+
+	if err := host.Start(); err != nil {
+		return nil, err
+	}
+
+	if stack.Runner != nil && !cfg.DeferRunner {
+		if err := stack.StartConsensus(); err != nil {
+			_ = host.Close()
+			return nil, err
+		}
+	}
+
+	for _, addr := range cfg.Bootnodes {
+		addr := addr
+		if addr == "" {
+			continue
+		}
+		go dialBootnode(host, addr)
+	}
+	time.Sleep(50 * time.Millisecond)
+
+	return stack, nil
+}
+
+// StartConsensus begins the BFT runner loop (no-op for full nodes).
+func (s *Stack) StartConsensus() error {
+	if s == nil || s.Runner == nil {
+		return nil
+	}
+	return s.Runner.Start()
+}
+
+// GossipTx announces a mempool tx hash to all peers.
+func (s *Stack) GossipTx(hash types.Hash) error {
+	if s == nil || s.Host == nil {
+		return nil
+	}
+	return s.Host.GossipTx(hash)
+}
+
+// Stop shuts down the consensus runner and P2P host.
+func (s *Stack) Stop() error {
+	if s == nil {
+		return nil
+	}
+	if s.Runner != nil {
+		s.Runner.Stop()
+	}
+	if s.Host != nil {
+		return s.Host.Close()
+	}
+	return nil
+}
+
+func appHandlers(stack *Stack, validator bool, engine **consensus.Engine) p2p.AppHandlers {
+	h := p2p.AppHandlers{
+		OnBlock: func(_ uint64, _ types.Hash, raw []byte, _ p2p.PeerID) error {
+			// Validators apply blocks via BFT OnCommit only; gossip import would
+			// advance the execution node ahead of the consensus engine.
+			if validator {
+				return nil
+			}
+			blk, err := types.UnmarshalBlockBinary(raw)
+			if err != nil {
+				return err
+			}
+			return stack.Node.ImportCommittedBlock(blk)
+		},
+		OnTx: func(hash types.Hash, raw []byte, _ p2p.PeerID) error {
+			backend := &P2PBackend{N: stack.Node}
+			if backend.HasTx(hash) {
+				return nil
+			}
+			_, err := stack.Node.SendRawTransaction(raw)
+			return err
+		},
+	}
+	if validator {
+		h.OnProposal = func(wp *p2p.WireProposal, _ p2p.PeerID) error {
+			if engine == nil || *engine == nil {
+				return nil
+			}
+			p, err := p2p.WireToProposal(wp)
+			if err != nil {
+				return err
+			}
+			return (*engine).HandleProposal(p)
+		}
+		h.OnVote = func(wv *p2p.WireVote, _ p2p.PeerID) error {
+			if engine == nil || *engine == nil {
+				return nil
+			}
+			v, err := p2p.WireToVote(wv)
+			if err != nil {
+				return err
+			}
+			return (*engine).HandleVote(v)
+		}
+	}
+	return h
+}
+
+func dialBootnode(host *p2p.Host, addr string) {
+	for i := 0; i < 15; i++ {
+		if _, err := host.Dial(addr); err == nil {
+			return
+		}
+		time.Sleep(time.Second)
+	}
+}

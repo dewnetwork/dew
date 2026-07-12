@@ -54,7 +54,10 @@ func (r *Runner) timeoutLoop() {
 		case <-r.stop:
 			return
 		case <-tick.C:
-			if r.Engine.Step() == StepPropose {
+			switch r.Engine.Step() {
+			case StepNewRound:
+				_ = r.Engine.StartRound()
+			case StepPropose, StepPrevote, StepPrecommit:
 				_ = r.Engine.ForceTimeoutRound()
 				_ = r.Engine.StartRound()
 			}

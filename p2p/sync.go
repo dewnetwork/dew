@@ -93,6 +93,42 @@ func countBlocks(chain ChainBackend, from, to uint64) int {
 	return n
 }
 
+// SyncMissingFromPeer requests blocks from local height+1 without trusting peer.Height
+// (handshake height can be stale on long-lived connections).
+func (h *Host) SyncMissingFromPeer(p *Peer) error {
+	if p == nil {
+		return fmt.Errorf("p2p: nil peer")
+	}
+	const maxBatches = 32
+	for batch := 0; batch < maxBatches; batch++ {
+		from := nextSyncFrom(h.chain)
+		to := from + h.cfg.MaxBlocksPerRequest - 1
+		req := &GetBlocks{From: from, To: to}
+		enc, err := req.Encode()
+		if err != nil {
+			return err
+		}
+		beforeH := h.chain.Height()
+		beforeHas := countBlocks(h.chain, from, to)
+		if err := p.Send(MsgGetBlocks, enc); err != nil {
+			return err
+		}
+		deadline := time.Now().Add(2 * time.Second)
+		progressed := false
+		for time.Now().Before(deadline) {
+			if h.chain.Height() > beforeH || countBlocks(h.chain, from, to) > beforeHas {
+				progressed = true
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		if !progressed {
+			return nil
+		}
+	}
+	return nil
+}
+
 // SyncBestPeer picks the highest peer and syncs from it.
 func (h *Host) SyncBestPeer() error {
 	var best *Peer
