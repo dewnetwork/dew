@@ -20,8 +20,8 @@ This is a **public demo RPC**, not a multi-host BFT network. Clients share one a
 | Item | Example |
 | :--- | :------ |
 | Host | Ubuntu 22.04/24.04, 1–2 vCPU, 2 GB RAM |
-| Domain (optional but recommended) | `rpc.example.com` → A-record to this host |
-| Public URL | `https://rpc.example.com` (or `http://…` until TLS) |
+| Domain (optional but recommended) | `rpc.dew.fadosoft.com` (+ faucet/explorer) → A-record to this host |
+| Public URL | `https://rpc.dew.fadosoft.com` (or `http://…` until TLS) |
 | Dew RPC | internal only (Compose) or `http://127.0.0.1:8545` (systemd) |
 
 Firewall (ufw):
@@ -125,21 +125,33 @@ Unit runs `dew run` (single execution node, auto-mine per tx). For in-process 3-
 
 ### TLS reverse proxy + rate limit (host nginx + certbot)
 
+**Full public surface** (rpc + faucet + explorer under `*.dew.fadosoft.com`):
+
+```bash
+sudo bash deploy/scripts/install-edge-nginx.sh
+export CERTBOT_EMAIL=ops@fadosoft.com
+sudo bash deploy/scripts/setup-certbot.sh
+# certbot.timer auto-renews; dry-run: certbot renew --dry-run
+```
+
+Edge config: [deploy/nginx/dew-edge.conf](../nginx/dew-edge.conf).
+
+**RPC-only** (legacy single site):
+
 ```bash
 sudo apt-get update && sudo apt-get install -y nginx certbot python3-certbot-nginx
 sudo install -m 644 deploy/node/nginx/dew-rpc.conf /etc/nginx/sites-available/dew-rpc
 sudo ln -sf /etc/nginx/sites-available/dew-rpc /etc/nginx/sites-enabled/dew-rpc
-# edit server_name (rpc.example.com → your domain)
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d rpc.example.com
+sudo certbot --nginx -d rpc.dew.fadosoft.com
 ```
 
-nginx sample (`deploy/node/nginx/dew-rpc.conf`) includes:
+nginx samples include:
 
-- Proxy → `http://127.0.0.1:8545`
-- Only `POST` / `OPTIONS` (MetaMask preflight)
-- Rate limit ~**10 r/s** burst 20 per IP (tune if abused)
+- Proxy → `http://127.0.0.1:8545` (RPC rate limit ~**10 r/s** burst 20)
+- Only `POST` / `OPTIONS` on RPC (MetaMask preflight)
 - Body size **1m** (matches Dew `MaxRequestBodyBytes`)
+- Faucet / explorer vhosts when using `dew-edge.conf`
 
 ### Ops (systemd)
 
@@ -157,20 +169,20 @@ nginx sample (`deploy/node/nginx/dew-rpc.conf`) includes:
 ```text
 Network:     Dew public-testnet-v1
 Chain ID:    2205
-RPC:         https://rpc.example.com
+RPC:         https://rpc.dew.fadosoft.com
 Symbol:      DEW
-Explorer:    (none)
-Faucet:      (none / manual / allowlist only)
+Explorer:    https://explorer.dew.fadosoft.com
+Faucet:      https://faucet.dew.fadosoft.com   # allowlist or captcha
 Bootnodes:   (n/a — single RPC path B)
 ```
 
 MetaMask: Custom network → RPC URL HTTPS, chain ID **2205**, symbol **DEW**.  
-**Explorer:** leave `(none)` until a live UI exists; when publishing a base URL use the conventions in [docs/development/block-explorer.md](../docs/development/block-explorer.md) (MetaMask “Block explorer URL” = base only, e.g. `https://explorer.example.com`).
+**Explorer:** MetaMask “Block explorer URL” = base only — `https://explorer.dew.fadosoft.com` (see [block-explorer.md](../docs/development/block-explorer.md)).
 
 External smoke:
 
 ```bash
-node scripts/smoke-rpc.mjs https://rpc.example.com
+node scripts/smoke-rpc.mjs https://rpc.dew.fadosoft.com
 ```
 
 ---

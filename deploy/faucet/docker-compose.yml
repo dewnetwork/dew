@@ -40,7 +40,7 @@ services:
         - PUBLIC_CAPTCHA_SITE_KEY=${PUBLIC_CAPTCHA_SITE_KEY}
     container_name: dew-faucet-frontend
     ports:
-      - "${FAUCET_PORT:-8081}:80"
+      - "${FAUCET_BIND:-127.0.0.1}:${FAUCET_PORT:-8081}:80"
     depends_on:
       - faucet-backend
     restart: unless-stopped

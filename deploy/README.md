@@ -24,6 +24,15 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 | ├── [docker-compose.yml](./explorer/docker-compose.yml) | Standalone explorer container |
 | ├── [explorer.env.example](./explorer/explorer.env.example) | `PUBLIC_RPC_URL` / chain / base URL |
 | └── [nginx/](./explorer/nginx/) | SPA `try_files` for client routes |
+| **[nginx/](./nginx/)** | **Edge TLS configs** |
+| ├── [dew-edge.docker.conf](./nginx/dew-edge.docker.conf) | **Compose edge** — rpc/faucet/explorer by Host |
+| ├── [docker-entrypoint-edge.sh](./nginx/docker-entrypoint-edge.sh) | Bootstrap TLS + reload on renew |
+| └── [dew-edge.conf](./nginx/dew-edge.conf) | Host nginx alternative (loopback backends) |
+| **[scripts/](./scripts/)** | **Certbot helpers** |
+| ├── [setup-certbot-docker.sh](./scripts/setup-certbot-docker.sh) | **Compose** Let's Encrypt issue + reload edge |
+| ├── [install-edge-nginx.sh](./scripts/install-edge-nginx.sh) | Host nginx site install |
+| └── [setup-certbot.sh](./scripts/setup-certbot.sh) | Host certbot (no Compose edge) |
+| [docker-compose.yml](./docker-compose.yml) | **Full stack** — node + faucet + explorer + edge + certbot |
 | [Launch checklist](../docs/development/launch-checklist.md) | End-to-end ops checklist |
 
 ## Prerequisites
@@ -106,7 +115,9 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 # expect chainId 2205 / 0x89d
 ```
 
-### TLS with Compose
+### TLS with Compose (in-container certs)
+
+Prefer **host edge + certbot** (next section) for Let's Encrypt auto-renew. In-container TLS:
 
 1. Obtain certs (certbot on host, or ACME elsewhere).
 2. Place `fullchain.pem` + `privkey.pem` under `deploy/node/certs/`.
@@ -119,6 +130,65 @@ Firewall: allow 22/80/443 only — **never** publish container `:8545` on `0.0.0
 ### Systemd alternative (no Docker)
 
 See [public-rpc-single-host.md](./node/public-rpc-single-host.md) — Dew on `127.0.0.1:8545`, host nginx on `:443`.
+
+## Public edge: nginx :443 + certbot (`*.dew.fadosoft.com`)
+
+### Recommended: Docker Compose edge
+
+Full stack in one compose file: backends **internal** + `edge` on **:80/:443** + `certbot` auto-renew.
+
+| Hostname | Upstream (compose) | Role |
+| :--- | :--- | :--- |
+| `rpc.dew.fadosoft.com` | `dew-node:8545` | JSON-RPC (rate limit, POST/OPTIONS) |
+| `faucet.dew.fadosoft.com` | `faucet-frontend:80` | Faucet SPA + `/api` |
+| `explorer.dew.fadosoft.com` | `explorer:80` | Block explorer SPA |
+
+```bash
+# 1) DNS A/AAAA: rpc / faucet / explorer.dew.fadosoft.com → this host
+
+# 2) Firewall: 22, 80, 443 only (not 8545)
+
+# 3) Start stack
+cp deploy/.env.example deploy/.env   # edit keys; PUBLIC_* already point at fadosoft hosts
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
+
+# 4) Issue Let's Encrypt (HTTP-01 via edge :80) + enable renew loop
+export CERTBOT_EMAIL=ops@fadosoft.com
+bash deploy/scripts/setup-certbot-docker.sh
+
+# 5) Verify
+node scripts/smoke-rpc.mjs https://rpc.dew.fadosoft.com
+```
+
+| Service | Role | Host ports |
+| :--- | :--- | :--- |
+| `dew-node` | Devnet JSON-RPC | none |
+| `faucet-backend` | Faucet API | none |
+| `faucet-frontend` | Faucet SPA | none |
+| `explorer` | Explorer SPA | none |
+| **`edge`** | nginx reverse proxy + TLS | **`:80`, `:443`** |
+| **`certbot`** | renew every 12h | none |
+
+Configs: [nginx/dew-edge.docker.conf](./nginx/dew-edge.docker.conf), [scripts/setup-certbot-docker.sh](./scripts/setup-certbot-docker.sh).
+
+Edge starts with a bootstrap self-signed cert until LE succeeds; after `setup-certbot-docker.sh`, real certs are copied in and nginx reloads. The `certbot` service renews automatically; edge re-syncs certs hourly.
+
+### Alternative: host nginx (no Compose edge)
+
+If you terminate TLS on the host instead of the `edge` container:
+
+```bash
+# backends must listen on 127.0.0.1:8545 / 8081 / 8082 (not the default compose layout)
+sudo bash deploy/scripts/install-edge-nginx.sh
+export CERTBOT_EMAIL=ops@fadosoft.com
+sudo -E bash deploy/scripts/setup-certbot.sh
+```
+
+Do **not** run host nginx and Compose `edge` on the same host ports at once.
+
+### Wildcard cert note
+
+A single cert for `*.dew.fadosoft.com` needs **DNS-01** (not HTTP-01). Default is a multi-name cert for the three hostnames above.
 
 ## systemd (binary install)
 
@@ -167,23 +237,31 @@ Smoke:
 
 ## Combined Node + Faucet + Explorer (Docker Compose)
 
-Local full stack: Dew devnet, faucet (backend + web), and block explorer:
+Full stack with **edge nginx** on `:80`/`:443`. Backends are not published on the host.
 
 ```bash
-cp deploy/.env.example deploy/.env   # optional; defaults work for local Anvil #0 faucet
+cp deploy/.env.example deploy/.env   # edit for production; Anvil #0 only for private
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
-# or without env file (built-in defaults):
-docker compose -f deploy/docker-compose.yml up --build -d
+export CERTBOT_EMAIL=ops@fadosoft.com
+bash deploy/scripts/setup-certbot-docker.sh
 ```
 
-| Surface | URL |
+| Surface | Public URL |
 | :--- | :--- |
-| JSON-RPC | `http://localhost:8545` |
-| Faucet web | `http://localhost:8081` |
-| Faucet API | `http://localhost:8081/api` |
-| **Explorer** | **`http://localhost:8082`** |
+| JSON-RPC | `https://rpc.dew.fadosoft.com` |
+| Faucet web | `https://faucet.dew.fadosoft.com` |
+| Faucet API | `https://faucet.dew.fadosoft.com/api` |
+| Explorer | `https://explorer.dew.fadosoft.com` |
 
-`PUBLIC_RPC_URL` for the explorer must be **browser-reachable** (`http://127.0.0.1:8545` on the host), not Docker-internal `http://dew-node:8545`.
+Local smoke **before** DNS/TLS (Host header + edge :80; HTTPS redirects until real certs):
+
+```bash
+curl -sk -X POST https://127.0.0.1/ -H 'Host: rpc.dew.fadosoft.com' \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}'
+```
+
+`PUBLIC_RPC_URL` must be **browser-reachable** (`https://rpc.dew.fadosoft.com`), not Docker-internal `http://dew-node:8545`.
 
 ## Related residual
 

@@ -12,9 +12,9 @@ services:
       context: ../..
       dockerfile: deploy/explorer/Dockerfile
       args:
-        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-http://127.0.0.1:8545}
+        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-https://rpc.dew.fadosoft.com}
         - PUBLIC_CHAIN_ID=${PUBLIC_CHAIN_ID:-2205}
-        - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-http://localhost:8082}
+        - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-https://explorer.dew.fadosoft.com}
         - PUBLIC_DEW_PRICE_USD=${PUBLIC_DEW_PRICE_USD:-}
         - PUBLIC_DEW_PRICE_BTC=${PUBLIC_DEW_PRICE_BTC:-}
         - PUBLIC_DEW_PRICE_CHANGE_24H=${PUBLIC_DEW_PRICE_CHANGE_24H:-}
@@ -22,5 +22,5 @@ services:
         - PUBLIC_DEW_TOTAL_SUPPLY=${PUBLIC_DEW_TOTAL_SUPPLY:-}
     container_name: dew-explorer
     ports:
-      - "${EXPLORER_PORT:-8082}:80"
+      - "${EXPLORER_BIND:-127.0.0.1}:${EXPLORER_PORT:-8082}:80"
     restart: unless-stopped
