@@ -432,117 +432,42 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	}
 	defer n.pool.Remove(txHash)
 
-	gasPrice := effectiveGasPrice(tx, n.baseFee)
-	if gasPrice == nil {
-		return dewtypes.Hash{}, fmt.Errorf("gas price too low for base fee")
-	}
-
-	msg := vm.Message{
-		From:     from,
-		Value:    uint256.MustFromBig(tx.Value()),
-		GasLimit: tx.Gas(),
-		GasPrice: gasPrice,
-		Data:     tx.Data(),
-	}
-	if to := tx.To(); to != nil {
-		a := ethToDewAddr(*to)
-		msg.To = &a
-	}
-
-	exec := vm.NewExecutor(n.statedb, vm.BlockContext{
-		Number:   n.header.Number + 1,
-		Time:     uint64(time.Now().Unix()),
-		GasLimit: n.header.GasLimit,
-		BaseFee:  n.baseFee,
-		Coinbase: n.header.Proposer,
-		ChainID:  n.chainID,
-	})
-	exec.EnableDewPrecompiles(n.enablePrecompiles)
-	exec.EnableStaking(n.enableStaking)
-
-	// Snapshot whole statedb via journal for full-tx failure after ApplyMessage outer errors
-	result, err := exec.ApplyMessage(msg)
-	if err != nil {
-		return dewtypes.Hash{}, err
-	}
-
-	// Build block
 	parent := n.header.Copy()
 	newHeader := &dewtypes.Header{
 		ParentHash:  parent.Hash(),
 		Number:      parent.Number + 1,
 		Timestamp:   uint64(time.Now().Unix()),
 		GasLimit:    parent.GasLimit,
-		GasUsed:     result.UsedGas,
+		GasUsed:     0,
 		BaseFee:     new(big.Int).Set(n.baseFee),
 		ExtraData:   parent.ExtraData,
 		Proposer:    parent.Proposer,
-		TxRoot:      dewtypes.EmptyTxRoot, // set after
+		TxRoot:      dewtypes.EmptyTxRoot,
 		ReceiptRoot: dewtypes.EmptyReceiptRoot,
 	}
 	if newHeader.Timestamp <= parent.Timestamp {
 		newHeader.Timestamp = parent.Timestamp + 1
 	}
 
-	// State root after execution
+	dewTx, err := ethTxToDew(tx)
+	if err != nil {
+		return dewtypes.Hash{}, err
+	}
+	execRes, gasUsed, err := n.executeEVMTxLocked(newHeader, dewTx, 0, 0)
+	if err != nil {
+		return dewtypes.Hash{}, err
+	}
+	newHeader.GasUsed = gasUsed
+
 	root, err := n.statedb.Commit()
 	if err != nil {
 		return dewtypes.Hash{}, err
 	}
 	newHeader.StateRoot = root
-
-	// Tx root: single eth tx hash list
 	newHeader.TxRoot = dewtypes.Keccak256Hash(txHash.Bytes())
 
-	block := dewtypes.NewBlock(newHeader, nil)
-	blockHash := block.Hash()
-
-	status := uint64(1)
-	if result.Failed {
-		status = 0
-	}
-	var contractAddr *dewcrypto.Address
-	if result.ContractAddress != nil {
-		contractAddr = result.ContractAddress
-	}
-	receipt := &dewtypes.Receipt{
-		Type:              tx.Type(),
-		Status:            status,
-		CumulativeGasUsed: result.UsedGas,
-		GasUsed:           result.UsedGas,
-		EffectiveGasPrice: gasPrice,
-		Logs:              result.Logs,
-		ContractAddress:   contractAddr,
-		TxHash:            txHash,
-		BlockHash:         blockHash,
-		BlockNumber:       newHeader.Number,
-		TransactionIndex:  0,
-	}
-
-	// Index logs
-	for i, lg := range result.Logs {
-		n.allLogs = append(n.allLogs, &IndexedLog{
-			Log:         lg,
-			BlockNumber: newHeader.Number,
-			BlockHash:   blockHash,
-			TxHash:      txHash,
-			TxIndex:     0,
-			Index:       uint(i),
-		})
-	}
-
-	n.blocks[blockHash] = block
-	n.blockNum[newHeader.Number] = blockHash
-	n.header = newHeader
-	n.txIndex[txHash] = &TxLookup{
-		BlockHash:   blockHash,
-		BlockNumber: newHeader.Number,
-		Index:       0,
-		Tx:          tx,
-		From:        from,
-		TxHash:      txHash,
-	}
-	n.receipts[txHash] = receipt
+	block := dewtypes.NewBlock(newHeader, []*dewtypes.Transaction{dewTx})
+	n.commitBlockLocked(block, []txExecResult{execRes})
 
 	return txHash, nil
 }

@@ -59,3 +59,63 @@ func TestSetAutoMine_AdmitOnly(t *testing.T) {
 		t.Fatalf("mempool len=%d want 1", n.Mempool().Len())
 	}
 }
+
+func TestImportCommittedBlock_Idempotent(t *testing.T) {
+	src, err := node.NewFromGenesis(testGenesis(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, err := ethcrypto.HexToECDSA(devnet.PrivHex0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	to := ethcrypto.PubkeyToAddress(key.PublicKey)
+	tx := ethtypes.NewTx(&ethtypes.LegacyTx{
+		Nonce:    0,
+		GasPrice: big.NewInt(1_000_000_000),
+		Gas:      21000,
+		To:       &to,
+		Value:    big.NewInt(1),
+	})
+	signed, err := ethtypes.SignTx(tx, ethtypes.LatestSignerForChainID(src.ChainID()), key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := signed.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := src.SendRawTransaction(raw); err != nil {
+		t.Fatal(err)
+	}
+	blk := src.GetBlockByNumber(1)
+	if blk == nil {
+		t.Fatal("missing block 1")
+	}
+	if len(blk.Transactions()) == 0 {
+		t.Fatal("block 1 has no transactions")
+	}
+
+	dst, err := node.NewFromGenesis(testGenesis(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dst.GetNonce(devnet.Faucet().Address) != 0 {
+		t.Fatalf("nonce before import=%d want 0", dst.GetNonce(devnet.Faucet().Address))
+	}
+	if err := dst.ImportCommittedBlock(blk); err != nil {
+		t.Fatal(err)
+	}
+	if dst.BlockNumber() != 1 {
+		t.Fatalf("height=%d want 1", dst.BlockNumber())
+	}
+	if dst.GetNonce(devnet.Faucet().Address) != 1 {
+		t.Fatalf("nonce after import=%d want 1", dst.GetNonce(devnet.Faucet().Address))
+	}
+	if err := dst.ImportCommittedBlock(blk); err != nil {
+		t.Fatal(err)
+	}
+	if dst.BlockNumber() != 1 {
+		t.Fatal("idempotent import changed head")
+	}
+}
