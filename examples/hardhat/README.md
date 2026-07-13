@@ -2,7 +2,7 @@
 
 Solidity samples for **local `dew devnet`** and **public-testnet-v1** (chain ID **2205**).
 
-Same contracts as [examples/foundry](../foundry/) (Token + Guestbook). Prefer Foundry if you already use `forge`; use this kit if you prefer Hardhat / ethers.
+Same contracts as [examples/foundry](../foundry/) (Token, Mock assets, Guestbook). Prefer Foundry if you already use `forge`; use this kit if you prefer Hardhat / ethers.
 
 | Doc | Link |
 | :--- | :--- |
@@ -59,6 +59,48 @@ TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
   npx hardhat run scripts/deploy-token.js --network dewLocal
 ```
 
+## Deploy Mock USDT
+
+Test-only OpenZeppelin ERC-20 (**6 decimals**, symbol **USDT**). Not real Tether.
+
+```bash
+npx hardhat run scripts/deploy-usdt.js --network dewLocal
+
+# optional transfer 1000 USDT
+TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
+  npx hardhat run scripts/deploy-usdt.js --network dewLocal
+
+# public-testnet-v1 (faucet-funded key)
+export PRIVATE_KEY=0xYOUR_FUNDED_KEY
+npx hardhat run scripts/deploy-usdt.js --network dewPublic
+```
+
+MetaMask: import token address with symbol `USDT`, decimals `6`.
+
+## Deploy Mock assets basket
+
+One script deploys **USDT · USDC · DAI · WETH · WBTC** (mintable mocks; not real assets).
+
+| Symbol | Decimals | Default supply |
+| :--- | ---: | :--- |
+| USDT | 6 | 1_000_000 |
+| USDC | 6 | 1_000_000 |
+| DAI | 18 | 1_000_000 |
+| WETH | 18 | 10_000 |
+| WBTC | 8 | 100 |
+
+```bash
+npx hardhat run scripts/deploy-mock-assets.js --network dewLocal
+
+TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
+  npx hardhat run scripts/deploy-mock-assets.js --network dewLocal
+
+export PRIVATE_KEY=0xYOUR_FUNDED_KEY
+npx hardhat run scripts/deploy-mock-assets.js --network dewPublic
+```
+
+Logs include addresses + a ready-to-paste `PUBLIC_KNOWN_TOKENS=…` line for the explorer.
+
 ## Guestbook
 
 ```bash
@@ -93,6 +135,8 @@ Explorer: `https://explorer-dew.fadosoft.com/address/<GUESTBOOK>` · `/tx/<hash>
 | `npm run compile` | `hardhat compile` |
 | `npm test` | in-process Hardhat network |
 | `npm run deploy:token` | needs `--network` via hardhat CLI |
+| `npm run deploy:usdt` | Mock USDT (6 dec) |
+| `npm run deploy:mock-assets` | Full basket (USDT/USDC/DAI/WETH/WBTC) |
 | `npm run deploy:guestbook` | same |
 | `npm run sign:guestbook` | same |
 

@@ -1,6 +1,6 @@
 ---
 title: Builder recipes
-description: Copy-paste Foundry and Hardhat recipes on Dew chain 2205 — Token, Guestbook, multi-tx batch.
+description: Copy-paste Foundry and Hardhat recipes on Dew chain 2205 — Token, Mock assets, Guestbook, multi-tx batch.
 category: ops
 order: 36
 status: stable
@@ -8,12 +8,12 @@ status: stable
 
 # Builder recipes
 
-Three short recipes against **local `dew devnet`** or **public-testnet-v1** (chain ID **2205**).
+Short recipes against **local `dew devnet`** or **public-testnet-v1** (chain ID **2205**).
 
 | Toolchain | Root |
 | :--- | :--- |
 | **Foundry** (default below) | [examples/foundry](../../examples/foundry/) |
-| **Hardhat** | [examples/hardhat](../../examples/hardhat/) — same Token / Guestbook |
+| **Hardhat** | [examples/hardhat](../../examples/hardhat/) — same Token / Mock assets / Guestbook |
 
 ### Foundry setup (once)
 
@@ -21,6 +21,7 @@ Three short recipes against **local `dew devnet`** or **public-testnet-v1** (cha
 go build -o bin/dew ./cmd/dew && ./bin/dew devnet --http.port 8545   # terminal 1
 cd examples/foundry
 forge install foundry-rs/forge-std --no-git   # once
+forge install OpenZeppelin/openzeppelin-contracts@v5.2.0 --no-git   # Mock assets
 export DEW_RPC_URL=http://127.0.0.1:8545
 export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
@@ -64,6 +65,88 @@ TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
 | :--- | :--- | :--- |
 | Contract | `src/Token.sol` | `contracts/Token.sol` |
 | Deploy | `script/Deploy.s.sol` | `scripts/deploy-token.js` |
+
+---
+
+## Recipe 1b — Mock USDT (testnet)
+
+Deploy **MockUSDT** (OpenZeppelin `ERC20` + `Ownable`): name `Tether USD`, symbol `USDT`, **6 decimals**, + owner `mint`. **Not** real Tether — for app / MetaMask testing only.
+
+**Foundry**
+
+```bash
+forge script script/DeployUSDT.s.sol:DeployUSDT \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+
+export TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+forge script script/DeployUSDT.s.sol:DeployUSDT \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+```
+
+**Hardhat**
+
+```bash
+npx hardhat run scripts/deploy-usdt.js --network dewLocal
+TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
+  npx hardhat run scripts/deploy-usdt.js --network dewLocal
+
+# public-testnet-v1
+export PRIVATE_KEY=0xYOUR_FUNDED_KEY
+npx hardhat run scripts/deploy-usdt.js --network dewPublic
+```
+
+| | Foundry | Hardhat |
+| :--- | :--- | :--- |
+| Contract | `src/MockUSDT.sol` | `contracts/MockUSDT.sol` |
+| Deploy | `script/DeployUSDT.s.sol` | `scripts/deploy-usdt.js` |
+
+MetaMask custom token: paste contract address, symbol **USDT**, decimals **6**. Explorer known-token list: `PUBLIC_KNOWN_TOKENS=USDT:0x…` at explorer build time.
+
+---
+
+## Recipe 1c — Mock assets basket (testnet)
+
+Deploy the full mock suite in one go: **USDT · USDC · DAI · WETH · WBTC**. All are OpenZeppelin `ERC20` + `Ownable` with owner `mint`. **Not** real assets — for dApp / MetaMask / multi-token testing only.
+
+| Symbol | Name | Decimals | Default supply |
+| :--- | :--- | ---: | :--- |
+| USDT | Tether USD | 6 | 1_000_000 |
+| USDC | USD Coin | 6 | 1_000_000 |
+| DAI | Dai Stablecoin | 18 | 1_000_000 |
+| WETH | Wrapped Ether | 18 | 10_000 (mintable stand-in; no native wrap) |
+| WBTC | Wrapped BTC | 8 | 100 |
+
+Base type: `MockERC20` (custom name/symbol/decimals). Named wrappers fix metadata.
+
+**Foundry**
+
+```bash
+forge script script/DeployMockAssets.s.sol:DeployMockAssets \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+
+export TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+forge script script/DeployMockAssets.s.sol:DeployMockAssets \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+```
+
+**Hardhat**
+
+```bash
+npx hardhat run scripts/deploy-mock-assets.js --network dewLocal
+TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
+  npx hardhat run scripts/deploy-mock-assets.js --network dewLocal
+
+export PRIVATE_KEY=0xYOUR_FUNDED_KEY
+npx hardhat run scripts/deploy-mock-assets.js --network dewPublic
+```
+
+| | Foundry | Hardhat |
+| :--- | :--- | :--- |
+| Contracts | `src/MockERC20.sol` + `MockUSDT` / `USDC` / `DAI` / `WETH` / `WBTC` | `contracts/` same names |
+| Deploy all | `script/DeployMockAssets.s.sol` | `scripts/deploy-mock-assets.js` |
+| Deploy USDT only | `script/DeployUSDT.s.sol` | `scripts/deploy-usdt.js` |
+
+Script logs print each address and a ready-to-paste `PUBLIC_KNOWN_TOKENS=USDT:0x…,USDC:0x…,…` line for explorer build time.
 
 ---
 

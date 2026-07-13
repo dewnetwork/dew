@@ -141,6 +141,10 @@ cd examples/hardhat
 npm install
 npm test
 npx hardhat run scripts/deploy-token.js --network dewLocal
+# Mock USDT (6 decimals) for testnet dApps / MetaMask
+npx hardhat run scripts/deploy-usdt.js --network dewLocal
+# Full mock basket: USDT / USDC / DAI / WETH / WBTC
+npx hardhat run scripts/deploy-mock-assets.js --network dewLocal
 ```
 
 Optional transfer:
@@ -204,6 +208,20 @@ Hardhat:
 ```bash
 export PRIVATE_KEY=0xYOUR_FUNDED_KEY
 npx hardhat run scripts/deploy-token.js --network dewPublic
+# or Mock USDT (6 dec):
+npx hardhat run scripts/deploy-usdt.js --network dewPublic
+# or full mock basket (USDT/USDC/DAI/WETH/WBTC):
+npx hardhat run scripts/deploy-mock-assets.js --network dewPublic
+```
+
+Foundry Mock USDT / mock assets basket:
+
+```bash
+forge script script/DeployUSDT.s.sol:DeployUSDT \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+
+forge script script/DeployMockAssets.s.sol:DeployMockAssets \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
 ```
 
 5. Open the tx or contract address on the explorer (`/tx/<hash>`, `/address/<addr>`).

@@ -24,6 +24,7 @@ go build -o bin/dew ./cmd/dew
 ```bash
 cd examples/foundry
 forge install foundry-rs/forge-std --no-git
+forge install OpenZeppelin/openzeppelin-contracts@v5.2.0 --no-git   # Mock assets
 forge build
 forge test
 ```
@@ -55,6 +56,8 @@ cast chain-id --rpc-url $DEW_RPC_URL   # 2205
 | Recipe | Contract | Script(s) |
 | :--- | :--- | :--- |
 | ERC-20 Token | `src/Token.sol` | `script/Deploy.s.sol` |
+| **Mock USDT** (6 dec) | `src/MockUSDT.sol` | `script/DeployUSDT.s.sol` |
+| **Mock assets basket** | `MockUSDT` · `MockUSDC` · `MockDAI` · `MockWETH` · `MockWBTC` (+ `MockERC20`) | `script/DeployMockAssets.s.sol` |
 | **Guestbook** (flagship) | `src/Guestbook.sol` | `DeployGuestbook.s.sol`, `SignGuestbook.s.sol` |
 | Multi-tx batch | (uses Guestbook) | `BatchSignGuestbook.s.sol` |
 
@@ -87,6 +90,46 @@ forge script script/BatchSignGuestbook.s.sol:BatchSignGuestbook \
 forge script script/Deploy.s.sol:Deploy \
   --rpc-url $DEW_RPC_URL --broadcast -vvv
 ```
+
+### Mock USDT (testnet)
+
+OpenZeppelin ERC-20 with **6 decimals**, symbol **USDT**, name **Tether USD**. Owner can `mint` more for demos. **Not** real Tether.
+
+```bash
+forge script script/DeployUSDT.s.sol:DeployUSDT \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+
+# optional: send 1000 USDT to a second address
+export TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+forge script script/DeployUSDT.s.sol:DeployUSDT \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+```
+
+MetaMask: import token with the logged address, symbol `USDT`, decimals `6`.
+
+### Mock assets basket (testnet)
+
+Deploys the full mock suite in one broadcast (all mintable; **not** real assets):
+
+| Symbol | Name | Decimals | Default supply |
+| :--- | :--- | ---: | :--- |
+| USDT | Tether USD | 6 | 1_000_000 |
+| USDC | USD Coin | 6 | 1_000_000 |
+| DAI | Dai Stablecoin | 18 | 1_000_000 |
+| WETH | Wrapped Ether | 18 | 10_000 (mintable; no native wrap) |
+| WBTC | Wrapped BTC | 8 | 100 |
+
+```bash
+forge script script/DeployMockAssets.s.sol:DeployMockAssets \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+
+# optional: demo amounts to a second address
+export TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+forge script script/DeployMockAssets.s.sol:DeployMockAssets \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+```
+
+Base type: `src/MockERC20.sol` (custom name/symbol/decimals). Named wrappers under `src/Mock*.sol`.
 
 ## Public testnet
 
