@@ -16,10 +16,12 @@ import {
   type GuestbookEntry,
 } from "./rpc";
 import {
+  burstSignGuestbook,
   connectWallet,
   ensureChain,
   hasInjectedProvider,
   signGuestbook,
+  type BurstResult,
 } from "./wallet";
 
 export default function App() {
@@ -40,6 +42,7 @@ export default function App() {
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<string | null>(null);
+  const [lastBurst, setLastBurst] = useState<BurstResult | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,16 +100,21 @@ export default function App() {
     }
   };
 
+  const ensureAccount = async () => {
+    if (account) return account;
+    await ensureChain(chainId, rpcUrl.trim(), explorer.trim());
+    const addr = await connectWallet();
+    setAccount(addr);
+    return addr;
+  };
+
   const onSign = async () => {
     setSignError(null);
     setLastTx(null);
+    setLastBurst(null);
     setSigning(true);
     try {
-      if (!account) {
-        await ensureChain(chainId, rpcUrl.trim(), explorer.trim());
-        const addr = await connectWallet();
-        setAccount(addr);
-      }
+      await ensureAccount();
       const hash = await signGuestbook(
         guestbook.trim(),
         message,
@@ -115,6 +123,31 @@ export default function App() {
         explorer.trim(),
       );
       setLastTx(hash);
+      setMessage("");
+      await load();
+    } catch (e) {
+      setSignError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSigning(false);
+    }
+  };
+
+  /** Two consecutive nonces — C1 may pack both into one block if confirmed promptly. */
+  const onBurst = async () => {
+    setSignError(null);
+    setLastTx(null);
+    setLastBurst(null);
+    setSigning(true);
+    try {
+      await ensureAccount();
+      const result = await burstSignGuestbook(
+        guestbook.trim(),
+        message,
+        chainId,
+        rpcUrl.trim(),
+        explorer.trim(),
+      );
+      setLastBurst(result);
       setMessage("");
       await load();
     } catch (e) {
@@ -207,15 +240,31 @@ export default function App() {
           >
             {msgBytes} / {MAX_MESSAGE_BYTES} bytes
           </span>
-          <button
-            type="button"
-            onClick={() => void onSign()}
-            disabled={signing || !message.trim() || msgBytes > MAX_MESSAGE_BYTES}
-            className="rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-frost transition hover:bg-cyan-mid disabled:opacity-50"
-          >
-            {signing ? "Confirm in wallet…" : "Sign with MetaMask"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void onSign()}
+              disabled={signing || !message.trim() || msgBytes > MAX_MESSAGE_BYTES}
+              className="rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-frost transition hover:bg-cyan-mid disabled:opacity-50"
+            >
+              {signing ? "Confirm in wallet…" : "Sign with MetaMask"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void onBurst()}
+              disabled={signing || !message.trim() || msgBytes > MAX_MESSAGE_BYTES - 8}
+              title="Two txs, consecutive nonces — confirm both quickly to pack into one block (C1)"
+              className="rounded-lg border border-line-strong px-4 py-2 text-sm font-medium text-frost transition hover:border-cyan hover:text-cyan disabled:opacity-50"
+            >
+              Burst ×2 (C1)
+            </button>
+          </div>
         </div>
+        <p className="mt-2 text-xs text-muted">
+          Burst posts two messages (<code className="font-mono">· A</code> /{" "}
+          <code className="font-mono">· B</code>) with consecutive nonces. Confirm both MetaMask
+          prompts quickly so Dew can pack them in one block (up to 64 txs).
+        </p>
         {signError && (
           <p role="alert" className="mt-3 text-sm text-danger">
             {signError}
@@ -233,6 +282,38 @@ export default function App() {
               {shortAddr(lastTx)}
             </a>
           </p>
+        )}
+        {lastBurst && (
+          <div className="mt-3 space-y-1 text-sm text-success">
+            <p>
+              Burst posted
+              {lastBurst.sameBlock
+                ? ` · same block #${lastBurst.blockNumbers[0]}`
+                : lastBurst.blockNumbers[0] != null && lastBurst.blockNumbers[1] != null
+                  ? ` · blocks #${lastBurst.blockNumbers[0]} + #${lastBurst.blockNumbers[1]}`
+                  : ""}
+              .
+            </p>
+            <p className="font-mono text-xs">
+              <a
+                className="underline-offset-2 hover:underline"
+                href={explorerTxUrl(explorer, lastBurst.hashes[0])}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {shortAddr(lastBurst.hashes[0])}
+              </a>
+              {" · "}
+              <a
+                className="underline-offset-2 hover:underline"
+                href={explorerTxUrl(explorer, lastBurst.hashes[1])}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {shortAddr(lastBurst.hashes[1])}
+              </a>
+            </p>
+          </div>
         )}
       </section>
 

@@ -4,6 +4,7 @@ SPA for the on-chain [Guestbook](../foundry/src/Guestbook.sol) on **public-testn
 
 - **Read** messages via JSON-RPC (`eth_call`)
 - **Sign** with MetaMask (adds chain 2205 if missing)
+- **Burst ×2 (C1)** — two consecutive nonces to demo multi-tx packing
 - Default contract: `0x83bB4E539BE46503481E66094b01b854990BF84a`
 
 ## Local

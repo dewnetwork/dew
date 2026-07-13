@@ -149,6 +149,7 @@ Product page: [Guestbook demo](../product/guestbook.md).
 pnpm guestbook:dev
 # http://localhost:4323 — Connect wallet → Sign · or read-only Refresh
 # After sign: SPA links to explorer /tx/{hash} and /address/{addr}
+# Burst ×2 (C1): two consecutive nonces; confirm both MetaMask prompts quickly
 ```
 
 Public host: `https://guestbook-dew.fadosoft.com`  

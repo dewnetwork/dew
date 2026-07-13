@@ -44,9 +44,13 @@ Ops may redeploy a new Guestbook address; set `PUBLIC_GUESTBOOK` and rebuild the
 
 1. Get DEW from the [faucet](https://faucet-dew.fadosoft.com) (captcha).  
 2. Open the SPA → **Connect** (MetaMask adds chain **2205** if missing).  
-3. **Sign** a message (max 280 bytes on-chain).  
-4. Open the **tx** / **address** deep-link on the explorer.  
+3. **Sign** a message (max 280 bytes on-chain), or **Burst ×2 (C1)** for two consecutive-nonce txs.  
+4. Open the **tx** / **address** deep-link on the explorer (burst shows both hashes and same-block status).  
 5. **Refresh** reads entries via `eth_call` (no wallet required for read-only).
+
+## Multi-tx burst (C1 showcase)
+
+The SPA **Burst ×2** control submits two `sign()` calls with explicit consecutive nonces and does **not** wait for the first receipt before submitting the second. Confirm both wallet prompts quickly so the mempool can pack them into one block (`DefaultMaxTxsPerBlock = 64`). Foundry/Hardhat batch: [Builder recipes — Recipe 3](../ops/recipes.md#recipe-3--multi-tx-batch-c1-pack).
 
 ## Explorer deep-links
 
