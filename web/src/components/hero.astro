@@ -5,10 +5,15 @@ import {
   IconClockHour4,
   IconDroplet,
   IconHexagon,
+  IconRocket,
   IconStack2,
 } from '@tabler/icons-react';
-import { HeroVisual } from './react/HeroVisual';
-import { Reveal } from './react/Reveal';
+import { HeroVisual } from './react/hero-visual';
+import { Reveal } from './react/reveal';
+import { withBase } from '../lib/paths';
+import { PUBLIC_NETWORK } from '../lib/network';
+
+const tryPublic = withBase('/docs/ops/try-public');
 
 const stats = [
   { label: 'Block time', value: '~1s', icon: IconClockHour4 },
@@ -46,10 +51,19 @@ const stats = [
     <div>
       <Reveal client:load>
         <p
-          class="mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-panel/50 px-3 py-1.5 font-mono text-[11px] tracking-[0.12em] text-mist uppercase shadow-[inset_0_1px_0_rgb(255_255_255_/_0.04)]"
+          class="mb-5 inline-flex flex-wrap items-center gap-2 rounded-full border border-[var(--color-line)] bg-panel/50 px-3 py-1.5 font-mono text-[11px] tracking-[0.12em] text-mist uppercase shadow-[inset_0_1px_0_rgb(255_255_255_/_0.04)]"
         >
+          <span class="relative flex h-2 w-2">
+            <span
+              class="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan opacity-40"
+            ></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-cyan"
+            ></span>
+          </span>
           <IconDroplet size={14} stroke={1.75} className="text-cyan" />
-          EVM L1 · Go + Node
+          {PUBLIC_NETWORK.freezeTag}
+          <span class="text-muted">·</span>
+          chain {PUBLIC_NETWORK.chainId}
         </p>
       </Reveal>
 
@@ -83,20 +97,31 @@ const stats = [
             class="rounded-md border border-[var(--color-line)] bg-panel px-1.5 py-0.5 font-mono text-[0.9em] text-mist"
             >eth_*</code
           > — while Dew-BFT commits blocks with instant finality under BFT assumptions.
+          Public testnet is live: faucet, explorer, and Guestbook SPA.
         </p>
       </Reveal>
 
       <Reveal client:load delay={0.22}>
         <div class="mt-9 flex flex-wrap items-center gap-3">
-          <a href="#builders" class="btn-primary px-6 py-3">
-            Open the builder path
+          <a href={tryPublic} class="btn-primary px-6 py-3">
+            <IconRocket size={17} stroke={1.75} />
+            Try public testnet
             <IconArrowRight size={17} stroke={2} />
+          </a>
+          <a href="#network" class="btn-secondary px-6 py-3">
+            Live surfaces
           </a>
           <a href="#protocol" class="btn-secondary px-6 py-3">
             <IconStack2 size={17} stroke={1.75} />
-            How the protocol works
+            How it works
           </a>
         </div>
+      </Reveal>
+
+      <Reveal client:load delay={0.26}>
+        <p class="mt-4 font-mono text-[11px] tracking-wide text-muted">
+          {PUBLIC_NETWORK.pathNote}
+        </p>
       </Reveal>
 
       <Reveal client:load delay={0.28}>

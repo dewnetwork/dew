@@ -65,5 +65,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] Public DX surface docs — try-public, Guestbook product, freeze/publish template, recipes C1 (July 2026)
 - [x] Hardhat example parity with Foundry (`examples/hardhat/` + quickstart §3b) — July 2026
 - [x] Multi-tx burst UI on Guestbook SPA (`Burst ×2`) + docs — July 2026
+- [x] Landing `web/` sync to public-testnet-v1 — live Network section, A–D phases, try-public CTAs, `src/lib/network.ts` (July 2026)
+- [x] Landing polish — mobile nav sheet, OG image (`public/og.png` + `og.svg`), dual-tab Builder terminal (July 2026)
 - [ ] VitePress is pinned to **2.0.0-alpha.18** (Vite 8) so `pnpm audit --audit-level=high` is clean; mermaid via `vitepress-mermaid-renderer` (no VitePress 1 peer). Revisit when VitePress 2 stable ships — drop alpha pin and re-check mermaid + theme.
 - [ ] Promote remaining protocol/execution pages from `status: draft` to `stable` after prose pass

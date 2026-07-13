@@ -6,14 +6,14 @@ import {
   IconRoute,
   IconShieldLock,
 } from '@tabler/icons-react';
-import { GlowCard } from './react/GlowCard';
-import { Reveal } from './react/Reveal';
+import { GlowCard } from './react/glow-card';
+import { Reveal } from './react/reveal';
 
 const pillars = [
   {
     eyebrow: 'Compatibility',
     title: 'Ethereum path first',
-    body: 'Same accounts, secp256k1 signatures, Solidity contracts, and JSON-RPC surface. Phase A must work with MetaMask and Foundry before Dew-native extras ship.',
+    body: 'Same accounts, secp256k1 signatures, Solidity contracts, and JSON-RPC surface. MetaMask, Foundry, and Hardhat work today — Dew-native extras never replace the default path.',
     meta: 'eth_* · EIP-1559 · go-ethereum EVM',
     span: 'lg:col-span-2',
     icon: IconHexagon,
@@ -37,8 +37,8 @@ const pillars = [
   {
     eyebrow: 'Roadmap',
     title: 'Phased sophistication',
-    body: 'Correct and compatible first. Then parallel execution (Block-STM style), native micro-fees, and DewTx — only after the base chain is solid.',
-    meta: 'Phase A → tune → Phase B',
+    body: 'Correct and compatible first, then parallel execution and native fees, then public freeze. Product surface ships only against frozen RPC — explorer and faucet do not invent wire formats.',
+    meta: 'A–C shipped · D product live',
     span: 'lg:col-span-2',
     icon: IconRoute,
   },
@@ -59,8 +59,8 @@ const pillars = [
         <div class="mt-5 h-0.5 w-16 rounded-full dew-edge" aria-hidden="true">
         </div>
         <p class="mt-4 leading-relaxed text-slate">
-          Dew is written from scratch: protocol in Go, docs and tooling in
-          Node — one product, two runtimes. The surface stays familiar; the
+          Dew is written from scratch: protocol in Go, docs and product UIs in
+          Node — one monorepo, two runtimes. The surface stays familiar; the
           internals are free to be fast.
         </p>
       </div>

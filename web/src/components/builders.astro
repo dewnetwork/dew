@@ -1,0 +1,102 @@
+---
+import {
+  IconCircleCheck,
+  IconPlugConnected,
+  IconTool,
+  IconWorldWww,
+} from '@tabler/icons-react';
+import { BuilderTerminal } from './react/builder-terminal';
+import { GlowCard } from './react/glow-card';
+import { Reveal } from './react/reveal';
+import { withBase } from '../lib/paths';
+
+const tryPublic = withBase('/docs/ops/try-public');
+const quickstart = withBase('/docs/ops/quickstart');
+
+const steps = [
+  {
+    n: '01',
+    title: 'Try public in the browser',
+    body: 'Faucet → MetaMask (chain 2205) → Guestbook sign → explorer. No node install required for the five-minute path.',
+    icon: IconWorldWww,
+    href: tryPublic,
+  },
+  {
+    n: '02',
+    title: 'Point tooling at Dew',
+    body: 'Same Foundry / Hardhat configs — swap the RPC. Local: dew devnet :8545. Public: rpc-dew.fadosoft.com.',
+    icon: IconPlugConnected,
+    href: quickstart,
+  },
+  {
+    n: '03',
+    title: 'Assume one-block finality',
+    body: 'Under normal BFT conditions, a commit is final. Design UX and bridges without multi-block confirmation theater.',
+    icon: IconCircleCheck,
+  },
+];
+---
+
+<section class="relative py-20 sm:py-28" id="builders">
+  <div class="mx-auto max-w-6xl px-5 sm:px-8">
+    <Reveal client:load>
+      <div class="group/title max-w-2xl">
+        <p class="eyebrow">
+          <IconTool size={14} stroke={1.75} aria-hidden="true" />
+          Builders
+        </p>
+        <h2 class="section-title mt-3">ETH-first developer experience.</h2>
+        <div class="mt-5 h-0.5 w-16 rounded-full dew-edge" aria-hidden="true">
+        </div>
+        <p class="mt-4 leading-relaxed text-slate">
+          Dew-native features never break the default Ethereum path. Start on
+          the live testnet in a browser, or deploy against a local devnet with
+          the tools you already use.
+        </p>
+      </div>
+    </Reveal>
+
+    <div class="mt-10 grid items-stretch gap-5 lg:grid-cols-2 lg:gap-6">
+      <div class="flex min-w-0 flex-col gap-3">
+        {
+          steps.map((s, i) => {
+            const Icon = s.icon;
+            const inner = (
+              <GlowCard client:visible className="flex items-start gap-4 p-4 sm:p-5">
+                <div class="icon-well" aria-hidden="true">
+                  <Icon size={18} stroke={1.6} />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="font-mono text-[10px] tracking-wider text-muted uppercase">
+                    Step {s.n}
+                  </p>
+                  <h3 class="mt-1 font-display text-lg font-semibold text-frost">
+                    {s.title}
+                  </h3>
+                  <p class="mt-1.5 text-sm leading-relaxed text-slate">
+                    {s.body}
+                  </p>
+                </div>
+              </GlowCard>
+            );
+            return (
+              <Reveal client:load delay={0.05 * i}>
+                {s.href ? (
+                  <a href={s.href} class="block no-underline">
+                    {inner}
+                  </a>
+                ) : (
+                  inner
+                )}
+              </Reveal>
+            );
+          })
+        }
+      </div>
+
+      <Reveal client:load delay={0.08} className="min-w-0 h-full">
+        <BuilderTerminal client:visible />
+      </Reveal>
+    </div>
+  </div>
+</section>

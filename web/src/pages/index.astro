@@ -1,15 +1,16 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Nav from '../components/Nav.astro';
-import Hero from '../components/Hero.astro';
-import Why from '../components/Why.astro';
-import Protocol from '../components/Protocol.astro';
-import Performance from '../components/Performance.astro';
-import Builders from '../components/Builders.astro';
-import Phases from '../components/Phases.astro';
-import Cta from '../components/Cta.astro';
-import Footer from '../components/Footer.astro';
-import { NavScroll } from '../components/react/NavScroll';
+import BaseLayout from '../layouts/base-layout.astro';
+import Nav from '../components/nav.astro';
+import Hero from '../components/hero.astro';
+import Network from '../components/network.astro';
+import Why from '../components/why.astro';
+import Protocol from '../components/protocol.astro';
+import Performance from '../components/performance.astro';
+import Builders from '../components/builders.astro';
+import Phases from '../components/phases.astro';
+import Cta from '../components/cta.astro';
+import Footer from '../components/footer.astro';
+import { NavScroll } from '../components/react/nav-scroll';
 ---
 
 <BaseLayout>
@@ -17,6 +18,7 @@ import { NavScroll } from '../components/react/NavScroll';
   <Nav />
   <main>
     <Hero />
+    <Network />
     <Why />
     <Protocol />
     <Performance />

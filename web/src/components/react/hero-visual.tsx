@@ -1,6 +1,6 @@
 import { useReducedMotion } from 'motion/react';
 import { useCallback, useRef, type MouseEvent } from 'react';
-import { CommitPulse } from './CommitPulse';
+import { CommitPulse } from './commit-pulse';
 
 /** Subtle perspective tilt on the hero instrument — no particle noise. */
 export function HeroVisual() {

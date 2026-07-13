@@ -34,7 +34,9 @@ Policy details: [Production faucet](../product/faucet.md) · [Public testnet fre
 
 ## 2. MetaMask network
 
-**Settings → Networks → Add network** (or let the Guestbook SPA add chain **2205** on first connect):
+**One-click (EIP-3085):** on the [landing site](https://dewnetwork.github.io/dew/) use **Add to wallet**, or connect in the [Guestbook SPA](https://guestbook-dew.fadosoft.com) — both call `wallet_switchEthereumChain` / `wallet_addEthereumChain` for chain **2205**.
+
+**Manual — Settings → Networks → Add network:**
 
 | Field | Value |
 | :--- | :--- |

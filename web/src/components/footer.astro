@@ -1,17 +1,24 @@
 ---
-import { IconBrandGithub, IconBook2 } from '@tabler/icons-react';
+import {
+  IconBrandGithub,
+  IconBook2,
+  IconExternalLink,
+} from '@tabler/icons-react';
 import { withBase } from '../lib/paths';
+import { PUBLIC_NETWORK } from '../lib/network';
 
 const year = new Date().getFullYear();
 const home = withBase('/');
 const docs = withBase('/docs');
+const tryPublic = withBase('/docs/ops/try-public');
 const logo = withBase('/logo.svg');
 
 const cols = [
   {
-    title: 'Protocol',
+    title: 'Product',
     links: [
-      { href: '#protocol', label: 'Overview' },
+      { href: '#network', label: 'Live network' },
+      { href: '#protocol', label: 'Protocol' },
       { href: '#phases', label: 'Phases' },
       { href: '#why', label: 'Why Dew' },
     ],
@@ -20,8 +27,33 @@ const cols = [
     title: 'Builders',
     links: [
       { href: '#builders', label: 'Developer path' },
-      { href: '#phases', label: 'Build order' },
+      { href: tryPublic, label: 'Try public (5 min)' },
       { href: docs, label: 'Docs' },
+    ],
+  },
+  {
+    title: 'Live',
+    links: [
+      {
+        href: PUBLIC_NETWORK.faucet,
+        label: 'Faucet',
+        external: true,
+      },
+      {
+        href: PUBLIC_NETWORK.explorer,
+        label: 'Explorer',
+        external: true,
+      },
+      {
+        href: PUBLIC_NETWORK.guestbook,
+        label: 'Guestbook',
+        external: true,
+      },
+      {
+        href: PUBLIC_NETWORK.rpc,
+        label: 'RPC',
+        external: true,
+      },
     ],
   },
 ];
@@ -29,7 +61,7 @@ const cols = [
 
 <footer class="border-t border-[var(--color-line)] pb-10">
   <div class="mx-auto max-w-6xl px-5 pt-14 sm:px-8">
-    <div class="flex flex-col gap-10 sm:flex-row sm:justify-between">
+    <div class="flex flex-col gap-10 lg:flex-row lg:justify-between">
       <div class="max-w-xs">
         <a href={home} class="flex items-center gap-2.5">
           <img
@@ -43,6 +75,9 @@ const cols = [
         </a>
         <p class="mt-4 text-sm leading-relaxed text-muted">
           High-performance EVM L1. Faster finality, flatter state, ETH-first DX.
+        </p>
+        <p class="mt-3 font-mono text-[11px] tracking-wide text-mist">
+          {PUBLIC_NETWORK.freezeTag} · chain {PUBLIC_NETWORK.chainId}
         </p>
         <div class="mt-5 flex items-center gap-2">
           <a
@@ -64,7 +99,7 @@ const cols = [
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-8 sm:gap-16">
+      <div class="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-12">
         {
           cols.map((col) => (
             <div>
@@ -76,9 +111,23 @@ const cols = [
                   <li class="m-0 list-none p-0">
                     <a
                       href={l.href}
-                      class="text-sm text-slate transition hover:text-frost"
+                      class="inline-flex items-center gap-1 text-sm text-slate transition hover:text-frost"
+                      {...(l.external
+                        ? {
+                            target: '_blank',
+                            rel: 'noopener noreferrer',
+                          }
+                        : {})}
                     >
                       {l.label}
+                      {l.external && (
+                        <IconExternalLink
+                          size={12}
+                          stroke={1.75}
+                          className="opacity-50"
+                          aria-hidden
+                        />
+                      )}
                     </a>
                   </li>
                 ))}
@@ -96,7 +145,7 @@ const cols = [
         © {year} Dew Network · Apache-2.0
       </p>
       <p class="font-mono text-[11px] text-muted">
-        Go core · Node docs & tooling
+        Go core · explorer · faucet · docs
       </p>
     </div>
   </div>

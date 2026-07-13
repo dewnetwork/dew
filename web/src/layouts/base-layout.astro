@@ -10,13 +10,18 @@ interface Props {
 const {
   title = 'Dew — EVM L1 with one-block finality',
   description =
-    'High-performance, EVM-compatible Layer 1. Solidity, MetaMask, Foundry — with Dew-BFT instant finality and flat-state execution.',
+    'High-performance EVM L1 with Dew-BFT one-block finality. public-testnet-v1 live — faucet, explorer, Guestbook. Solidity, MetaMask, Foundry path intact.',
 } = Astro.props;
 
 const canonical = Astro.site
   ? new URL(Astro.url.pathname, Astro.site).href
   : Astro.url.href;
 const favicon = withBase('/favicon.svg');
+// PNG for social crawlers; SVG source lives at public/og.svg
+const ogImagePath = withBase('/og.png');
+const ogImage = Astro.site
+  ? new URL(ogImagePath, Astro.site).href
+  : ogImagePath;
 ---
 
 <!doctype html>
@@ -38,9 +43,16 @@ const favicon = withBase('/favicon.svg');
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Dew — Ship Solidity. Settle in one block." />
+    {Astro.site && <meta property="og:url" content={canonical} />}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
     <title>{title}</title>
   </head>
   <body class="relative overflow-x-hidden">

@@ -1,0 +1,171 @@
+---
+import {
+  IconArrowUpRight,
+  IconBook2,
+  IconDroplet,
+  IconNetwork,
+  IconSearch,
+  IconServer,
+  IconWorldWww,
+} from '@tabler/icons-react';
+import { AddNetworkButton } from './react/add-network-button';
+import { GlowCard } from './react/glow-card';
+import { Reveal } from './react/reveal';
+import { withBase } from '../lib/paths';
+import { PUBLIC_NETWORK } from '../lib/network';
+
+const tryPublic = withBase('/docs/ops/try-public');
+
+const surfaces = [
+  {
+    title: 'Faucet',
+    body: 'Captcha drip — 1 DEW per address / 24h. Fund a fresh wallet before you deploy or sign.',
+    href: PUBLIC_NETWORK.faucet,
+    meta: '1 DEW · captcha',
+    icon: IconDroplet,
+    external: true,
+  },
+  {
+    title: 'Explorer',
+    body: 'Blocks, transactions, and addresses. Deep-links from Guestbook and MetaMask explorer base.',
+    href: PUBLIC_NETWORK.explorer,
+    meta: 'read-only UI',
+    icon: IconSearch,
+    external: true,
+  },
+  {
+    title: 'Guestbook',
+    body: 'Connect wallet, sign on-chain, follow the receipt. Browser-only demo of the public path.',
+    href: PUBLIC_NETWORK.guestbook,
+    meta: 'SPA demo',
+    icon: IconWorldWww,
+    external: true,
+  },
+  {
+    title: 'JSON-RPC',
+    body: 'Ethereum JSON-RPC for MetaMask, Foundry, and Hardhat. Chain ID 2205 · symbol DEW.',
+    href: PUBLIC_NETWORK.rpc,
+    meta: `chain ${PUBLIC_NETWORK.chainId}`,
+    icon: IconServer,
+    external: true,
+  },
+];
+---
+
+<section class="relative py-20 sm:py-28" id="network">
+  <div class="mx-auto max-w-6xl px-5 sm:px-8">
+    <Reveal client:load>
+      <div
+        class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <div class="max-w-xl">
+          <p class="eyebrow">
+            <IconNetwork size={14} stroke={1.75} />
+            Live network
+          </p>
+          <h2 class="section-title mt-3">
+            public-testnet-v1 is online.
+          </h2>
+          <div class="mt-5 h-0.5 w-16 rounded-full dew-edge" aria-hidden="true">
+          </div>
+          <p class="mt-4 leading-relaxed text-slate">
+            Touch the chain without building a node. Faucet → MetaMask → sign →
+            explorer. Full walkthrough in five minutes.
+          </p>
+        </div>
+        <div class="flex flex-col items-start gap-3 sm:items-end">
+          <div class="flex flex-wrap items-start gap-2 sm:justify-end">
+            <AddNetworkButton client:load variant="compact" showStatus={true} />
+            <a href={tryPublic} class="btn-secondary !px-5 !py-2.5">
+              <IconBook2 size={16} stroke={1.75} />
+              Try public guide
+              <IconArrowUpRight size={15} stroke={2} />
+            </a>
+          </div>
+          <p class="font-mono text-[11px] text-muted sm:text-right">
+            {PUBLIC_NETWORK.pathNote}
+          </p>
+        </div>
+      </div>
+    </Reveal>
+
+    <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {
+        surfaces.map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <Reveal client:load delay={0.05 * i} className="h-full">
+              <a
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="block h-full no-underline"
+              >
+                <GlowCard client:visible className="flex h-full flex-col p-5">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="icon-well" aria-hidden="true">
+                      <Icon size={18} stroke={1.6} />
+                    </div>
+                    <IconArrowUpRight
+                      size={16}
+                      stroke={1.75}
+                      className="text-muted"
+                      aria-hidden
+                    />
+                  </div>
+                  <h3 class="mt-4 font-display text-lg font-semibold tracking-tight text-frost">
+                    {s.title}
+                  </h3>
+                  <p class="mt-2 flex-1 text-sm leading-relaxed text-muted">
+                    {s.body}
+                  </p>
+                  <p class="mt-4 font-mono text-[11px] tracking-wide text-mist">
+                    {s.meta}
+                  </p>
+                </GlowCard>
+              </a>
+            </Reveal>
+          );
+        })
+      }
+    </div>
+
+    <Reveal client:load delay={0.15}>
+      <div
+        class="mt-6 overflow-x-auto rounded-2xl border border-[var(--color-line)] bg-panel/30 px-4 py-3 sm:px-5"
+      >
+        <dl
+          class="flex min-w-0 flex-col gap-3 font-mono text-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-2"
+        >
+          <div class="flex min-w-0 items-baseline gap-2">
+            <dt class="shrink-0 text-muted uppercase tracking-wider text-[10px]">
+              RPC
+            </dt>
+            <dd class="truncate text-mist">{PUBLIC_NETWORK.rpc}</dd>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <dt class="shrink-0 text-muted uppercase tracking-wider text-[10px]">
+              Chain ID
+            </dt>
+            <dd class="text-frost">
+              {PUBLIC_NETWORK.chainId}
+              <span class="text-muted"> ({PUBLIC_NETWORK.chainIdHex})</span>
+            </dd>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <dt class="shrink-0 text-muted uppercase tracking-wider text-[10px]">
+              Symbol
+            </dt>
+            <dd class="text-frost">{PUBLIC_NETWORK.symbol}</dd>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <dt class="shrink-0 text-muted uppercase tracking-wider text-[10px]">
+              Explorer
+            </dt>
+            <dd class="truncate text-mist">{PUBLIC_NETWORK.explorer}</dd>
+          </div>
+        </dl>
+      </div>
+    </Reveal>
+  </div>
+</section>
