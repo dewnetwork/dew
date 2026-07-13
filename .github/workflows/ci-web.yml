@@ -61,11 +61,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # explorer/package.json has no packageManager field — pin to monorepo major.
+      # Use root package.json "packageManager" (do not also set version: — conflicts with pnpm/action-setup).
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -92,8 +90,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node
         uses: actions/setup-node@v4
