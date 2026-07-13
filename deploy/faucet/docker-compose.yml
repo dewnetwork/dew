@@ -1,7 +1,14 @@
-version: '3.8'
+# Standalone faucet backend + SPA.
+# From repo root (GHCR default):
+#   cp deploy/faucet/faucet.env.example deploy/faucet/faucet.env
+#   docker compose -f deploy/faucet/docker-compose.yml --env-file deploy/faucet/faucet.env pull
+#   docker compose -f deploy/faucet/docker-compose.yml --env-file deploy/faucet/faucet.env up -d
+# Source rebuild: … up --build -d
 
 services:
   faucet-backend:
+    image: ${FAUCET_IMAGE:-ghcr.io/dewnetwork/dew-faucet:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ../..
       dockerfile: deploy/faucet/Dockerfile
@@ -30,6 +37,8 @@ services:
       - dew_network
 
   faucet-frontend:
+    image: ${FAUCET_WEB_IMAGE:-ghcr.io/dewnetwork/dew-faucet-web:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ../..
       dockerfile: deploy/faucet/Dockerfile.web

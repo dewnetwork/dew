@@ -42,31 +42,35 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 - Or Go 1.25+ for host binary builds (see root `go.mod`)
 - Node only for smoke scripts (`scripts/smoke-rpc.mjs`)
 
-### Prebuilt release artifacts
+### Prebuilt release artifacts (GHCR + binaries)
 
-GitHub Releases (semver `vX.Y.Z`) attach:
+GitHub Releases (semver `vX.Y.Z`) attach binaries + `images.txt`. Compose **path B / full stack** default to **pull GHCR** (`ghcr.io/dewnetwork/dew*:latest` or pin a version).
 
-- Cross-built `dew` / `dewcli` / `dewfaucet` archives + `checksums.txt`
-- `images.txt` listing GHCR tags
-
-Versioning is driven by [Release Please](https://github.com/googleapis/release-please) on `main` — see [go-project-layout § Release](../docs/build/go-project-layout.md#release). Protocol freeze remains **`public-testnet-v1`** ([public-testnet](../docs/ops/public-testnet.md)); package tags do not change wire formats.
+Versioning: [Release Please](https://github.com/googleapis/release-please) — see [go-project-layout § Release](../docs/build/go-project-layout.md#release). Protocol freeze **`public-testnet-v1`** is independent of image tags.
 
 ```bash
+# Full public stack — pull then run (no local Go/Node build)
+cp deploy/.env.example deploy/.env   # set FAUCET_PRIVATE_KEY, TLS, pin image tags
+# Optional: DEW_IMAGE=ghcr.io/dewnetwork/dew:0.2.0  (same for FAUCET_*, EXPLORER_*, GUESTBOOK_*)
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env pull
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d
+
+# Private packages: docker login ghcr.io -u USER --password-stdin  (PAT read:packages)
+# Or set each GHCR package visibility to Public.
+
+# Source rebuild (custom PUBLIC_* / genesis) still works:
+# docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
+
 # Binaries (example):
 # curl -fsSL -O https://github.com/dewnetwork/dew/releases/download/v0.2.0/dew_v0.2.0_linux_amd64.tar.gz
-# curl -fsSL -O https://github.com/dewnetwork/dew/releases/download/v0.2.0/checksums.txt
-# sha256sum -c checksums.txt --ignore-missing
-# tar -xzf dew_v0.2.0_linux_amd64.tar.gz
-
-# GHCR images (linux/amd64 + arm64; package may need to be Public for anonymous pull):
-# docker pull ghcr.io/dewnetwork/dew:0.2.0
-# docker pull ghcr.io/dewnetwork/dew-faucet:0.2.0
-# docker pull ghcr.io/dewnetwork/dew-faucet-web:0.2.0
-# docker pull ghcr.io/dewnetwork/dew-explorer:0.2.0
-# docker pull ghcr.io/dewnetwork/dew-guestbook:0.2.0
 ```
 
-Compose path B / soak can still `docker compose … --build` from Dockerfiles, or point `image:` at a GHCR tag after release.
+| Compose file | Default images | Notes |
+| :--- | :--- | :--- |
+| [`docker-compose.yml`](./docker-compose.yml) | GHCR `dew*` | Path B full stack |
+| [`node/docker-compose.yml`](./node/docker-compose.yml) | GHCR `dew` | RPC + nginx only |
+| [`faucet/`](./faucet/docker-compose.yml) · [`explorer/`](./explorer/docker-compose.yml) · [`guestbook/`](./guestbook/docker-compose.yml) | GHCR | Standalone SPAs/services |
+| [`node/docker-compose.soak.yml`](./node/docker-compose.soak.yml) | **local `dew:local` build** | Private Anvil genesis — do not use public GHCR image |
 
 ## Quick private soak
 
@@ -134,8 +138,10 @@ After private soak. Dew is **not** published on host `:8545`; only nginx is on `
 # Stop soak first if it holds ports 80/443 (usually not) or 8545
 docker compose -f deploy/node/docker-compose.soak.yml --profile devnet down
 
-cp deploy/node/public.env.example deploy/node/public.env   # once
-docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env up --build
+cp deploy/node/public.env.example deploy/node/public.env   # once; pin DEW_IMAGE if desired
+docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env pull
+docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env up -d
+# source rebuild: … up --build
 ```
 
 | Service | Role | Host ports |
@@ -192,7 +198,8 @@ cp deploy/.env.example deploy/.env
 #   CERTBOT_EMAIL=ops@…
 #   CLOUDFLARE_API_TOKEN=…   # Zone → DNS → Edit
 
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env pull
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d
 docker compose -f deploy/docker-compose.yml logs -f certbot edge
 
 # 4) Verify
@@ -267,23 +274,25 @@ See [faucet/docker-compose.yml](./faucet/docker-compose.yml) to deploy Faucet ba
 
 ```bash
 cp deploy/faucet/faucet.env.example deploy/faucet/faucet.env
-# edit deploy/faucet/faucet.env with your keys, chain details, and recaptcha config
-docker compose -f deploy/faucet/docker-compose.yml up --build -d
+# edit keys / FAUCET_* ; pin FAUCET_IMAGE if desired
+docker compose -f deploy/faucet/docker-compose.yml --env-file deploy/faucet/faucet.env pull
+docker compose -f deploy/faucet/docker-compose.yml --env-file deploy/faucet/faucet.env up -d
 ```
 
-Frontend runs on `:8081` by default and routes backend requests internally.
+Frontend runs on `:8081` by default and routes backend requests internally. Custom SPA `PUBLIC_*` needs `up --build`.
 
 ## Explorer Deployment (Dockerized)
 
-Static SPA only — no backend, no keys. Browser calls `PUBLIC_RPC_URL` directly (must be CORS-reachable). Spec: [block-explorer.md](../docs/product/block-explorer.md).
+Static SPA only — no backend, no keys. Browser calls `PUBLIC_RPC_URL` baked into the image (GHCR path B defaults). Spec: [block-explorer.md](../docs/product/block-explorer.md).
 
 ```bash
 cp deploy/explorer/explorer.env.example deploy/explorer/explorer.env
-# edit PUBLIC_RPC_URL (public HTTPS RPC) and PUBLIC_EXPLORER_BASE
-docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env up --build -d
+docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env pull
+docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env up -d
+# custom PUBLIC_RPC_URL / PUBLIC_EXPLORER_BASE: … up --build -d
 ```
 
-Default host port: **`:8082`**. Rebuild the image when env changes (Vite bakes `PUBLIC_*` at build time).
+Default host port: **`:8082`**.
 
 Smoke:
 
@@ -296,8 +305,9 @@ Smoke:
 Full stack with **edge nginx** on `:80`/`:443`. Backends are not published on the host.
 
 ```bash
-cp deploy/.env.example deploy/.env   # set CLOUDFLARE_API_TOKEN + CERTBOT_* for DNS-01
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
+cp deploy/.env.example deploy/.env   # set CLOUDFLARE_API_TOKEN + CERTBOT_* + pin *IMAGE tags
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env pull
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d
 docker compose -f deploy/docker-compose.yml logs -f certbot edge
 ```
 

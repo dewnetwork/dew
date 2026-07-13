@@ -47,7 +47,9 @@ From **repo root** after private soak:
 docker compose -f deploy/node/docker-compose.soak.yml --env-file deploy/node/soak.env down
 
 cp deploy/node/public.env.example deploy/node/public.env   # once
-docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env up --build
+docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env pull
+docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env up -d
+# source rebuild: … up --build
 ```
 
 | Container | Role | Host ports |

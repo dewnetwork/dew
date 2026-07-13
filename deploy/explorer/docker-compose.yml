@@ -1,13 +1,16 @@
-version: '3.8'
-
 # Standalone explorer SPA against a browser-reachable JSON-RPC URL.
-# From repo root:
+# From repo root (GHCR default — PUBLIC_* already baked for path B):
 #   cp deploy/explorer/explorer.env.example deploy/explorer/explorer.env
-#   # edit PUBLIC_RPC_URL / PUBLIC_EXPLORER_BASE
+#   docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env pull
+#   docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env up -d
+#
+# Custom RPC/base URL requires a source rebuild:
 #   docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/explorer.env up --build -d
 
 services:
   explorer:
+    image: ${EXPLORER_IMAGE:-ghcr.io/dewnetwork/dew-explorer:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ../..
       dockerfile: deploy/explorer/Dockerfile

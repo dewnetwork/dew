@@ -1,8 +1,11 @@
 # Dew controlled public RPC (path B) — single host.
 #
-# From repo root:
+# From repo root (pull GHCR by default):
 #   cp deploy/node/public.env.example deploy/node/public.env   # once
-#   docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env up --build
+#   docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env pull
+#   docker compose -f deploy/node/docker-compose.yml --env-file deploy/node/public.env up -d
+#
+# Rebuild from source: … up --build
 #
 # Layout:
 #   - dew: JSON-RPC only on the internal compose network (not published to host)
@@ -17,10 +20,13 @@ name: dew-public
 
 services:
   dew:
+    image: ${DEW_IMAGE:-ghcr.io/dewnetwork/dew:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ../..
       dockerfile: deploy/node/Dockerfile
-    image: ${DEW_IMAGE:-dew:local}
+      args:
+        GENESIS_FILE: ${DEW_GENESIS_FILE:-genesis.public.json}
     container_name: dew-rpc
     command:
       - run

@@ -58,7 +58,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] Longer continuous fuzz in CI (`-fuzztime` schedules) — [`.github/workflows/security.yml`](../.github/workflows/security.yml) (PR short; weekly/manual 2m+1m)
 - [x] GitHub Release Please + cross-platform Go binaries (`release-please.yml` / `release-binaries.yml`) — July 2026
 - [x] GHCR multi-arch image push on release (`release-images.yml`: dew, faucet, explorer, guestbook) — July 2026
-- [ ] Optional: compose samples default to `image: ghcr.io/...:tag` instead of `build:` for path B
+- [x] Compose path B / full stack default to GHCR pull (`image:` + `pull_policy`; `build:` kept for `--build`) — July 2026
 - [ ] Optional: `ldflags` version injection for `dew` / `dewcli` / `web3_clientVersion`
 
 ## Deferred / mainnet

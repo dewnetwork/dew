@@ -1,10 +1,15 @@
 # Standalone Guestbook SPA.
-# From repo root:
+# From repo root (GHCR default — path B PUBLIC_* baked):
 #   cp deploy/guestbook/guestbook.env.example deploy/guestbook/guestbook.env
-#   docker compose -f deploy/guestbook/docker-compose.yml --env-file deploy/guestbook/guestbook.env up --build -d
+#   docker compose -f deploy/guestbook/docker-compose.yml --env-file deploy/guestbook/guestbook.env pull
+#   docker compose -f deploy/guestbook/docker-compose.yml --env-file deploy/guestbook/guestbook.env up -d
+#
+# Custom contract/RPC: … up --build -d
 
 services:
   guestbook:
+    image: ${GUESTBOOK_IMAGE:-ghcr.io/dewnetwork/dew-guestbook:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ../..
       dockerfile: deploy/guestbook/Dockerfile

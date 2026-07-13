@@ -1,11 +1,15 @@
 # Combined public stack: Dew + faucet + explorer + nginx edge (:80/:443) + certbot.
 #
-# From repo root:
-#   cp deploy/.env.example deploy/.env   # edit keys / PUBLIC_* / TLS
+# From repo root (pull GHCR release images — default):
+#   cp deploy/.env.example deploy/.env   # edit keys / image tags / TLS
 #   # TLS (see deploy/README.md):
 #   #   DNS-01 CF: CERTBOT_AUTH=dns-cloudflare + CLOUDFLARE_API_TOKEN + CERTBOT_IMAGE=certbot/dns-cloudflare
 #   #   HTTP-01:   CERTBOT_AUTH=webroot + CERTBOT_EMAIL
 #   #   Origin CA: mount PEMs + CERTBOT_DISABLE=1 (optional; see README)
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env pull
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d
+#
+# Rebuild from source instead of GHCR:
 #   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
 #
 # Public hostnames (DNS A/AAAA → this host):
@@ -20,8 +24,10 @@ name: dew
 
 services:
   # 1. Dew Blockchain Node (public path B — single auto-mine RPC)
-  # Uses genesis.public.json: faucet funded only; Anvil validators have no alloc (not drainable).
+  # GHCR image bakes genesis.public.json (faucet alloc only).
   dew-node:
+    image: ${DEW_IMAGE:-ghcr.io/dewnetwork/dew:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ..
       dockerfile: deploy/node/Dockerfile
@@ -48,6 +54,8 @@ services:
 
   # 2. Faucet Go Backend
   faucet-backend:
+    image: ${FAUCET_IMAGE:-ghcr.io/dewnetwork/dew-faucet:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ..
       dockerfile: deploy/faucet/Dockerfile
@@ -77,7 +85,10 @@ services:
       - dew_network
 
   # 3. Faucet React Frontend (internal nginx → backend)
+  # GHCR SPA bakes path B PUBLIC_*; --build uses args below for custom hosts.
   faucet-frontend:
+    image: ${FAUCET_WEB_IMAGE:-ghcr.io/dewnetwork/dew-faucet-web:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ..
       dockerfile: deploy/faucet/Dockerfile.web
@@ -95,8 +106,10 @@ services:
     networks:
       - dew_network
 
-  # 4. Block Explorer SPA (browser talks to PUBLIC_RPC_URL)
+  # 4. Block Explorer SPA (browser talks to PUBLIC_RPC_URL baked in image)
   explorer:
+    image: ${EXPLORER_IMAGE:-ghcr.io/dewnetwork/dew-explorer:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ..
       dockerfile: deploy/explorer/Dockerfile
@@ -120,6 +133,8 @@ services:
 
   # 4b. Guestbook SPA (browser → PUBLIC_RPC_URL + MetaMask)
   guestbook:
+    image: ${GUESTBOOK_IMAGE:-ghcr.io/dewnetwork/dew-guestbook:latest}
+    pull_policy: ${PULL_POLICY:-always}
     build:
       context: ..
       dockerfile: deploy/guestbook/Dockerfile

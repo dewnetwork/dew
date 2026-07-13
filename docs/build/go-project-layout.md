@@ -171,8 +171,9 @@ Config: [`release-please-config.json`](../../release-please-config.json) (`relea
 | GHCR visibility | First push creates packages under the org/user; set **Public** if anonymous pull is required (**Packages → package → Package settings**) |
 | Re-upload binaries | Actions → **Release binaries** → Run workflow → enter tag |
 | Re-push images | Actions → **Release images** → Run workflow → enter tag |
-| Path B deploy | Operator-side (`deploy/`); pull GHCR tags or keep `docker compose … --build` |
-| SPA rebuild | Path B URLs are **build-time**; other domains need a rebuild with different `PUBLIC_*` args |
+| Path B deploy | `deploy/docker-compose.yml` pulls GHCR by default (`pull` + `up -d`); pin `*_IMAGE` in `deploy/.env` |
+| Soak / private | Keep `docker-compose.soak.yml` local build (`dew:local`) — public GHCR bakes `genesis.public.json` |
+| SPA rebuild | Path B URLs are **build-time** in GHCR images; other domains need `docker compose … --build` with `PUBLIC_*` |
 
 Pull example (after a release):
 
