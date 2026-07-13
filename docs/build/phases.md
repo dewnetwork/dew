@@ -16,6 +16,7 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
 | **C1–C6** | **Done** (C6 = public-testnet-v1 freeze) | Mempool, encrypted P2P, SMT, staking, private → public freeze |
 | **D1–D3** | **D1–D2 done** · D3a/D3b + durable chaindata done · D3c–D3e pending | Product surface + optional ops scale after public-testnet-v1 |
+| **Product-v1** | **P1a–c / P2a–b / P3a shipped** | Post-MVP explorer/faucet/Guestbook slices — [upgrades](../product/upgrades.md) |
 
 High-level order: [Roadmap](./roadmap.md).
 

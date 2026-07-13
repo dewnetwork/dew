@@ -19,6 +19,7 @@ import {
 } from "@/lib/rpc";
 import { hexToNumber, isHexHash } from "@/lib/format";
 import { fetchNetworkStats } from "@/lib/network-stats";
+import { fetchErc20Meta } from "@/lib/erc20";
 
 const HEAD_MS = 4000;
 
@@ -98,6 +99,17 @@ export function useAddress(addr: string) {
       return { balance, nonce, code };
     },
     enabled: Boolean(addr),
+  });
+}
+
+/** Soft ERC-20 probe — only enable for contracts with code. */
+export function useErc20Meta(addr: string, isContract: boolean) {
+  return useQuery({
+    queryKey: qk.erc20(addr),
+    queryFn: () => fetchErc20Meta(addr),
+    enabled: Boolean(addr) && isContract,
+    staleTime: 60_000,
+    retry: false,
   });
 }
 

@@ -84,6 +84,7 @@
     - block-explorer.md
     - faucet.md
     - guestbook.md
+    - upgrades.md
 
 - category: Scale
   path: scale

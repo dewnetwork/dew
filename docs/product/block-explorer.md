@@ -37,10 +37,21 @@ The explorer **must not** hold validator keys, faucet keys, or admin signing mat
 | :--- | :--- |
 | `/` | Stats + latest blocks + latest txs (poll while tab visible) |
 | `/block/{n\|hash}` | Header fields + tx list |
-| `/tx/{hash}` | Status, fees, gas, input, logs |
-| `/address/{addr}` | Balance, nonce, code / EOA vs contract |
+| `/tx/{hash}` | Status, fees, gas, input, logs, **token transfers** (product-v1) |
+| `/address/{addr}` | Balance, nonce, code / EOA vs contract; **ERC-20 metadata** when `eth_call` succeeds (product-v1) |
 
-Search resolves address / tx hash / block number (and block hash when applicable). Failed, pending, and not-found states are distinct.
+Search resolves address / tx hash / block number (and block hash when applicable). **Recent searches** chips (localStorage). Failed, pending, and not-found states are distinct.
+
+### Product-v1 (no indexer)
+
+| Feature | Behavior |
+| :--- | :--- |
+| ERC-20 probe | `name` / `symbol` / `decimals` / `totalSupply` via `eth_call`; Token badge + tab |
+| Method labels | Common selectors (`transfer`, `approve`, …) on tx overview |
+| Token transfers tab | Decode ERC-20 `Transfer` / `Approval` logs from receipt |
+| Recent search | Up to 8 queries in `localStorage` (`dew-explorer-ui`) |
+
+Upgrade backlog (P1d+): [upgrades.md](./upgrades.md).
 
 ### Deep-links from demos
 

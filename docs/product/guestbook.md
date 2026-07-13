@@ -52,6 +52,17 @@ Ops may redeploy a new Guestbook address; set `PUBLIC_GUESTBOOK` and rebuild the
 
 The SPA **Burst ×2** control submits two `sign()` calls with explicit consecutive nonces and does **not** wait for the first receipt before submitting the second. Confirm both wallet prompts quickly so the mempool can pack them into one block (`DefaultMaxTxsPerBlock = 64`). Foundry/Hardhat batch: [Builder recipes — Recipe 3](../ops/recipes.md#recipe-3--multi-tx-batch-c1-pack).
 
+## Product-v1 feed filter
+
+Client-side only (no new contract methods):
+
+| Control | Behavior |
+| :--- | :--- |
+| Filter box | Case-insensitive match on author address substring or message text |
+| **Mine** | When wallet connected, show only entries from the connected address |
+
+Backlog (share query param, reactions): [upgrades.md](./upgrades.md).
+
 ## Explorer deep-links
 
 SPA and docs use the explorer **base URL only** (no path suffix in MetaMask). Patterns:

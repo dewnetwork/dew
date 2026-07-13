@@ -8,6 +8,8 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Phase D** — D1 explorer + D2 faucet done; D3a + D3b + D3a residual done; **durable chaindata done** → D3d Path A / D3c / D3e when needed. Design: [durable-chaindata.md](../docs/ops/durable-chaindata.md). D3 scale: [d3-scale.md](../docs/scale/d3-scale.md). Acceptance in [phases.md](../docs/build/phases.md).
 
+**Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 (product) first: product-v1 P1a–c / P2a–b / P3a shipped; remaining P1d–f / P2c–d / P3b–c planned or deferred.
+
 ## Durable chaindata
 
 - [x] Pebble backend (`db.PebbleDB`) behind existing `db.Database`
@@ -58,6 +60,15 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [ ] PE uses fork+overlay, not full multi-version Block-STM — higher memory and re-exec cost under heavy conflicts (`core/vm/parallel.go`). Not required for first public testnet.
 - [ ] External security audit of consensus + VM bridge + crypto — required before mainnet (see `docs/security/phase-b-audit.md` and security principles stage table).
 - [ ] Tokenomics issuance / inflation numbers still draft (not part of wire freeze).
+
+## Product surface (product-v1)
+
+- [x] Upgrade backlog doc [docs/product/upgrades.md](../docs/product/upgrades.md) — all tracks 1–5
+- [x] Explorer P1a ERC-20 metadata · P1b method + token transfer logs · P1c recent search
+- [x] Faucet P2a success actions · P2b rate-limit copy
+- [x] Guestbook P3a author / mine filter
+- [ ] P1d known-token balances · P2c wallet paste · P3b share `?author=` (planned)
+- [ ] P1e indexer history · P1f verified source · P3c reactions (deferred)
 
 ## Docs
 

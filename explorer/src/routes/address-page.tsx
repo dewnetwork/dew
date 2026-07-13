@@ -1,6 +1,7 @@
 import { useParams } from "@tanstack/react-router";
-import { useAddress } from "@/hooks/use-chain";
+import { useAddress, useErc20Meta } from "@/hooks/use-chain";
 import { formatDew, hexToBigInt, hexToNumber, isHexAddress } from "@/lib/format";
+import { formatTokenAmount } from "@/lib/erc20";
 import { config } from "@/lib/config";
 import { Identicon } from "@/components/identicon";
 import {
@@ -41,6 +42,36 @@ export function AddressPage() {
   const codeBytes = isContract ? Math.max(0, (code.length - 2) / 2) : 0;
 
   return (
+    <AddressBody
+      addr={addr}
+      balance={balance}
+      nonce={nonce}
+      code={code}
+      isContract={isContract}
+      codeBytes={codeBytes}
+    />
+  );
+}
+
+function AddressBody({
+  addr,
+  balance,
+  nonce,
+  code,
+  isContract,
+  codeBytes,
+}: {
+  addr: string;
+  balance: string;
+  nonce: string;
+  code: string;
+  isContract: boolean;
+  codeBytes: number;
+}) {
+  const erc20 = useErc20Meta(addr, isContract);
+  const token = erc20.data;
+
+  return (
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <Identicon address={addr} size={56} />
@@ -50,12 +81,27 @@ export function AddressPage() {
               <span className="mono break-all text-lg sm:text-2xl">{addr.toLowerCase()}</span>
             }
             badges={
-              <span className="rounded-full border border-[var(--color-line)] px-2.5 py-0.5 text-xs text-slate">
-                {isContract ? "Contract" : "EOA"}
+              <span className="flex flex-wrap gap-1.5">
+                <span className="rounded-full border border-[var(--color-line)] px-2.5 py-0.5 text-xs text-slate">
+                  {isContract ? "Contract" : "EOA"}
+                </span>
+                {token ? (
+                  <span className="rounded-full border border-[var(--ex-status-final-border)] bg-[var(--ex-status-final-bg)] px-2.5 py-0.5 text-xs text-cyan">
+                    Token{token.symbol ? ` · ${token.symbol}` : ""}
+                  </span>
+                ) : null}
               </span>
             }
             actions={<CopyButton value={addr.toLowerCase()} label="Copy address" />}
           />
+          {token?.name || token?.symbol ? (
+            <p className="mt-1 text-sm text-slate">
+              {token.name ?? "Token"}
+              {token.symbol ? (
+                <span className="text-muted"> ({token.symbol})</span>
+              ) : null}
+            </p>
+          ) : null}
           <p className="text-2xl font-semibold text-frost sm:text-3xl">
             {formatDew(hexToBigInt(balance))}{" "}
             <span className="text-base font-normal text-muted">{config.symbol}</span>
@@ -66,7 +112,7 @@ export function AddressPage() {
 
       <WarningBanner>
         Full address history needs an indexer. Showing on-chain balance, nonce, and code from
-        JSON-RPC.
+        JSON-RPC{token ? "; ERC-20 metadata via eth_call" : ""}.
       </WarningBanner>
 
       <Tabs.Root defaultValue="overview">
@@ -74,6 +120,11 @@ export function AddressPage() {
           <Tabs.Trigger value="overview" className="tab-trigger">
             Overview
           </Tabs.Trigger>
+          {token ? (
+            <Tabs.Trigger value="token" className="tab-trigger">
+              Token
+            </Tabs.Trigger>
+          ) : null}
           {isContract ? (
             <Tabs.Trigger value="contract" className="tab-trigger">
               Contract
@@ -93,8 +144,43 @@ export function AddressPage() {
             {isContract ? (
               <DataField label="Code size">{codeBytes.toLocaleString()} bytes</DataField>
             ) : null}
+            {token?.symbol ? (
+              <DataField label="Detected token">
+                <span className="text-sm">
+                  {token.name ?? "—"}{" "}
+                  <span className="mono text-cyan">{token.symbol}</span>
+                </span>
+              </DataField>
+            ) : null}
           </FieldList>
         </Tabs.Content>
+
+        {token ? (
+          <Tabs.Content value="token">
+            <FieldList>
+              <DataField label="Name">{token.name ?? "—"}</DataField>
+              <DataField label="Symbol">
+                <span className="mono">{token.symbol ?? "—"}</span>
+              </DataField>
+              <DataField label="Decimals">
+                {token.decimals != null ? token.decimals : "—"}
+              </DataField>
+              <DataField label="Total supply">
+                {token.totalSupply != null ? (
+                  <span className="mono">
+                    {formatTokenAmount(token.totalSupply, token.decimals)}
+                    {token.symbol ? ` ${token.symbol}` : ""}
+                    <span className="mt-0.5 block text-xs text-muted">
+                      {token.totalSupply.toString()} raw
+                    </span>
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </DataField>
+            </FieldList>
+          </Tabs.Content>
+        ) : null}
 
         {isContract ? (
           <Tabs.Content value="contract">

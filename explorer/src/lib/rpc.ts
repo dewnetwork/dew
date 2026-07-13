@@ -230,3 +230,15 @@ export async function ethGetTransactionCount(address: string, rpcUrl?: string): 
 export async function ethGetCode(address: string, rpcUrl?: string): Promise<string> {
   return rpcCall<string>("eth_getCode", [address.toLowerCase(), "latest"], rpcUrl);
 }
+
+export async function ethCall(
+  to: string,
+  data: string,
+  rpcUrl?: string,
+): Promise<string> {
+  return rpcCall<string>(
+    "eth_call",
+    [{ to: to.toLowerCase(), data }, "latest"],
+    rpcUrl,
+  );
+}

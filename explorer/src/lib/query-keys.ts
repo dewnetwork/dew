@@ -12,6 +12,8 @@ export const qk = {
     ["receipt", rpc, hash.toLowerCase()] as const,
   address: (addr: string, rpc = config.rpcUrl) =>
     ["address", rpc, addr.toLowerCase()] as const,
+  erc20: (addr: string, rpc = config.rpcUrl) =>
+    ["erc20", rpc, addr.toLowerCase()] as const,
   recent: (head: number, n: number, rpc = config.rpcUrl) =>
     ["recent", rpc, head, n] as const,
   networkStats: (rpc = config.rpcUrl) => ["networkStats", rpc] as const,

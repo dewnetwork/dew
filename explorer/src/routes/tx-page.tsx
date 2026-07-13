@@ -7,8 +7,11 @@ import {
   formatNumber,
   hexToBigInt,
   hexToNumber,
+  methodLabel,
   relativeTime,
 } from "@/lib/format";
+import { decodeTokenLog, decodeTransferCalldata, methodName, methodSelector } from "@/lib/abi";
+import { formatTokenAmount } from "@/lib/erc20";
 import { config } from "@/lib/config";
 import {
   AddressLink,
@@ -68,12 +71,24 @@ export function TxPage() {
   const burnt = baseFee != null && gasUsed != null ? baseFee * gasUsed : null;
   const ts = blockQ.data ? hexToNumber(blockQ.data.timestamp) : null;
 
+  const mName = methodName(tx.input);
+  const mSel = methodSelector(tx.input);
+  const transferCall = decodeTransferCalldata(tx.input ?? "0x");
+  const tokenLogs =
+    rcpt?.logs
+      ?.map((log) => decodeTokenLog(log))
+      .filter((r): r is NonNullable<typeof r> => r != null) ?? [];
+
   const summary =
     !tx.to
       ? "Contract creation"
-      : tx.input && tx.input !== "0x"
-        ? "Contract call"
-        : `Transfer ${formatDew(hexToBigInt(tx.value))} ${config.symbol}`;
+      : transferCall
+        ? `transfer ${formatDew(transferCall.value)} → ${transferCall.to.slice(0, 10)}…`
+        : tx.input && tx.input !== "0x"
+          ? mName !== mSel
+            ? `${mName}()`
+            : `Contract call (${mSel})`
+          : `Transfer ${formatDew(hexToBigInt(tx.value))} ${config.symbol}`;
 
   return (
     <div>
@@ -92,6 +107,9 @@ export function TxPage() {
         <Tabs.List className="mb-4 flex gap-1 border-b border-[var(--color-line)]">
           <Tabs.Trigger value="overview" className="tab-trigger">
             Overview
+          </Tabs.Trigger>
+          <Tabs.Trigger value="transfers" className="tab-trigger">
+            Token transfers ({tokenLogs.length})
           </Tabs.Trigger>
           <Tabs.Trigger value="logs" className="tab-trigger">
             Logs ({rcpt?.logs?.length ?? 0})
@@ -144,6 +162,25 @@ export function TxPage() {
                 <StatusPill status="contract" />
               )}
             </DataField>
+            {mSel ? (
+              <DataField label="Method">
+                <span className="mono text-sm">
+                  {mName}
+                  {mName !== mSel ? (
+                    <span className="ml-2 text-xs text-muted">{mSel}</span>
+                  ) : null}
+                </span>
+              </DataField>
+            ) : null}
+            {transferCall ? (
+              <DataField label="transfer() args">
+                <span className="text-sm">
+                  to <AddressLink address={transferCall.to} /> · amount{" "}
+                  <span className="mono">{formatDew(transferCall.value)}</span>
+                  <span className="text-xs text-muted"> (raw · token decimals unknown here)</span>
+                </span>
+              </DataField>
+            ) : null}
             <DataField label="Value">
               <span className="mono">
                 {formatDew(hexToBigInt(tx.value))} {config.symbol}
@@ -193,6 +230,7 @@ export function TxPage() {
                 {tx.transactionIndex != null
                   ? ` · Position #${hexToNumber(tx.transactionIndex)}`
                   : ""}
+                {mSel ? ` · Method ${methodLabel(tx.input)}` : ""}
               </span>
             </DataField>
             <DataField label="Input data">
@@ -201,6 +239,57 @@ export function TxPage() {
               </pre>
             </DataField>
           </FieldList>
+        </Tabs.Content>
+
+        <Tabs.Content value="transfers">
+          {tokenLogs.length === 0 ? (
+            <EmptyState
+              title="No token transfers"
+              detail="No ERC-20 Transfer/Approval logs in this receipt (or receipt not loaded yet)."
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {tokenLogs.map((row) => (
+                <div
+                  key={`${row.kind}-${row.logIndex}-${row.token}`}
+                  className="panel flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span
+                        className={`rounded-full border px-2 py-0.5 ${
+                          row.kind === "transfer"
+                            ? "border-[var(--ex-status-ok-border)] bg-[var(--ex-status-ok-bg)] text-success"
+                            : "border-[var(--ex-status-final-border)] bg-[var(--ex-status-final-bg)] text-cyan"
+                        }`}
+                      >
+                        {row.kind === "transfer" ? "Transfer" : "Approval"}
+                      </span>
+                      <span className="text-muted">log #{row.logIndex}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1 text-sm">
+                      <AddressLink address={row.from} />
+                      <span className="text-muted">→</span>
+                      <AddressLink address={row.to} />
+                    </div>
+                    <div className="text-xs text-muted">
+                      Token <AddressLink address={row.token} />
+                    </div>
+                  </div>
+                  <div className="mono text-right text-sm text-frost">
+                    {formatTokenAmount(row.value, 18)}
+                    <span className="mt-0.5 block text-[10px] text-muted">
+                      raw {row.value.toString()} · assume 18 dec
+                    </span>
+                  </div>
+                </div>
+              ))}
+              <p className="text-xs text-muted">
+                Amounts use 18 decimals for display only. Open the token address for on-chain
+                decimals when available.
+              </p>
+            </div>
+          )}
         </Tabs.Content>
 
         <Tabs.Content value="logs">

@@ -43,6 +43,8 @@ export default function App() {
   const [signError, setSignError] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<string | null>(null);
   const [lastBurst, setLastBurst] = useState<BurstResult | null>(null);
+  const [authorFilter, setAuthorFilter] = useState("");
+  const [mineOnly, setMineOnly] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -160,6 +162,18 @@ export default function App() {
   const contractHref = explorerAddressUrl(explorer, guestbook.trim());
   const msgBytes = new TextEncoder().encode(message).length;
   const walletOk = hasInjectedProvider();
+
+  const filterNeedle = authorFilter.trim().toLowerCase();
+  const filteredEntries = entries.filter((e) => {
+    if (mineOnly && account) {
+      if (e.author.toLowerCase() !== account.toLowerCase()) return false;
+    }
+    if (!filterNeedle) return true;
+    return (
+      e.author.toLowerCase().includes(filterNeedle) ||
+      e.message.toLowerCase().includes(filterNeedle)
+    );
+  });
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-8 px-4 py-10 sm:px-6">
@@ -385,9 +399,38 @@ export default function App() {
       )}
 
       <section aria-label="Entries" className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-lg font-semibold text-frost">Messages</h2>
-          <p className="text-xs text-muted">Newest first · max 200</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex items-baseline justify-between gap-2 sm:block">
+            <h2 className="font-display text-lg font-semibold text-frost">Messages</h2>
+            <p className="text-xs text-muted">
+              Newest first · showing {filteredEntries.length}
+              {filteredEntries.length !== entries.length ? ` / ${entries.length}` : ""} · max 200
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              value={authorFilter}
+              onChange={(e) => setAuthorFilter(e.target.value)}
+              placeholder="Filter author or text…"
+              className="min-w-[12rem] flex-1 rounded-lg border border-line bg-ink-soft px-3 py-1.5 font-mono text-xs text-frost outline-none focus:border-cyan sm:max-w-xs"
+              spellCheck={false}
+              aria-label="Filter messages"
+            />
+            <button
+              type="button"
+              disabled={!account}
+              title={account ? "Show only messages from the connected wallet" : "Connect wallet first"}
+              onClick={() => setMineOnly((v) => !v)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:opacity-40 ${
+                mineOnly
+                  ? "border-cyan bg-cyan/15 text-cyan"
+                  : "border-line-strong text-frost hover:border-cyan hover:text-cyan"
+              }`}
+            >
+              Mine
+            </button>
+          </div>
         </div>
 
         {!loading && !error && entries.length === 0 && (
@@ -396,8 +439,26 @@ export default function App() {
           </p>
         )}
 
+        {!loading && !error && entries.length > 0 && filteredEntries.length === 0 && (
+          <p className="rounded-xl border border-line bg-panel/50 px-4 py-8 text-center text-sm text-muted">
+            No messages match this filter.
+            {(mineOnly || filterNeedle) && (
+              <button
+                type="button"
+                className="mt-2 block w-full text-cyan underline-offset-2 hover:underline"
+                onClick={() => {
+                  setAuthorFilter("");
+                  setMineOnly(false);
+                }}
+              >
+                Clear filter
+              </button>
+            )}
+          </p>
+        )}
+
         <ul className="flex flex-col gap-3">
-          {entries.map((e) => (
+          {filteredEntries.map((e) => (
             <li
               key={e.id}
               className="rounded-xl border border-line bg-panel-raised/90 p-4 shadow-lg"

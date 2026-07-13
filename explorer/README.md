@@ -47,8 +47,10 @@ Vite is configured with `envPrefix: "PUBLIC_"`.
 | :--- | :--- |
 | `/` | Home — stats, latest blocks & txs |
 | `/block/$id` | Block by number or hash |
-| `/tx/$hash` | Transaction + receipt / logs |
-| `/address/$addr` | Balance, nonce, code |
+| `/tx/$hash` | Transaction + receipt / logs / **token transfers** |
+| `/address/$addr` | Balance, nonce, code / **ERC-20 metadata** when applicable |
+
+**Product-v1:** recent search chips; method selector labels; ERC-20 `eth_call` probe; Transfer/Approval log decode. Spec: [docs/product/upgrades.md](../docs/product/upgrades.md).
 
 ## Home network overview
 

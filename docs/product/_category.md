@@ -15,3 +15,4 @@ Read-only explorer, ops faucet, and the public Guestbook demo SPA for public and
 | Block explorer | [block-explorer.md](./block-explorer.md) |
 | Faucet | [faucet.md](./faucet.md) |
 | Guestbook demo | [guestbook.md](./guestbook.md) |
+| Upgrade backlog | [upgrades.md](./upgrades.md) — product first, then D3c/d/e + core |

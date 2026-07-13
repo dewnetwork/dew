@@ -93,9 +93,26 @@ export function formatPercent(used: bigint, limit: bigint): number {
   return Number((used * 10000n) / limit) / 100;
 }
 
+/** Prefer known ERC-20 / common selectors; else 4-byte hex. */
 export function methodLabel(input: string | null | undefined): string {
+  // Lazy import avoided — keep pure: re-export naming from abi via dynamic pattern
   if (!input || input === "0x" || input.length < 10) return "Transfer";
-  return input.slice(0, 10);
+  const sel = input.slice(0, 10).toLowerCase();
+  const known: Record<string, string> = {
+    "0xa9059cbb": "transfer",
+    "0x23b872dd": "transferFrom",
+    "0x095ea7b3": "approve",
+    "0x70a08231": "balanceOf",
+    "0x18160ddd": "totalSupply",
+    "0x313ce567": "decimals",
+    "0x06fdde03": "name",
+    "0x95d89b41": "symbol",
+    "0xd0e30db0": "deposit",
+    "0x2e1a7d4d": "withdraw",
+    "0x40c10f19": "mint",
+    "0x42966c68": "burn",
+  };
+  return known[sel] ?? sel;
 }
 
 export function relativeTime(tsSec: number, nowMs = Date.now()): string {

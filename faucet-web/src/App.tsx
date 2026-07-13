@@ -45,6 +45,31 @@ export default function App() {
     return `${base.replace(/\/$/, "")}/tx/${txHash}`;
   };
 
+  const getExplorerAddressLink = (addr: string) => {
+    const base = import.meta.env.PUBLIC_EXPLORER_URL;
+    if (!base) return null;
+    return `${base.replace(/\/$/, "")}/address/${addr.toLowerCase()}`;
+  };
+
+  /** Map common faucet backend errors to clearer UX copy. */
+  const friendlyFaucetError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (m.includes("rate") || m.includes("limit") || m.includes("cooldown") || m.includes("too many")) {
+      const windowHint =
+        info != null
+          ? ` Per address: ${info.perAddress} / ${formatSeconds(info.perAddressWindowSec)}; per IP: ${info.perIP} / ${formatSeconds(info.perIPWindowSec)}.`
+          : "";
+      return `Rate limit reached — try again after the cooldown window.${windowHint}`;
+    }
+    if (m.includes("allowlist") || m.includes("not allowed") || m.includes("not on")) {
+      return "This address is not on the faucet allowlist. Ask an operator to add it, or use captcha mode if enabled.";
+    }
+    if (m.includes("captcha") || m.includes("turnstile") || m.includes("hcaptcha")) {
+      return "Captcha verification failed. Refresh the challenge and try again.";
+    }
+    return raw;
+  };
+
   const formatDewAmount = (weiStr: string) => {
     try {
       const val = BigInt(weiStr);
@@ -244,16 +269,22 @@ export default function App() {
     } catch (err: unknown) {
       console.error(err);
       const message = err instanceof Error ? err.message : "An unexpected error occurred.";
-      setError(message);
+      setError(friendlyFaucetError(message));
     } finally {
       setLoading(false);
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const [copiedField, setCopiedField] = useState<"from" | "tx" | null>(null);
+
+  const copyToClipboard = (text: string, field: "from" | "tx" = "from") => {
+    void navigator.clipboard.writeText(text);
+    setCopiedField(field);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      setCopied(false);
+      setCopiedField(null);
+    }, 2000);
   };
 
   const year = new Date().getFullYear();
@@ -371,36 +402,71 @@ export default function App() {
                 </div>
 
                 <div className="space-y-1.5 rounded-lg border border-[var(--color-line)] bg-ink/50 p-3 font-mono text-xs">
-                  <div className="flex justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-muted">Recipient</span>
-                    <span className="truncate text-slate max-w-[240px]">{success.to}</span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-slate max-w-[200px]">{success.to}</span>
+                      {getExplorerAddressLink(success.to) ? (
+                        <a
+                          href={getExplorerAddressLink(success.to)!}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="shrink-0 text-cyan hover:text-mist"
+                        >
+                          view
+                        </a>
+                      ) : null}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-muted">Tx hash</span>
-                    <span className="truncate font-medium text-cyan max-w-[200px]">{success.txHash}</span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="truncate font-medium text-cyan max-w-[160px]">
+                        {success.txHash}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(success.txHash, "tx")}
+                        className="btn-ghost shrink-0 !px-2 !py-0.5 text-[10px]"
+                      >
+                        {copied && copiedField === "tx" ? "Copied" : "Copy"}
+                      </button>
+                    </span>
                   </div>
                 </div>
 
-                {getExplorerTxLink(success.txHash) ? (
-                  <a
-                    href={getExplorerTxLink(success.txHash)!}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 text-xs font-semibold text-cyan hover:text-mist"
-                  >
-                    View on block explorer
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </a>
-                ) : (
-                  <p className="text-[10px] text-muted italic">No explorer link configured.</p>
-                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  {getExplorerTxLink(success.txHash) ? (
+                    <a
+                      href={getExplorerTxLink(success.txHash)!}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-semibold text-cyan hover:text-mist"
+                    >
+                      View tx on explorer
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                    </a>
+                  ) : (
+                    <p className="text-[10px] text-muted italic">No explorer link configured.</p>
+                  )}
+                  {getExplorerAddressLink(success.to) ? (
+                    <a
+                      href={getExplorerAddressLink(success.to)!}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-medium text-slate hover:text-cyan"
+                    >
+                      Recipient address
+                    </a>
+                  ) : null}
+                </div>
               </div>
             )}
 
@@ -528,11 +594,11 @@ export default function App() {
                 <span className="max-w-[200px] truncate text-slate md:max-w-xs">{info.from}</span>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(info.from)}
+                  onClick={() => copyToClipboard(info.from, "from")}
                   className="btn-ghost !px-2 !py-1"
                   title="Copy address"
                 >
-                  {copied ? "Copied" : "Copy"}
+                  {copied && copiedField === "from" ? "Copied" : "Copy"}
                 </button>
               </div>
             </div>

@@ -13,6 +13,8 @@ status: stable
 
 **Context:** Path B is live (single-host controlled RPC). Bands A–C and D1–D2 are done. This document is the **implementation spec** for Phase D3. Acceptance summaries remain in [Phases](../build/phases.md#d3--scale-when-needed-path-a--c4--audit); residuals are tracked in [agents/debt.md](../../agents/debt.md).
 
+**Product surface upgrades** (explorer / faucet / Guestbook, independent of D3c–e) live in [Product & scale upgrades](../product/upgrades.md) Track 1.
+
 **Durable chaindata:** with `--datadir`, chain + state live under `<datadir>/chaindata` (Pebble); peers remain in `peers.json`. Spec: [Durable chaindata](../ops/durable-chaindata.md).
 
 ---
