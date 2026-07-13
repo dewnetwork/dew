@@ -8,7 +8,7 @@ var ErrNotFound = errors.New("db: key not found")
 
 // Database is a simple byte-keyed store.
 // Implementations must be safe for concurrent use if documented as such;
-// MemoryDB is safe for concurrent use.
+// PebbleDB is safe for concurrent use.
 type Database interface {
 	// Has reports whether key exists.
 	Has(key []byte) (bool, error)
@@ -22,7 +22,7 @@ type Database interface {
 	Close() error
 }
 
-// Batch groups writes for atomic flush (optional optimization; MemoryDB applies immediately).
+// Batch groups writes for atomic flush.
 type Batch interface {
 	Put(key, value []byte) error
 	Delete(key []byte) error

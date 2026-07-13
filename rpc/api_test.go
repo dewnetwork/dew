@@ -39,10 +39,7 @@ func TestRPC_ChainIdAndBalance(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	n, err := node.NewFromGenesis(g)
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, g)
 	srv := NewServer()
 	srv.RegisterAll(NewAPI(n).Handlers())
 
@@ -87,10 +84,7 @@ func TestRPC_SendRawTransaction_Transfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n, err := node.NewFromGenesis(g)
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, g)
 	srv := NewServer()
 	srv.RegisterAll(NewAPI(n).Handlers())
 
@@ -171,10 +165,7 @@ func TestRPC_DewSendRawTransaction_AndStats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n, err := node.NewFromGenesis(g)
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, g)
 	srv := NewServer()
 	srv.RegisterAll(NewAPI(n).Handlers())
 

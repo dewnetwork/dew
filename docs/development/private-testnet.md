@@ -84,14 +84,20 @@ Private multi-validator staging on **one machine** (pre–Path A):
 
 Manual multi-host uses the same flags with real hostnames in `--p2p.bootnodes` and unique `--datadir` / keys per host. Path A public publish is [D3d](./d3-scale.md#d3d--path-a-multi-host-public).
 
-### Data directory layout (D3b)
+### Data directory layout (D3b + durable chaindata)
 
-| Path | Contents |
-| :--- | :------- |
-| `<datadir>/peers.json` | Known P2P peers (id, addr, lastSeen, banScore); loaded on start, flushed on change/close |
-| `--p2p.bootnodes` | Always redialed; never TTL-evicted (not required to appear in the file) |
+| Path | Contents | Status |
+| :--- | :------- | :----- |
+| `<datadir>/peers.json` | Known P2P peers (id, addr, lastSeen, banScore); loaded on start, flushed on change/close | **Shipped** (D3b) |
+| `<datadir>/chaindata/` | Pebble: headers, bodies, canonical, receipts, tx index, flat state, tip meta | **Shipped** — [Durable chaindata](./durable-chaindata.md) |
+| `--p2p.bootnodes` | Always redialed; never TTL-evicted (not required to appear in the file) | Shipped |
 
-When `--datadir` is set, the host auto-redials last-known peers after disconnect or process restart (exponential backoff, cap 5 minutes). Entries idle longer than **7 days** are dropped unless they are bootnodes or currently active. Compose `multi` mounts a per-node volume at `/var/lib/dew`.
+When `--datadir` is set:
+
+- Chain + state open from `chaindata/` (Pebble). Process restart recovers tip, balances, receipts, and tx lookups.
+- P2P auto-redials last-known peers (exponential backoff, cap 5 minutes). Entries idle longer than **7 days** are dropped unless they are bootnodes or currently active.
+
+Compose Path B and `multi` mount volumes at `/var/lib/dew` (the **default** `--datadir`; compose does not need to pass the flag). **Do not** put peer records inside `chaindata/` (separate lifecycle). Local override: `dew run --datadir ./data …`.
 
 Minimum private bar (security principles): multi-validator + chaos restart — covered by `go test ./devnet/ -run Chaos`. Auto-redial without manual mesh helper: `go test ./p2p/ -run 'AutoRedial|ReloadAndRedial'`.
 

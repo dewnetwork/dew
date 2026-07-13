@@ -67,8 +67,7 @@ func TestSecurity_DewTxRejectsEVMPrefix(t *testing.T) {
 }
 
 func TestSecurity_AccessListFailClosedNoMutation(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	t.Cleanup(func() { mdb.Close() })
+	mdb := db.OpenTest(t)
 	st := state.New(mdb)
 	key, _ := crypto.GenerateKey()
 	sender := crypto.PubkeyToAddress(&key.PublicKey)
@@ -110,8 +109,7 @@ func TestSecurity_NativeDisabled(t *testing.T) {
 }
 
 func TestSecurity_PrecompileDisabledNoForward(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	t.Cleanup(func() { mdb.Close() })
+	mdb := db.OpenTest(t)
 	st := state.New(mdb)
 	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	recipient := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
@@ -137,8 +135,7 @@ func TestSecurity_PrecompileDisabledNoForward(t *testing.T) {
 }
 
 func TestSecurity_PrecompileBadInputReverts(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	t.Cleanup(func() { mdb.Close() })
+	mdb := db.OpenTest(t)
 	st := state.New(mdb)
 	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	st.SetBalance(caller, uint256.NewInt(1_000_000_000_000_000_000))
@@ -163,8 +160,7 @@ func TestSecurity_PrecompileBadInputReverts(t *testing.T) {
 }
 
 func TestSecurity_ParallelEquivalenceUnderConflict(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	t.Cleanup(func() { mdb.Close() })
+	mdb := db.OpenTest(t)
 	base := state.New(mdb)
 	key, _ := crypto.GenerateKey()
 	sender := crypto.PubkeyToAddress(&key.PublicKey)
@@ -216,10 +212,7 @@ func newTestNode(t *testing.T) *node.Node {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n, err := node.NewFromGenesis(g)
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, g)
 	return n
 }
 

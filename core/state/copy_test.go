@@ -11,8 +11,7 @@ import (
 )
 
 func TestStateDB_CopyIsolation(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	s := New(mdb)
 	a := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	s.SetBalance(a, uint256.NewInt(1000))
@@ -31,8 +30,7 @@ func TestStateDB_CopyIsolation(t *testing.T) {
 }
 
 func TestStateDB_ApplyOverlay(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	s := New(mdb)
 	a := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	b := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
@@ -60,8 +58,7 @@ func TestStateDB_ApplyOverlay(t *testing.T) {
 }
 
 func TestAccessSet_Conflicts(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	s := New(mdb)
 	a := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	b := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")

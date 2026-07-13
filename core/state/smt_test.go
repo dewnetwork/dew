@@ -18,7 +18,7 @@ func TestSMT_EmptyRoot(t *testing.T) {
 	if ComputeSMTRoot([]leaf{}) != EmptySMTRoot() {
 		t.Fatal("empty slice")
 	}
-	s := New(db.NewMemoryDB())
+	s := New(db.OpenTest(t))
 	root, err := s.IntermediateRoot()
 	if err != nil {
 		t.Fatal(err)
@@ -29,7 +29,7 @@ func TestSMT_EmptyRoot(t *testing.T) {
 }
 
 func TestSMT_SingleAccount(t *testing.T) {
-	mdb := db.NewMemoryDB()
+	mdb := db.OpenTest(t)
 	s := New(mdb)
 	addr := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	s.SetBalance(addr, uint256.NewInt(42))
@@ -42,7 +42,7 @@ func TestSMT_SingleAccount(t *testing.T) {
 	}
 
 	// Independent node with same pre-state mutation
-	s2 := New(db.NewMemoryDB())
+	s2 := New(db.OpenTest(t))
 	s2.SetBalance(addr, uint256.NewInt(42))
 	root2, err := s2.Commit()
 	if err != nil {
@@ -54,7 +54,7 @@ func TestSMT_SingleAccount(t *testing.T) {
 }
 
 func TestSMT_StorageSlots(t *testing.T) {
-	s := New(db.NewMemoryDB())
+	s := New(db.OpenTest(t))
 	addr := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
 	s.SetBalance(addr, uint256.NewInt(1))
 	slot0 := types.BytesToHash([]byte{0x01})
@@ -66,7 +66,7 @@ func TestSMT_StorageSlots(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sB := New(db.NewMemoryDB())
+	sB := New(db.OpenTest(t))
 	sB.SetBalance(addr, uint256.NewInt(1))
 	sB.SetState(addr, slot1, types.BytesToHash([]byte{0xbb}))
 	sB.SetState(addr, slot0, types.BytesToHash([]byte{0xaa})) // reverse write order
@@ -80,7 +80,7 @@ func TestSMT_StorageSlots(t *testing.T) {
 }
 
 func TestSMT_DeleteEmptyAccount(t *testing.T) {
-	s := New(db.NewMemoryDB())
+	s := New(db.OpenTest(t))
 	addr := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
 	s.SetBalance(addr, uint256.NewInt(100))
 	slot := types.BytesToHash([]byte{0x01})
@@ -102,7 +102,7 @@ func TestSMT_DeleteEmptyAccount(t *testing.T) {
 	}
 
 	// Fresh empty DB still empty root
-	empty, err := New(db.NewMemoryDB()).IntermediateRoot()
+	empty, err := New(db.OpenTest(t)).IntermediateRoot()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestSMT_DeleteEmptyAccount(t *testing.T) {
 }
 
 func TestSMT_CodeLeaf(t *testing.T) {
-	s := New(db.NewMemoryDB())
+	s := New(db.OpenTest(t))
 	addr := crypto.MustHexToAddress("0x00000000000000000000000000000000000000bb")
 	code := []byte{0x60, 0x00, 0x60, 0x00, 0xf3}
 	s.SetCode(addr, code)
@@ -121,7 +121,7 @@ func TestSMT_CodeLeaf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s2 := New(db.NewMemoryDB())
+	s2 := New(db.OpenTest(t))
 	s2.SetCode(addr, code)
 	s2.SetBalance(addr, uint256.NewInt(0))
 	root2, err := s2.Commit()

@@ -66,15 +66,15 @@ Phase A can use a simple in-memory pool. Do not over-design before multi-node te
 
 ## Databases
 
-| Store      | Keys (illustrative) | Values                 |
-| :--------- | :------------------ | :--------------------- |
-| Block DB   | hash, height        | header, body, receipts |
-| State DB   | address             | account RLP/binary     |
-| Storage DB | address \|\| slot   | 32-byte value          |
-| Peer store | node ID             | addresses, last seen   |
-| Consensus  | height/round meta   | votes, valset          |
+| Store      | Keys (illustrative) | Values                 | Status |
+| :--------- | :------------------ | :--------------------- | :----- |
+| Block DB   | hash, height        | header, body, receipts | `<datadir>/chaindata` (Pebble) when `--datadir` set — [Durable chaindata](../development/durable-chaindata.md) |
+| State DB   | address             | account RLP/binary     | Flat keys `a`/`s`/`c` in same Pebble under `chaindata/` |
+| Storage DB | address \|\| slot   | 32-byte value          | Same KV as state |
+| Peer store | node ID             | addresses, last seen   | `<datadir>/peers.json` (not in chaindata) |
+| Consensus  | height/round meta   | votes, valset          | In-process today |
 
-Exact codec is implementation-defined but must be versioned.
+Exact codec is implementation-defined but must be versioned. Peer data stays out of the chain DB (different lifecycle).
 
 ## Configuration surfaces
 

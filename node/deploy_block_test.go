@@ -20,10 +20,7 @@ func TestDeployBlock_BuildAndValidate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n, err := node.NewFromGenesis(g)
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, g)
 	n.SetAutoMine(false)
 	faucet := devnet.Faucet()
 

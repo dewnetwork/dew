@@ -94,8 +94,9 @@ flowchart TD
 | D1 before faucet/UX polish | Public RPC without explorer leaves publish template at `Explorer: (none)` |
 | D2 optional | Faucet is ops; allowlist may suffice |
 | D3 on demand | Path A, staking residuals, and audit are scale/mainnet gates — not MVP for first public RPC |
+| Durable chaindata before D3d/D3c longevity | Disk `chaindata/` (Pebble); peers stay in `peers.json` — [Durable chaindata](./durable-chaindata.md) |
 
-Out of Phase C / into D3 or mainnet debt: full multi-version Block-STM upgrade, **external** security audit of consensus + VM bridge + crypto, C4/C5 residuals. See [Security principles](../security/security-principles.md) stage table, [Phases](./phases.md) D3, and `agents/debt.md`.
+Out of Phase C / into D3 or mainnet debt: full multi-version Block-STM upgrade, **external** security audit of consensus + VM bridge + crypto, C4/C5 residuals, **durable chaindata** (design ready). See [Security principles](../security/security-principles.md) stage table, [Phases](./phases.md) D3, and `agents/debt.md`.
 
 ## Mapping to docs
 

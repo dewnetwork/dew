@@ -65,7 +65,7 @@ func cmdRun(args []string) error {
 	p2pBoot := fs.String("p2p.bootnodes", "", "comma-separated host:port peers to dial")
 	p2pEncrypt := fs.Bool("p2p.encrypt", true, "encrypted P2P sessions (C2 default)")
 	p2pCleartext := fs.Bool("p2p.allow-cleartext", false, "permit cleartext when --p2p.encrypt=false")
-	dataDir := fs.String("datadir", "", "data directory (peers.json under here when P2P enabled)")
+	dataDir := fs.String("datadir", node.DefaultDataDir, "data directory (default /var/lib/dew): chaindata/ Pebble + peers.json")
 	validator := fs.Bool("validator", false, "enable Dew-BFT validator mode")
 	validatorKey := fs.String("validator.key", "", "hex secp256k1 key for --validator")
 	noAutoMine := fs.Bool("no-auto-mine", false, "admit txs to mempool only (no local seal)")
@@ -87,10 +87,17 @@ func cmdRun(args []string) error {
 	if err != nil {
 		return err
 	}
-	n, err := node.NewFromGenesis(g)
+	dir := strings.TrimSpace(*dataDir)
+	if dir == "" {
+		dir = node.DefaultDataDir
+	}
+	n, err := node.Open(g, node.ChainDataDir(dir))
 	if err != nil {
 		return err
 	}
+	defer func() { _ = n.Close() }()
+	// Keep *dataDir consistent for P2P peers.json path.
+	*dataDir = dir
 	if *staking {
 		n.SetStakingEnabled(true)
 	}
@@ -350,8 +357,8 @@ func printUsage() {
 Usage:
   dew init [--out genesis.json]
   dew devnet [--http.addr 127.0.0.1] [--http.port 8545] [--no-p2p] [--bft.heights 1]
-  dew run [--genesis genesis.json] [--http.addr 127.0.0.1] [--http.port 8545] [--staking]
-          [--validator] [--validator.key HEX] [--no-auto-mine] [--datadir DIR]
+  dew run [--genesis genesis.json] [--datadir /var/lib/dew] [--http.addr 127.0.0.1] [--http.port 8545] [--staking]
+          [--validator] [--validator.key HEX] [--no-auto-mine]
           [--p2p.listen host:port] [--p2p.key HEX] [--p2p.bootnodes a:port,b:port]
           [--p2p.encrypt] [--p2p.allow-cleartext]
   dew version

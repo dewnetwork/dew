@@ -49,8 +49,7 @@ func transferMsg(from, to crypto.Address, amount uint64) Message {
 }
 
 func TestParallel_EquivalenceNonConflicting(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	seqDB := state.New(mdb)
 	addrs := fundEOAs(seqDB, 8, uint256.NewInt(1_000_000))
 	if _, err := seqDB.Commit(); err != nil {
@@ -66,8 +65,7 @@ func TestParallel_EquivalenceNonConflicting(t *testing.T) {
 	}
 
 	// Sequential baseline on a fork of committed state
-	mdb2 := db.NewMemoryDB()
-	defer mdb2.Close()
+	mdb2 := db.OpenTest(t)
 	// rebuild same genesis balances
 	base := state.New(mdb2)
 	for i, a := range addrs {
@@ -128,8 +126,7 @@ func TestParallel_EquivalenceNonConflicting(t *testing.T) {
 }
 
 func TestParallel_EquivalenceConflicting(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	base := state.New(mdb)
 	addrs := fundEOAs(base, 3, uint256.NewInt(1_000_000))
 	if _, err := base.Commit(); err != nil {
@@ -184,8 +181,7 @@ func TestParallel_SpeedupNonConflicting(t *testing.T) {
 		t.Skip("speedup check")
 	}
 	const n = 64
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	base := state.New(mdb)
 	// n pairs = 2n addresses
 	addrs := fundEOAs(base, n*2, uint256.NewInt(1_000_000))
@@ -233,8 +229,7 @@ func TestParallel_SpeedupNonConflicting(t *testing.T) {
 }
 
 func TestParallel_MetricsRecorded(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	base := state.New(mdb)
 	addrs := fundEOAs(base, 4, uint256.NewInt(1_000_000))
 	if _, err := base.Commit(); err != nil {

@@ -35,6 +35,8 @@ services:
       - "0.0.0.0"
       - --http.port
       - "8545"
+    volumes:
+      - dew-node-data:/var/lib/dew
     # Internal only — JSON-RPC via edge (rpc-dew.fadosoft.com).
     # Debug from host: docker compose exec dew-node … or temporary ports: mapping.
     expose:
@@ -175,5 +177,6 @@ networks:
     driver: bridge
 
 volumes:
+  dew-node-data:
   dew_letsencrypt:
   dew_certbot_www:

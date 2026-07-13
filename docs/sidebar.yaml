@@ -66,6 +66,7 @@
     - roadmap.md
     - phases.md
     - d3-scale.md
+    - durable-chaindata.md
     - devnet.md
     - private-testnet.md
     - public-testnet.md

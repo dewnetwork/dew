@@ -64,10 +64,7 @@ func admitTestTx(t *testing.T, n *node.Node) {
 }
 
 func TestMempoolBlockBuilder_BuildsBlock(t *testing.T) {
-	n, err := node.NewFromGenesis(testGenesis(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, testGenesis(t))
 	n.SetAutoMine(false)
 	admitTestTx(t, n)
 
@@ -92,10 +89,7 @@ func TestMempoolBlockBuilder_BuildsBlock(t *testing.T) {
 }
 
 func TestExecutionValidator_AcceptsValidRoot(t *testing.T) {
-	n, err := node.NewFromGenesis(testGenesis(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, testGenesis(t))
 	n.SetAutoMine(false)
 	admitTestTx(t, n)
 
@@ -113,10 +107,7 @@ func TestExecutionValidator_AcceptsValidRoot(t *testing.T) {
 }
 
 func TestExecutionValidator_RejectsBadRoot(t *testing.T) {
-	n, err := node.NewFromGenesis(testGenesis(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, testGenesis(t))
 	n.SetAutoMine(false)
 	admitTestTx(t, n)
 

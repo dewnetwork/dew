@@ -240,11 +240,27 @@ func (s *StateDB) SetState(addr crypto.Address, slot, value types.Hash) {
 
 // Commit flushes dirty objects to the database and returns a deterministic StateRoot.
 func (s *StateDB) Commit() (types.Hash, error) {
-	// Persist accounts
+	if err := s.FlushDirtyTo(s.db); err != nil {
+		return types.Hash{}, err
+	}
+	root, err := s.IntermediateRoot()
+	if err != nil {
+		return types.Hash{}, err
+	}
+	s.ClearDirty()
+	return root, nil
+}
+
+// FlushDirtyTo writes dirty accounts/storage/code into w without clearing dirty sets.
+// Use with a db.Batch so chain keys can share one atomic Write; call ClearDirty after Write succeeds.
+func (s *StateDB) FlushDirtyTo(w stateWriter) error {
+	if w == nil {
+		return fmt.Errorf("state: nil writer")
+	}
 	for addr := range s.accountDirty {
 		if _, dead := s.suicides[addr]; dead {
-			if err := s.db.Delete(accountKey(addr)); err != nil {
-				return types.Hash{}, err
+			if err := w.Delete(accountKey(addr)); err != nil {
+				return err
 			}
 			continue
 		}
@@ -254,16 +270,15 @@ func (s *StateDB) Commit() (types.Hash, error) {
 		}
 		blob, err := encodeAccount(acc)
 		if err != nil {
-			return types.Hash{}, err
+			return err
 		}
-		if err := s.db.Put(accountKey(addr), blob); err != nil {
-			return types.Hash{}, err
+		if err := w.Put(accountKey(addr), blob); err != nil {
+			return err
 		}
-		// Persist code if present
 		if acc.CodeHash != types.EmptyCodeHash {
 			if code, ok := s.code[acc.CodeHash]; ok {
-				if err := s.db.Put(codeKey(acc.CodeHash), code); err != nil {
-					return types.Hash{}, err
+				if err := w.Put(codeKey(acc.CodeHash), code); err != nil {
+					return err
 				}
 			}
 		}
@@ -271,26 +286,29 @@ func (s *StateDB) Commit() (types.Hash, error) {
 	for id := range s.storageDirty {
 		val := s.storage[id]
 		if val.IsZero() {
-			if err := s.db.Delete(storageKey(id.addr, id.slot)); err != nil {
-				return types.Hash{}, err
+			if err := w.Delete(storageKey(id.addr, id.slot)); err != nil {
+				return err
 			}
 			continue
 		}
-		if err := s.db.Put(storageKey(id.addr, id.slot), val.Bytes()); err != nil {
-			return types.Hash{}, err
+		if err := w.Put(storageKey(id.addr, id.slot), val.Bytes()); err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
-	root, err := s.IntermediateRoot()
-	if err != nil {
-		return types.Hash{}, err
-	}
-
-	// Clear dirty sets (keep cache warm)
+// ClearDirty drops dirty tracking after a successful durable flush (keeps account cache warm).
+func (s *StateDB) ClearDirty() {
 	s.accountDirty = make(map[crypto.Address]struct{})
 	s.storageDirty = make(map[storageID]struct{})
 	s.suicides = make(map[crypto.Address]struct{})
-	return root, nil
+}
+
+// stateWriter is satisfied by db.Database and db.Batch.
+type stateWriter interface {
+	Put(key, value []byte) error
+	Delete(key []byte) error
 }
 
 // IntermediateRoot computes the SMT commitment over flat state (Phase C3).

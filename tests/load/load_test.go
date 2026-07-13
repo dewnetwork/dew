@@ -75,8 +75,7 @@ func TestLoad_ParallelVsSequential_NonConflicting(t *testing.T) {
 
 func TestLoad_Parallel_MixedConflicts_Equivalence(t *testing.T) {
 	const n = 64
-	mdb := db.NewMemoryDB()
-	t.Cleanup(func() { mdb.Close() })
+	mdb := db.OpenTest(t)
 	base := state.New(mdb)
 
 	// Shared hub + many leaf pairs → partial conflicts
@@ -134,8 +133,7 @@ func TestLoad_Parallel_MixedConflicts_Equivalence(t *testing.T) {
 
 func TestLoad_NativeDewTx_Throughput(t *testing.T) {
 	const n = 200
-	mdb := db.NewMemoryDB()
-	t.Cleanup(func() { mdb.Close() })
+	mdb := db.OpenTest(t)
 	st := state.New(mdb)
 	key, err := crypto.GenerateKey()
 	if err != nil {
@@ -191,8 +189,7 @@ func TestLoad_ReportFeeComparison(t *testing.T) {
 
 func makeDisjointTransfers(t *testing.T, n int) ([]vm.Message, *state.StateDB) {
 	t.Helper()
-	mdb := db.NewMemoryDB()
-	t.Cleanup(func() { mdb.Close() })
+	mdb := db.OpenTest(t)
 	base := state.New(mdb)
 	msgs := make([]vm.Message, n)
 	for i := 0; i < n; i++ {

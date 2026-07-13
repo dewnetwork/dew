@@ -68,8 +68,7 @@ func TestParseGenesis_AndCommitAlloc(t *testing.T) {
 		t.Fatalf("chainId = %s", g.ChainID())
 	}
 
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 
 	block, statedb, err := g.Commit(mdb)
 	if err != nil {
@@ -118,7 +117,7 @@ func TestParseGenesis_AndCommitAlloc(t *testing.T) {
 	}
 
 	// Second commit from same JSON → same state root + header hash
-	mdb2 := db.NewMemoryDB()
+	mdb2 := db.OpenTest(t)
 	block2, _, err := g.Commit(mdb2)
 	if err != nil {
 		t.Fatal(err)
@@ -151,7 +150,7 @@ func TestGenesisHeader_HashFixture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mdb := db.NewMemoryDB()
+	mdb := db.OpenTest(t)
 	block, _, err := g.Commit(mdb)
 	if err != nil {
 		t.Fatal(err)

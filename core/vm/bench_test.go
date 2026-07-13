@@ -47,8 +47,7 @@ func BenchmarkParallelTransfers(b *testing.B) {
 // BenchmarkParallelConflicting measures PE under full sender conflict (worst case re-exec).
 func BenchmarkParallelConflicting(b *testing.B) {
 	const n = 32
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(b)
 	base := state.New(mdb)
 	// one rich sender, n receivers
 	key, err := crypto.GenerateKey()
@@ -82,8 +81,7 @@ func BenchmarkParallelConflicting(b *testing.B) {
 
 // BenchmarkNativeTransferPrecompile measures CALL to 0x100.
 func BenchmarkNativeTransferPrecompile(b *testing.B) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(b)
 	st := state.New(mdb)
 	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	recipient := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
@@ -118,7 +116,7 @@ func BenchmarkNativeTransferPrecompile(b *testing.B) {
 
 func benchTransferFixture(b *testing.B, n int) ([]Message, *state.StateDB) {
 	b.Helper()
-	mdb := db.NewMemoryDB()
+	mdb := db.OpenTest(b)
 	b.Cleanup(func() { mdb.Close() })
 	base := state.New(mdb)
 	addrs := fundEOAs(base, n*2, uint256.NewInt(1_000_000))

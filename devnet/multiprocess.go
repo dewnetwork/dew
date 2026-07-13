@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -21,10 +23,11 @@ type MultiProcessNet struct {
 	Full       *node.Stack
 	RPCURL     string
 
-	genesis *config.Genesis
-	mu      sync.Mutex
-	httpSrv *http.Server
-	ln      net.Listener
+	genesis  *config.Genesis
+	dataRoot string
+	mu       sync.Mutex
+	httpSrv  *http.Server
+	ln       net.Listener
 }
 
 // MultiProcessConfig configures StartMultiProcessBFT.
@@ -58,15 +61,20 @@ func StartMultiProcessBFT(cfg MultiProcessConfig) (*MultiProcessNet, error) {
 	}
 
 	vals := DefaultValidators()
+	dataRoot, err := os.MkdirTemp("", "dew-multiproc-*")
+	if err != nil {
+		return nil, fmt.Errorf("devnet: temp dir: %w", err)
+	}
 	netw := &MultiProcessNet{
 		Validators: make([]*node.Stack, 0, len(vals)),
 		genesis:    g,
+		dataRoot:   dataRoot,
 	}
 
 	// Start validators sequentially so later nodes can dial earlier bootnodes.
 	var bootAddrs []string
 	for i, v := range vals {
-		n, err := node.NewFromGenesis(g)
+		n, err := node.Open(g, filepath.Join(dataRoot, fmt.Sprintf("val-%d", i), "chaindata"))
 		if err != nil {
 			_ = netw.Stop()
 			return nil, fmt.Errorf("devnet: validator %d node: %w", i, err)
@@ -93,7 +101,7 @@ func StartMultiProcessBFT(cfg MultiProcessConfig) (*MultiProcessNet, error) {
 	}
 
 	// Full node dials all validators.
-	fullNode, err := node.NewFromGenesis(g)
+	fullNode, err := node.Open(g, filepath.Join(dataRoot, "full", "chaindata"))
 	if err != nil {
 		_ = netw.Stop()
 		return nil, fmt.Errorf("devnet: full node: %w", err)
@@ -254,6 +262,10 @@ func (m *MultiProcessNet) Stop() error {
 	if m.Full != nil {
 		_ = m.Full.Stop()
 		m.Full = nil
+	}
+	if m.dataRoot != "" {
+		_ = os.RemoveAll(m.dataRoot)
+		m.dataRoot = ""
 	}
 	return nil
 }

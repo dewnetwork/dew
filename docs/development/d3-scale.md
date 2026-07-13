@@ -8,10 +8,12 @@ status: draft
 
 # D3 scale (design spec)
 
-**Status:** D3a + D3b + D3a residual (pace + bulk backpressure) implemented (July 2026); D3c–D3e pending.  
+**Status:** D3a + D3b + D3a residual (pace + bulk backpressure) implemented (July 2026); **durable chaindata** implemented (July 2026); D3c–D3e pending.  
 **Freeze:** `public-testnet-v1` wire formats stay frozen — D3 changes **packaging, ops, and consensus wiring**, not DewTx / fee floors / precompile addresses. See [Public testnet freeze](./public-testnet.md).
 
 **Context:** Path B is live (single-host controlled RPC). Bands A–C and D1–D2 are done. This document is the **implementation spec** for Phase D3. Acceptance summaries remain in [Phases](./phases.md#d3--scale-when-needed-path-a--c4--audit); residuals are tracked in [agents/debt.md](../../agents/debt.md).
+
+**Durable chaindata:** with `--datadir`, chain + state live under `<datadir>/chaindata` (Pebble); peers remain in `peers.json`. Spec: [Durable chaindata](./durable-chaindata.md).
 
 ---
 
@@ -23,11 +25,14 @@ Pick **one** workstream at a time. Dependencies:
 flowchart LR
   D3a[D3a Multi-process BFT]
   D3b[D3b Peer store / redial]
+  Dur[Durable chaindata]
   D3c[D3c Staking residuals]
   D3d[D3d Path A public]
   D3e[D3e Audit prep]
-  D3a --> D3d
-  D3b --> D3d
+  D3a --> Dur
+  D3b --> Dur
+  Dur --> D3d
+  Dur --> D3c
   D3c --> D3d
   D3d --> D3e
 ```
@@ -35,12 +40,13 @@ flowchart LR
 | ID | Workstream | Owns | Blocks |
 | :--- | :--- | :--- | :--- |
 | **D3a** | C5 multi-process BFT | Shared block production across `dew run` processes | Path A |
-| **D3b** | C5 peer persistence | Auto-redial + durable peer store | Path A ops comfort |
+| **D3b** | C5 peer persistence | Auto-redial + durable peer store (`peers.json` only) | Path A ops comfort |
+| **Durable chaindata** | Disk chain + state | Pebble `chaindata/`; restart keeps tip (**done** July 2026) | Path A / long-lived Path B |
 | **D3c** | C4 staking residuals | Unbonding, evidence, ActiveSet → BFT rotation | Public staking |
 | **D3d** | Path A multi-host public | ≥3 validators, bootnodes, publish template | Decentralized public net |
 | **D3e** | External audit prep | Scope pack for consensus + VM + crypto | Mainnet claims |
 
-**Recommended order:** D3a → D3b (can overlap) → D3d when ops ready → D3c when staking is intentionally enabled → D3e before mainnet.
+**Recommended order:** D3a → D3b (done) → **durable chaindata** → D3d when ops ready → D3c when staking is intentionally enabled → D3e before mainnet.
 
 ---
 
@@ -191,7 +197,7 @@ Consensus messages use a **dedicated queue** priority over bulk sync (see [P2P](
 | Partition | Stall at height; no conflicting commits (BFT safety) |
 | Bad proposal | Nil prevote; round advance |
 | RPC ahead of validators | `eth_blockNumber` lags until sync catches up |
-| Process restart | Rejoin from persisted chain DB (future: see D3b); dial bootnodes |
+| Process restart | Rejoin from persisted **chaindata** ([durable chaindata](./durable-chaindata.md); peers via D3b `peers.json`); dial bootnodes |
 
 ### Tests & acceptance (D3a)
 

@@ -12,8 +12,7 @@ import (
 )
 
 func TestStateDB_AccountRoundTrip(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	s := New(mdb)
 
 	addr := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
@@ -59,7 +58,7 @@ func TestStateDB_AccountRoundTrip(t *testing.T) {
 }
 
 func TestStateDB_StorageAndCode(t *testing.T) {
-	mdb := db.NewMemoryDB()
+	mdb := db.OpenTest(t)
 	s := New(mdb)
 
 	addr := crypto.MustHexToAddress("0x0000000000000000000000000000000000000001")
@@ -99,7 +98,7 @@ func TestStateDB_StorageAndCode(t *testing.T) {
 }
 
 func TestStateDB_RootStable(t *testing.T) {
-	mdb := db.NewMemoryDB()
+	mdb := db.OpenTest(t)
 	s := New(mdb)
 	a1 := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
 	a2 := crypto.MustHexToAddress("0x00000000000000000000000000000000000000bb")
@@ -110,7 +109,7 @@ func TestStateDB_RootStable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mdb2 := db.NewMemoryDB()
+	mdb2 := db.OpenTest(t)
 	sB := New(mdb2)
 	// Insert in reverse order — root must match.
 	sB.AddBalance(a2, uint256.MustFromBig(big.NewInt(200)))

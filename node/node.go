@@ -20,7 +20,6 @@ import (
 	dewcrypto "github.com/dewnetwork/dew/crypto"
 	"github.com/dewnetwork/dew/db"
 	"github.com/dewnetwork/dew/mempool"
-	"github.com/dewnetwork/dew/params"
 )
 
 // Node holds chain state and applies transactions sequentially.
@@ -78,43 +77,7 @@ type IndexedLog struct {
 	Index       uint
 }
 
-// NewFromGenesis commits genesis into a fresh MemoryDB-backed node.
-func NewFromGenesis(g *config.Genesis) (*Node, error) {
-	mdb := db.NewMemoryDB()
-	block, statedb, err := g.Commit(mdb)
-	if err != nil {
-		return nil, err
-	}
-	h := block.Header()
-	n := &Node{
-		genesis:           g,
-		chainID:           g.ChainID(),
-		db:                mdb,
-		statedb:           statedb,
-		header:            h,
-		blocks:            map[dewtypes.Hash]*dewtypes.Block{block.Hash(): block},
-		blockNum:          map[uint64]dewtypes.Hash{0: block.Hash()},
-		txIndex:           make(map[dewtypes.Hash]*TxLookup),
-		receipts:          make(map[dewtypes.Hash]*dewtypes.Receipt),
-		gasPrice:          big.NewInt(1_000_000_000), // 1 gwei
-		baseFee:           new(big.Int).Set(h.BaseFee),
-		enableNative:      params.DefaultEnableNativePath,
-		enablePrecompiles: params.DefaultEnableDewPrecompiles,
-		enableStaking:     params.DefaultEnableStaking,
-		pool:              mempool.New(mempool.DefaultConfig()),
-		autoMine:          true,
-	}
-	if n.baseFee == nil {
-		n.baseFee = big.NewInt(1_000_000_000)
-	}
-	// Align pool gas floor with node gas price suggestion when higher than default.
-	if n.gasPrice != nil && n.gasPrice.Cmp(n.pool.Config().MinGasPriceWei) > 0 {
-		cfg := mempool.DefaultConfig()
-		cfg.MinGasPriceWei = new(big.Int).Set(n.gasPrice)
-		n.pool = mempool.New(cfg)
-	}
-	return n, nil
-}
+// NewFromGenesis / Open are defined in open.go (Pebble-backed chaindata).
 
 // SetMempoolConfig replaces the admission pool (e.g. tests / operator tuning).
 func (n *Node) SetMempoolConfig(cfg mempool.Config) {
@@ -329,15 +292,18 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	// Dev auto-mine path: drop from pool once we attempt inclusion.
 	defer n.pool.Remove(hash)
 
+	snap := n.statedb.Snapshot()
 	feeSink := n.header.Proposer
 	exec := native.NewExecutor(n.statedb, feeSink)
 	result, err := exec.ApplyDewTx(tx)
 	if err != nil {
+		n.statedb.RevertToSnapshot(snap)
 		return dewtypes.Hash{}, err
 	}
 	if result.Failed {
 		// Fail-closed incomplete access list: do not mine a success block;
 		// surface as RPC error (tx not included).
+		n.statedb.RevertToSnapshot(snap)
 		return dewtypes.Hash{}, result.Err
 	}
 
@@ -359,8 +325,9 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	}
 
 	txHash := tx.Hash()
-	root, err := n.statedb.Commit()
+	root, err := n.statedb.IntermediateRoot()
 	if err != nil {
+		n.statedb.RevertToSnapshot(snap)
 		return dewtypes.Hash{}, err
 	}
 	newHeader.StateRoot = root
@@ -381,19 +348,16 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 		BlockNumber:       newHeader.Number,
 		TransactionIndex:  0,
 	}
-
-	n.blocks[blockHash] = block
-	n.blockNum[newHeader.Number] = blockHash
-	n.header = newHeader
-	n.txIndex[txHash] = &TxLookup{
-		BlockHash:   blockHash,
-		BlockNumber: newHeader.Number,
-		Index:       0,
-		DewTx:       tx,
-		From:        tx.Sender,
-		TxHash:      txHash,
+	execRes := txExecResult{
+		txHash:  txHash,
+		dewTx:   tx,
+		from:    tx.Sender,
+		receipt: receipt,
 	}
-	n.receipts[txHash] = receipt
+	if err := n.persistBlockLocked(block, []txExecResult{execRes}); err != nil {
+		n.statedb.RevertToSnapshot(snap)
+		return dewtypes.Hash{}, err
+	}
 	return txHash, nil
 }
 
@@ -453,21 +417,27 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	if err != nil {
 		return dewtypes.Hash{}, err
 	}
+	snap := n.statedb.Snapshot()
 	execRes, gasUsed, err := n.executeEVMTxLocked(newHeader, dewTx, 0, 0)
 	if err != nil {
+		n.statedb.RevertToSnapshot(snap)
 		return dewtypes.Hash{}, err
 	}
 	newHeader.GasUsed = gasUsed
 
-	root, err := n.statedb.Commit()
+	root, err := n.statedb.IntermediateRoot()
 	if err != nil {
+		n.statedb.RevertToSnapshot(snap)
 		return dewtypes.Hash{}, err
 	}
 	newHeader.StateRoot = root
 	newHeader.TxRoot = dewtypes.Keccak256Hash(txHash.Bytes())
 
 	block := dewtypes.NewBlock(newHeader, []*dewtypes.Transaction{dewTx})
-	n.commitBlockLocked(block, []txExecResult{execRes})
+	if err := n.persistBlockLocked(block, []txExecResult{execRes}); err != nil {
+		n.statedb.RevertToSnapshot(snap)
+		return dewtypes.Hash{}, err
+	}
 
 	return txHash, nil
 }

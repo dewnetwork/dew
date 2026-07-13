@@ -17,14 +17,8 @@ func TestStack_CrossNodeTxBlockValidation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := node.NewFromGenesis(g)
-	if err != nil {
-		t.Fatal(err)
-	}
-	b, err := node.NewFromGenesis(g)
-	if err != nil {
-		t.Fatal(err)
-	}
+	a := node.OpenTest(t, g)
+	b := node.OpenTest(t, g)
 	a.SetAutoMine(false)
 	b.SetAutoMine(false)
 

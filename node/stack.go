@@ -223,10 +223,16 @@ func (s *Stack) Stop() error {
 	if s.Runner != nil {
 		s.Runner.Stop()
 	}
+	var err error
 	if s.Host != nil {
-		return s.Host.Close()
+		err = s.Host.Close()
 	}
-	return nil
+	if s.Node != nil {
+		if cerr := s.Node.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}
+	return err
 }
 
 func appHandlers(stack *Stack, validator bool, engine **consensus.Engine) p2p.AppHandlers {

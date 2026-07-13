@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -43,6 +45,7 @@ type Network struct {
 	Chains []*p2p.MemoryChain
 
 	encryptP2P *bool
+	dataRoot   string // temp dir holding Pebble chaindata; removed on Stop
 
 	mu      sync.Mutex
 	httpSrv *http.Server
@@ -76,8 +79,13 @@ func Start(cfg NetworkConfig) (*Network, error) {
 		cfg.HTTPAddr = fmt.Sprintf("127.0.0.1:%d", DefaultRPCPort)
 	}
 
-	n, err := node.NewFromGenesis(g)
+	dataRoot, err := os.MkdirTemp("", "dew-devnet-*")
 	if err != nil {
+		return nil, fmt.Errorf("devnet: temp dir: %w", err)
+	}
+	n, err := node.Open(g, filepath.Join(dataRoot, "chaindata"))
+	if err != nil {
+		_ = os.RemoveAll(dataRoot)
 		return nil, fmt.Errorf("devnet: node: %w", err)
 	}
 
@@ -113,6 +121,7 @@ func Start(cfg NetworkConfig) (*Network, error) {
 		User1:      user1,
 		Cluster:    cluster,
 		encryptP2P: cfg.EncryptP2P,
+		dataRoot:   dataRoot,
 	}
 
 	// P2P: one host per validator (encrypted by default — C2/C5).
@@ -227,6 +236,14 @@ func (n *Network) Stop() error {
 		_ = h.Close()
 	}
 	n.Hosts = nil
+	if n.Node != nil {
+		_ = n.Node.Close()
+		n.Node = nil
+	}
+	if n.dataRoot != "" {
+		_ = os.RemoveAll(n.dataRoot)
+		n.dataRoot = ""
+	}
 	return nil
 }
 

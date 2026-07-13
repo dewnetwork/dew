@@ -18,10 +18,7 @@ func TestStack_TwoValidatorProposalDelivery(t *testing.T) {
 	vals := devnet.DefaultValidators()
 
 	start := func(i int, boots []string) (*node.Stack, error) {
-		n, err := node.NewFromGenesis(g)
-		if err != nil {
-			return nil, err
-		}
+		n := node.OpenTest(t, g)
 		return node.StartStack(node.StackConfig{
 			Genesis:        g,
 			Node:           n,
@@ -95,10 +92,7 @@ func TestStack_WireProposalRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n, err := node.NewFromGenesis(g)
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, g)
 	vals := devnet.DefaultValidators()
 	valSet, err := consensus.ValidatorSetFromGenesis(g)
 	if err != nil {

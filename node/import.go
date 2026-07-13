@@ -68,11 +68,10 @@ func (n *Node) importCommittedBlockLocked(block *dewtypes.Block) error {
 		n.statedb.RevertToSnapshot(snap)
 		return fmt.Errorf("node: state root mismatch: got %s want %s", root.Hex(), h.StateRoot.Hex())
 	}
-	if _, err := n.statedb.Commit(); err != nil {
+	if err := n.persistBlockLocked(block, results); err != nil {
 		n.statedb.RevertToSnapshot(snap)
 		return err
 	}
-	n.commitBlockLocked(block, results)
 	return nil
 }
 

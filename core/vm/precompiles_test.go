@@ -13,8 +13,7 @@ import (
 )
 
 func TestNativeTransferPrecompile_CallWithValue(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
 
 	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
@@ -63,8 +62,7 @@ func TestNativeTransferPrecompile_CallWithValue(t *testing.T) {
 }
 
 func TestNativeTransferPrecompile_Disabled(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
 	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	recipient := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
@@ -100,8 +98,7 @@ func TestNativeTransferPrecompile_Disabled(t *testing.T) {
 }
 
 func TestStakingPrecompile_DisabledReverts(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
 	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	statedb.SetBalance(caller, uint256.NewInt(1_000_000_000_000_000_000))
@@ -130,8 +127,7 @@ func TestStakingPrecompile_DisabledReverts(t *testing.T) {
 }
 
 func TestStakingPrecompile_BondUnbondActiveSet(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
 	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	min := uint256.MustFromBig(params.MinValidatorStakeWei())

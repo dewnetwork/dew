@@ -15,8 +15,7 @@ import (
 
 // BenchmarkDewTxTransfer measures native system token transfers.
 func BenchmarkDewTxTransfer(b *testing.B) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(b)
 	st := state.New(mdb)
 	key, err := crypto.GenerateKey()
 	if err != nil {

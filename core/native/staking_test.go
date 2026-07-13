@@ -12,7 +12,7 @@ import (
 )
 
 func TestStakingModule_ActiveSetRanking(t *testing.T) {
-	s := state.New(db.NewMemoryDB())
+	s := state.New(db.OpenTest(t))
 	cfg := DefaultStakingConfig()
 	cfg.MinSelfStake = big.NewInt(1000)
 	cfg.ActiveCap = 2
@@ -36,7 +36,7 @@ func TestStakingModule_ActiveSetRanking(t *testing.T) {
 }
 
 func TestStakingModule_JailDropsPower(t *testing.T) {
-	s := state.New(db.NewMemoryDB())
+	s := state.New(db.OpenTest(t))
 	cfg := DefaultStakingConfig()
 	cfg.MinSelfStake = big.NewInt(1)
 	m := NewStakingModule(s, cfg)
@@ -55,7 +55,7 @@ func TestStakingModule_JailDropsPower(t *testing.T) {
 }
 
 func TestStakingModule_Unbond(t *testing.T) {
-	s := state.New(db.NewMemoryDB())
+	s := state.New(db.OpenTest(t))
 	cfg := DefaultStakingConfig()
 	cfg.MinSelfStake = big.NewInt(50)
 	m := NewStakingModule(s, cfg)

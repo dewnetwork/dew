@@ -17,8 +17,7 @@ import (
 )
 
 func TestExecutor_DeployERC20_Transfer_Events(t *testing.T) {
-	mdb := db.NewMemoryDB()
-	defer mdb.Close()
+	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
 
 	deployer := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
@@ -149,7 +148,7 @@ func TestExecutor_DeployERC20_Transfer_Events(t *testing.T) {
 }
 
 func TestExecutor_FailedTx_RevertsState(t *testing.T) {
-	mdb := db.NewMemoryDB()
+	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
 
 	from := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
@@ -218,7 +217,7 @@ func TestExecutor_FailedTx_RevertsState(t *testing.T) {
 }
 
 func TestBridge_ImplementsSnapshotRevert(t *testing.T) {
-	mdb := db.NewMemoryDB()
+	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
 	addr := crypto.MustHexToAddress("0x0000000000000000000000000000000000000001")
 	statedb.SetBalance(addr, uint256.NewInt(100))

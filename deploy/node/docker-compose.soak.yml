@@ -50,8 +50,6 @@ services:
       - run
       - --genesis
       - /etc/dew/genesis.json
-      - --datadir
-      - /var/lib/dew
       - --http.addr
       - "0.0.0.0"
       - --http.port
@@ -85,8 +83,6 @@ services:
       - run
       - --genesis
       - /etc/dew/genesis.json
-      - --datadir
-      - /var/lib/dew
       - --http.addr
       - "0.0.0.0"
       - --http.port
@@ -120,8 +116,6 @@ services:
       - run
       - --genesis
       - /etc/dew/genesis.json
-      - --datadir
-      - /var/lib/dew
       - --http.addr
       - "0.0.0.0"
       - --http.port
@@ -155,8 +149,6 @@ services:
       - run
       - --genesis
       - /etc/dew/genesis.json
-      - --datadir
-      - /var/lib/dew
       - --no-auto-mine
       - --http.addr
       - "0.0.0.0"

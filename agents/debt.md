@@ -6,7 +6,18 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 
 **Phase C (C1–C6) complete** — freeze tag `public-testnet-v1`. See [public-testnet.md](../docs/development/public-testnet.md).
 
-**Phase D** — D1 explorer + D2 faucet done; D3a + D3b + D3a residual done → D3d Path A / D3c / D3e when needed. Design spec: [d3-scale.md](../docs/development/d3-scale.md). Acceptance in [phases.md](../docs/development/phases.md).
+**Phase D** — D1 explorer + D2 faucet done; D3a + D3b + D3a residual done; **durable chaindata done** → D3d Path A / D3c / D3e when needed. Design: [durable-chaindata.md](../docs/development/durable-chaindata.md). D3 scale: [d3-scale.md](../docs/development/d3-scale.md). Acceptance in [phases.md](../docs/development/phases.md).
+
+## Durable chaindata
+
+- [x] Pebble backend (`db.PebbleDB`) behind existing `db.Database`
+- [x] Persist headers/bodies/canonical/receipts/tx index + tip under `<datadir>/chaindata`
+- [x] Atomic batch with flat state (`a`/`s`/`c`) on seal + `ImportCommittedBlock`
+- [x] `node.Open` + restart recovery; genesis mismatch refuses start
+- [x] `dew run --datadir` opens chaindata; compose volumes for Path B / multi
+- [x] **Not** merging peers into chaindata — keep `<datadir>/peers.json` (D3b)
+- [x] Pebble is the only DB backend; MemoryDB removed; `--datadir` defaults to `/var/lib/dew`
+- [ ] Optional: lazy hydrate / log index keys when tip is very large
 
 ## C1 residuals
 

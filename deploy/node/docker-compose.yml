@@ -30,6 +30,8 @@ services:
       - "0.0.0.0"
       - --http.port
       - "8545"
+    volumes:
+      - dew-rpc-data:/var/lib/dew
     # No host ports — reachable only via dew_internal (proxy).
     # Port must stay 8545 to match nginx/dew-rpc.docker.conf upstream.
     expose:
@@ -62,3 +64,6 @@ networks:
     internal: true
   dew_edge:
     driver: bridge
+
+volumes:
+  dew-rpc-data:

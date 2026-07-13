@@ -22,10 +22,7 @@ func testGenesis(t *testing.T) *config.Genesis {
 }
 
 func TestSetAutoMine_AdmitOnly(t *testing.T) {
-	n, err := node.NewFromGenesis(testGenesis(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, testGenesis(t))
 	n.SetAutoMine(false)
 	before := n.BlockNumber()
 
@@ -61,10 +58,7 @@ func TestSetAutoMine_AdmitOnly(t *testing.T) {
 }
 
 func TestImportCommittedBlock_Idempotent(t *testing.T) {
-	src, err := node.NewFromGenesis(testGenesis(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	src := node.OpenTest(t, testGenesis(t))
 	key, err := ethcrypto.HexToECDSA(devnet.PrivHex0)
 	if err != nil {
 		t.Fatal(err)
@@ -96,10 +90,7 @@ func TestImportCommittedBlock_Idempotent(t *testing.T) {
 		t.Fatal("block 1 has no transactions")
 	}
 
-	dst, err := node.NewFromGenesis(testGenesis(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	dst := node.OpenTest(t, testGenesis(t))
 	if dst.GetNonce(devnet.Faucet().Address) != 0 {
 		t.Fatalf("nonce before import=%d want 0", dst.GetNonce(devnet.Faucet().Address))
 	}

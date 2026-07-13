@@ -12,10 +12,7 @@ import (
 )
 
 func TestBuildBlockFromPool_IncludesPendingTx(t *testing.T) {
-	n, err := node.NewFromGenesis(testGenesis(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	n := node.OpenTest(t, testGenesis(t))
 	n.SetAutoMine(false)
 
 	key, err := ethcrypto.HexToECDSA(devnet.PrivHex0)

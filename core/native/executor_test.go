@@ -16,8 +16,7 @@ import (
 
 func setup(t *testing.T) (*state.StateDB, *ecdsa.PrivateKey, crypto.Address, crypto.Address, crypto.Address) {
 	t.Helper()
-	mdb := db.NewMemoryDB()
-	t.Cleanup(func() { mdb.Close() })
+	mdb := db.OpenTest(t)
 	s := state.New(mdb)
 	key, err := crypto.GenerateKey()
 	if err != nil {
