@@ -49,7 +49,7 @@ Owned by D3 — see [d3-scale.md](../docs/development/d3-scale.md) (D3a / D3b).
 - [x] Path B public surface live (July 2026) — `https://rpc-dew.fadosoft.com`, `https://faucet-dew.fadosoft.com`, `https://explorer-dew.fadosoft.com`; bootnodes n/a for path B
 - [ ] Publish real public bootnode hostnames / multiaddrs when Path A multi-host launches (process documented; values not in-repo)
 - [x] Production faucet service (rate limits, captcha) outside monorepo core — `faucet/` + `cmd/dewfaucet` (D2); see [docs/development/faucet.md](../docs/development/faucet.md)
-- [ ] Longer continuous fuzz in CI (`-fuzztime` schedules)
+- [x] Longer continuous fuzz in CI (`-fuzztime` schedules) — [`.github/workflows/security.yml`](../.github/workflows/security.yml) (PR short; weekly/manual 2m+1m)
 
 ## Deferred / mainnet
 

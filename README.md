@@ -144,7 +144,9 @@ Layout after merge:
 | :--- | :--- |
 | [`.github/workflows/ci-go.yml`](./.github/workflows/ci-go.yml) | Go vet, tests, binary builds (PR + `main`) |
 | [`.github/workflows/ci-web.yml`](./.github/workflows/ci-web.yml) | Docs/landing site + explorer + faucet-web builds (PR + `main`) |
+| [`.github/workflows/security.yml`](./.github/workflows/security.yml) | govulncheck, fuzz, pnpm audit, CodeQL, Trivy (PR + `main` + weekly) |
 | [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) | Deploy combined `dist/` to GitHub Pages (`main` only) |
+| [`.github/dependabot.yml`](./.github/dependabot.yml) | Weekly dependency update PRs (Go / npm / Actions) |
 
 Layout notes: [docs/development/go-project-layout.md](./docs/development/go-project-layout.md) § CI.
 

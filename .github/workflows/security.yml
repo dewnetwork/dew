@@ -1,0 +1,193 @@
+# Security lane: vulns, short fuzz, dependency audit, CodeQL, FS scan.
+# Complements ci-go.yml (unit/security package tests) — does not replace them.
+# See docs/development/go-project-layout.md § CI and agents/debt.md C6.
+
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly long-ish fuzz + vuln refresh (UTC Monday 06:00).
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  govulncheck:
+    name: Go vuln check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Prefer latest 1.23.x patch for the scan toolchain (stdlib CVEs fixed after 1.23.2).
+      # Module language version stays in go.mod; this only selects the runner toolchain.
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          check-latest: true
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: govulncheck
+        run: govulncheck ./...
+
+  fuzz:
+    name: Short codec / RPC fuzz
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          check-latest: true
+          cache: true
+
+      - name: Fuzz duration
+        id: fuzz
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dewtx=2m" >> "$GITHUB_OUTPUT"
+            echo "rpc=1m" >> "$GITHUB_OUTPUT"
+          else
+            # PR / push: keep short so the gate stays cheap.
+            echo "dewtx=20s" >> "$GITHUB_OUTPUT"
+            echo "rpc=10s" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fuzz DewTx unmarshal
+        run: go test ./core/types/ -fuzz=FuzzDewTxUnmarshal -fuzztime=${{ steps.fuzz.outputs.dewtx }}
+
+      - name: Fuzz RPC hex decode
+        run: go test ./rpc/ -fuzz=FuzzDecodeBytes -fuzztime=${{ steps.fuzz.outputs.rpc }}
+
+  npm-audit:
+    name: npm / pnpm audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: monorepo
+            dir: .
+            lock: pnpm-lock.yaml
+          - name: web
+            dir: web
+            lock: web/pnpm-lock.yaml
+          - name: explorer
+            dir: explorer
+            lock: explorer/pnpm-lock.yaml
+          - name: faucet-web
+            dir: faucet-web
+            lock: faucet-web/pnpm-lock.yaml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Version from root package.json "packageManager" (do not also set version:).
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: ${{ matrix.lock }}
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        working-directory: ${{ matrix.dir }}
+
+      - name: Audit (high+)
+        # Fail on high/critical only — moderate noise is tracked via Dependabot PRs.
+        run: pnpm audit --audit-level=high
+        working-directory: ${{ matrix.dir }}
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: go, javascript
+          queries: security-extended
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          check-latest: true
+          cache: true
+
+      # Manual Go build for reliable CodeQL extraction; JS uses autobuild.
+      - name: Build Go (CodeQL extract)
+        run: |
+          go build -o /tmp/dew ./cmd/dew
+          go build -o /tmp/dewcli ./cmd/dewcli
+          go build -o /tmp/dewfaucet ./cmd/dewfaucet
+
+      - name: Autobuild (JS)
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:multi"
+
+  trivy:
+    name: Filesystem vuln scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy (fs)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-results.sarif
+          # Skip huge generated / vendor trees; focus on source + lockfiles + deploy.
+          skip-dirs: node_modules,dist,web/dist,explorer/dist,faucet-web/dist,docs/.vitepress/dist
+
+      - name: Upload Trivy SARIF
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-fs
