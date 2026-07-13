@@ -4,15 +4,23 @@ import {
   DEFAULT_EXPLORER,
   DEFAULT_GUESTBOOK,
   DEFAULT_RPC_URL,
+  MAX_MESSAGE_BYTES,
 } from "./config";
 import {
   explorerAddressUrl,
+  explorerTxUrl,
   fetchChainId,
   fetchEntries,
   formatTs,
   shortAddr,
   type GuestbookEntry,
 } from "./rpc";
+import {
+  connectWallet,
+  ensureChain,
+  hasInjectedProvider,
+  signGuestbook,
+} from "./wallet";
 
 export default function App() {
   const [rpcUrl, setRpcUrl] = useState(DEFAULT_RPC_URL);
@@ -27,15 +35,18 @@ export default function App() {
   const [liveChainId, setLiveChainId] = useState<number | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
+  const [account, setAccount] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [signing, setSigning] = useState(false);
+  const [signError, setSignError] = useState<string | null>(null);
+  const [lastTx, setLastTx] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const cid = await fetchChainId(rpcUrl.trim());
       setLiveChainId(cid);
-      if (cid !== chainId) {
-        // Still attempt reads; warn via error banner soft note
-      }
       const { total: t, entries: list } = await fetchEntries(
         rpcUrl.trim(),
         guestbook.trim(),
@@ -57,7 +68,65 @@ export default function App() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const eth = window.ethereum;
+    if (!eth?.on) return;
+    const onAccounts = (...args: unknown[]) => {
+      const accs = args[0] as string[] | undefined;
+      setAccount(accs?.[0] ?? null);
+    };
+    const onChain = () => {
+      void load();
+    };
+    eth.on("accountsChanged", onAccounts);
+    eth.on("chainChanged", onChain);
+    return () => {
+      eth.removeListener?.("accountsChanged", onAccounts);
+      eth.removeListener?.("chainChanged", onChain);
+    };
+  }, [load]);
+
+  const onConnect = async () => {
+    setSignError(null);
+    try {
+      await ensureChain(chainId, rpcUrl.trim(), explorer.trim());
+      const addr = await connectWallet();
+      setAccount(addr);
+    } catch (e) {
+      setSignError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const onSign = async () => {
+    setSignError(null);
+    setLastTx(null);
+    setSigning(true);
+    try {
+      if (!account) {
+        await ensureChain(chainId, rpcUrl.trim(), explorer.trim());
+        const addr = await connectWallet();
+        setAccount(addr);
+      }
+      const hash = await signGuestbook(
+        guestbook.trim(),
+        message,
+        chainId,
+        rpcUrl.trim(),
+        explorer.trim(),
+      );
+      setLastTx(hash);
+      setMessage("");
+      await load();
+    } catch (e) {
+      setSignError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSigning(false);
+    }
+  };
+
   const contractHref = explorerAddressUrl(explorer, guestbook.trim());
+  const msgBytes = new TextEncoder().encode(message).length;
+  const walletOk = hasInjectedProvider();
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-8 px-4 py-10 sm:px-6">
@@ -72,20 +141,27 @@ export default function App() {
               Guestbook
             </h1>
             <p className="mt-1 max-w-md text-sm text-muted">
-              Read-only on-chain messages via JSON-RPC. Deploy or sign with Foundry —{" "}
+              Read messages on-chain and sign with MetaMask (chain {chainId}). Faucet:{" "}
               <a
                 className="text-cyan underline-offset-2 hover:underline"
-                href="https://github.com/dewnetwork/dew/blob/main/docs/ops/recipes.md"
+                href="https://faucet-dew.fadosoft.com"
                 target="_blank"
                 rel="noreferrer"
               >
-                recipes
+                faucet-dew.fadosoft.com
               </a>
               .
             </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void onConnect()}
+            className="rounded-lg border border-line-strong px-4 py-2 text-sm font-medium text-frost transition hover:border-cyan hover:text-cyan"
+          >
+            {account ? shortAddr(account) : "Connect wallet"}
+          </button>
           <button
             type="button"
             onClick={() => void load()}
@@ -104,6 +180,61 @@ export default function App() {
           </a>
         </div>
       </header>
+
+      <section
+        className="rounded-2xl border border-line bg-panel/80 p-4 shadow-xl backdrop-blur-sm sm:p-5"
+        aria-label="Sign message"
+      >
+        <h2 className="mb-3 text-xs font-semibold tracking-wider text-muted uppercase">
+          Sign on-chain
+        </h2>
+        {!walletOk && (
+          <p className="mb-3 text-sm text-gold">
+            No injected wallet detected. Install MetaMask, or use Foundry{" "}
+            <code className="font-mono text-xs">SignGuestbook</code>.
+          </p>
+        )}
+        <textarea
+          className="min-h-24 w-full rounded-lg border border-line bg-ink-soft px-3 py-2 text-sm text-frost outline-none focus:border-cyan"
+          placeholder="Write a short message (max 280 bytes)…"
+          value={message}
+          maxLength={400}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <span
+            className={`font-mono text-xs ${msgBytes > MAX_MESSAGE_BYTES ? "text-danger" : "text-muted"}`}
+          >
+            {msgBytes} / {MAX_MESSAGE_BYTES} bytes
+          </span>
+          <button
+            type="button"
+            onClick={() => void onSign()}
+            disabled={signing || !message.trim() || msgBytes > MAX_MESSAGE_BYTES}
+            className="rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-frost transition hover:bg-cyan-mid disabled:opacity-50"
+          >
+            {signing ? "Confirm in wallet…" : "Sign with MetaMask"}
+          </button>
+        </div>
+        {signError && (
+          <p role="alert" className="mt-3 text-sm text-danger">
+            {signError}
+          </p>
+        )}
+        {lastTx && (
+          <p className="mt-3 text-sm text-success">
+            Posted.{" "}
+            <a
+              className="font-mono underline-offset-2 hover:underline"
+              href={explorerTxUrl(explorer, lastTx)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {shortAddr(lastTx)}
+            </a>
+          </p>
+        )}
+      </section>
 
       <section
         className="rounded-2xl border border-line bg-panel/80 p-4 shadow-xl backdrop-blur-sm sm:p-5"
@@ -153,21 +284,13 @@ export default function App() {
         <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate">
           <span>
             Live chain:{" "}
-            <span className="font-mono text-frost">
-              {liveChainId ?? "—"}
-            </span>
+            <span className="font-mono text-frost">{liveChainId ?? "—"}</span>
             {liveChainId != null && liveChainId !== chainId && (
               <span className="ml-2 text-gold">≠ expected {chainId}</span>
             )}
           </span>
-          {updatedAt && (
-            <span>
-              Updated {updatedAt.toLocaleTimeString()}
-            </span>
-          )}
-          <span className="font-mono text-muted">
-            totalEntries = {total}
-          </span>
+          {updatedAt && <span>Updated {updatedAt.toLocaleTimeString()}</span>}
+          <span className="font-mono text-muted">totalEntries = {total}</span>
         </div>
       </section>
 
@@ -182,17 +305,13 @@ export default function App() {
 
       <section aria-label="Entries" className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-lg font-semibold text-frost">
-            Messages
-          </h2>
+          <h2 className="font-display text-lg font-semibold text-frost">Messages</h2>
           <p className="text-xs text-muted">Newest first · max 200</p>
         </div>
 
         {!loading && !error && entries.length === 0 && (
           <p className="rounded-xl border border-line bg-panel/50 px-4 py-8 text-center text-sm text-muted">
-            No entries yet. Deploy and{" "}
-            <code className="font-mono text-cyan">sign()</code> via Foundry
-            recipes.
+            No entries yet. Connect MetaMask and sign above, or use Foundry recipes.
           </p>
         )}
 
@@ -228,7 +347,7 @@ export default function App() {
       </section>
 
       <footer className="mt-auto border-t border-line pt-6 text-center text-xs text-muted">
-        Chain ID {chainId} · read-only eth_call ·{" "}
+        Chain ID {chainId} · eth_call + MetaMask ·{" "}
         <a
           className="text-slate hover:text-cyan"
           href="https://faucet-dew.fadosoft.com"
@@ -238,12 +357,7 @@ export default function App() {
           faucet
         </a>
         {" · "}
-        <a
-          className="text-slate hover:text-cyan"
-          href={explorer}
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a className="text-slate hover:text-cyan" href={explorer} target="_blank" rel="noreferrer">
           explorer
         </a>
       </footer>

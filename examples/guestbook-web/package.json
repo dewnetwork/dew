@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Read-only Dew Guestbook UI — eth_call against public-testnet-v1 or local RPC",
+  "description": "Dew Guestbook UI — eth_call + MetaMask sign on public-testnet-v1",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "vite",

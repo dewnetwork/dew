@@ -53,6 +53,10 @@ export function explorerAddressUrl(base: string, addr: string): string {
   return `${base.replace(/\/$/, "")}/address/${addr}`;
 }
 
+export function explorerTxUrl(base: string, hash: string): string {
+  return `${base.replace(/\/$/, "")}/tx/${hash}`;
+}
+
 export function shortAddr(addr: string): string {
   if (addr.length < 12) return addr;
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;

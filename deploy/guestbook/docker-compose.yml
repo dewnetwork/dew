@@ -1,0 +1,19 @@
+# Standalone Guestbook SPA.
+# From repo root:
+#   cp deploy/guestbook/guestbook.env.example deploy/guestbook/guestbook.env
+#   docker compose -f deploy/guestbook/docker-compose.yml --env-file deploy/guestbook/guestbook.env up --build -d
+
+services:
+  guestbook:
+    build:
+      context: ../..
+      dockerfile: deploy/guestbook/Dockerfile
+      args:
+        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-https://rpc-dew.fadosoft.com}
+        - PUBLIC_GUESTBOOK=${PUBLIC_GUESTBOOK:-0x83bB4E539BE46503481E66094b01b854990BF84a}
+        - PUBLIC_EXPLORER_URL=${PUBLIC_EXPLORER_URL:-https://explorer-dew.fadosoft.com}
+        - PUBLIC_CHAIN_ID=${PUBLIC_CHAIN_ID:-2205}
+    container_name: dew-guestbook
+    ports:
+      - "${GUESTBOOK_BIND:-127.0.0.1}:${GUESTBOOK_PORT:-8083}:80"
+    restart: unless-stopped

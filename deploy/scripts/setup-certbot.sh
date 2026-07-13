@@ -11,15 +11,17 @@
 #   A/AAAA  rpc-dew.fadosoft.com       → this host
 #   A/AAAA  faucet-dew.fadosoft.com    → this host
 #   A/AAAA  explorer-dew.fadosoft.com  → this host
+#   A/AAAA  guestbook-dew.fadosoft.com → this host
 #
 # Zone wildcard (*.fadosoft.com) needs DNS-01, not this script — see deploy/README.md.
-# Default here is a multi-name cert for the three *-dew hostnames above.
+# Default here is a multi-name cert for the four *-dew hostnames above.
 
 set -euo pipefail
 
 RPC_HOST="${RPC_HOST:-rpc-dew.fadosoft.com}"
 FAUCET_HOST="${FAUCET_HOST:-faucet-dew.fadosoft.com}"
 EXPLORER_HOST="${EXPLORER_HOST:-explorer-dew.fadosoft.com}"
+GUESTBOOK_HOST="${GUESTBOOK_HOST:-guestbook-dew.fadosoft.com}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 
 if [[ "$(id -u)" -ne 0 ]]; then
@@ -46,6 +48,7 @@ CERTBOT_ARGS=(
   -d "${RPC_HOST}"
   -d "${FAUCET_HOST}"
   -d "${EXPLORER_HOST}"
+  -d "${GUESTBOOK_HOST}"
   --agree-tos
   --redirect
   --non-interactive
@@ -58,7 +61,7 @@ else
   echo "warn: CERTBOT_EMAIL unset — using --register-unsafely-without-email" >&2
 fi
 
-echo "Requesting certificates for ${RPC_HOST}, ${FAUCET_HOST}, ${EXPLORER_HOST}…"
+echo "Requesting certificates for ${RPC_HOST}, ${FAUCET_HOST}, ${EXPLORER_HOST}, ${GUESTBOOK_HOST}…"
 certbot "${CERTBOT_ARGS[@]}"
 
 # Auto-renew (Ubuntu/Debian package provides certbot.timer)

@@ -80,16 +80,19 @@ Public explorer: `https://explorer-dew.fadosoft.com/address/<GUESTBOOK>` (or tx 
 
 **Why this demo:** one contract, faucet DEW, MetaMask-friendly, visible on explorer — good “I used Dew” story without bridges or staking.
 
-### Read UI (browser)
+### Web UI (read + MetaMask sign)
 
 Public Guestbook (example deploy): `0x83bB4E539BE46503481E66094b01b854990BF84a`
 
 ```bash
 pnpm guestbook:dev
-# http://localhost:4323 — defaults to public RPC + address above
+# http://localhost:4323 — Connect wallet → Sign · or read-only Refresh
 ```
 
-SPA source: [examples/guestbook-web](../../examples/guestbook-web/). Sign still uses Foundry (`SignGuestbook`); the UI only **reads**.
+Public host (after ops DNS + compose): `https://guestbook-dew.fadosoft.com`  
+Packaging: [deploy/guestbook](../../deploy/guestbook/) · full stack edge in [deploy/docker-compose.yml](../../deploy/docker-compose.yml).
+
+SPA: [examples/guestbook-web](../../examples/guestbook-web/).
 
 ---
 

@@ -151,9 +151,10 @@ Full stack in one compose file: backends **internal** + `edge` on **:80/:443** +
 | `rpc-dew.fadosoft.com` | `dew-node:8545` | JSON-RPC (rate limit, POST/OPTIONS) |
 | `faucet-dew.fadosoft.com` | `faucet-frontend:80` | Faucet SPA + `/api` |
 | `explorer-dew.fadosoft.com` | `explorer:80` | Block explorer SPA |
+| `guestbook-dew.fadosoft.com` | `guestbook:80` | Guestbook SPA (read + MetaMask sign) |
 
 ```bash
-# 1) DNS A/AAAA: rpc / faucet / explorer → this host (orange-cloud OK with DNS-01)
+# 1) DNS A/AAAA: rpc / faucet / explorer / guestbook → this host (orange-cloud OK with DNS-01)
 
 # 2) Firewall: 22, 80, 443 only (not 8545)
 
@@ -179,8 +180,11 @@ node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com
 | `faucet-backend` | Faucet API | none |
 | `faucet-frontend` | Faucet SPA | none |
 | `explorer` | Explorer SPA | none |
+| `guestbook` | Guestbook SPA | none |
 | **`edge`** | nginx reverse proxy + TLS | **`:80`, `:443`** |
 | **`certbot`** | LE issue/renew (`CERTBOT_AUTH`) or idle if disabled | none |
+
+**Guestbook:** set `PUBLIC_GUESTBOOK` in `deploy/.env` to the deployed contract. After adding the hostname, expand the LE cert (or re-issue) so SAN includes `guestbook-dew.fadosoft.com`. Standalone: [guestbook/docker-compose.yml](./guestbook/docker-compose.yml).
 
 Configs: [nginx/dew-edge.docker.conf](./nginx/dew-edge.docker.conf), [nginx/certbot-entrypoint.sh](./nginx/certbot-entrypoint.sh).
 
@@ -277,6 +281,7 @@ docker compose -f deploy/docker-compose.yml logs -f certbot edge
 | Faucet web | `https://faucet-dew.fadosoft.com` |
 | Faucet API | `https://faucet-dew.fadosoft.com/api` |
 | Explorer | `https://explorer-dew.fadosoft.com` |
+| Guestbook | `https://guestbook-dew.fadosoft.com` |
 
 Local smoke **before** DNS/TLS (Host header + edge :80; HTTPS redirects until real certs):
 

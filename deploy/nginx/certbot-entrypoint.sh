@@ -23,6 +23,7 @@ WEBROOT="${CERTBOT_WEBROOT:-/var/www/certbot}"
 RPC_HOST="${RPC_HOST:-rpc-dew.fadosoft.com}"
 FAUCET_HOST="${FAUCET_HOST:-faucet-dew.fadosoft.com}"
 EXPLORER_HOST="${EXPLORER_HOST:-explorer-dew.fadosoft.com}"
+GUESTBOOK_HOST="${GUESTBOOK_HOST:-guestbook-dew.fadosoft.com}"
 CERT_PRIMARY="${CERT_PRIMARY:-${RPC_HOST}}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 CERTBOT_STAGING="${CERTBOT_STAGING:-}"
@@ -68,7 +69,7 @@ run_certbot() {
 }
 
 issue_cert() {
-  echo "certbot: requesting certificate for ${RPC_HOST}, ${FAUCET_HOST}, ${EXPLORER_HOST} (cert-name=${CERT_PRIMARY}, auth=${CERTBOT_AUTH})"
+  echo "certbot: requesting certificate for ${RPC_HOST}, ${FAUCET_HOST}, ${EXPLORER_HOST}, ${GUESTBOOK_HOST} (cert-name=${CERT_PRIMARY}, auth=${CERTBOT_AUTH})"
 
   case "${CERTBOT_AUTH}" in
     webroot)
@@ -77,6 +78,7 @@ issue_cert() {
         -d "${RPC_HOST}" \
         -d "${FAUCET_HOST}" \
         -d "${EXPLORER_HOST}" \
+        -d "${GUESTBOOK_HOST}" \
         --cert-name "${CERT_PRIMARY}" \
         --agree-tos \
         --non-interactive \
@@ -91,6 +93,7 @@ issue_cert() {
         -d "${RPC_HOST}" \
         -d "${FAUCET_HOST}" \
         -d "${EXPLORER_HOST}" \
+        -d "${GUESTBOOK_HOST}" \
         --cert-name "${CERT_PRIMARY}" \
         --agree-tos \
         --non-interactive \

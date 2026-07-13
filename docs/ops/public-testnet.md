@@ -23,6 +23,7 @@ Private multi-host ops remain in [Private multi-host testnet](./private-testnet.
 | JSON-RPC | `https://rpc-dew.fadosoft.com` |
 | Block explorer | `https://explorer-dew.fadosoft.com` |
 | Faucet | `https://faucet-dew.fadosoft.com` |
+| Guestbook | `https://guestbook-dew.fadosoft.com` (ops: deploy SPA; contract set via `PUBLIC_GUESTBOOK`) |
 | Bootnodes | **n/a** (path B — no public P2P dial list) |
 
 | Item | Value |

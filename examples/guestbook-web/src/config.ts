@@ -16,7 +16,10 @@ export const DEFAULT_CHAIN_ID = Number.parseInt(
   10,
 ) || 2205;
 
+export const MAX_MESSAGE_BYTES = 280;
+
 export const GUESTBOOK_ABI = [
   "function totalEntries() view returns (uint256)",
   "function getEntry(uint256 id) view returns (address author, uint64 timestamp, string message)",
+  "function sign(string message) returns (uint256 id)",
 ] as const;

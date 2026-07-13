@@ -80,6 +80,7 @@ deploy/node/soak.env
 deploy/node/public.env
 deploy/faucet/faucet.env
 deploy/explorer/explorer.env
+deploy/guestbook/guestbook.env
 deploy/.env
 *.pem
 *.key

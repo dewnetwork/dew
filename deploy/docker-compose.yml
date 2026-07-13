@@ -12,6 +12,7 @@
 #   https://rpc-dew.fadosoft.com
 #   https://faucet-dew.fadosoft.com
 #   https://explorer-dew.fadosoft.com
+#   https://guestbook-dew.fadosoft.com
 #
 # Only the edge service publishes host ports (80/443). Backends stay on dew_network.
 
@@ -117,6 +118,23 @@ services:
     networks:
       - dew_network
 
+  # 4b. Guestbook SPA (browser → PUBLIC_RPC_URL + MetaMask)
+  guestbook:
+    build:
+      context: ..
+      dockerfile: deploy/guestbook/Dockerfile
+      args:
+        - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-https://rpc-dew.fadosoft.com}
+        - PUBLIC_GUESTBOOK=${PUBLIC_GUESTBOOK:-0x83bB4E539BE46503481E66094b01b854990BF84a}
+        - PUBLIC_EXPLORER_URL=${PUBLIC_EXPLORER_URL:-https://explorer-dew.fadosoft.com}
+        - PUBLIC_CHAIN_ID=${PUBLIC_CHAIN_ID:-2205}
+    container_name: dew-guestbook
+    expose:
+      - "80"
+    restart: unless-stopped
+    networks:
+      - dew_network
+
   # 5. Public edge — only host-published ports (:80 / :443)
   edge:
     image: ${NGINX_IMAGE:-nginx:1.27-alpine}
@@ -125,6 +143,7 @@ services:
       - dew-node
       - faucet-frontend
       - explorer
+      - guestbook
     environment:
       - CERT_PRIMARY=${CERT_PRIMARY:-rpc-dew.fadosoft.com}
       # Optional host PEMs: mount a dir at /etc/nginx/origin-certs (see deploy/README.md)
@@ -159,6 +178,7 @@ services:
       - RPC_HOST=${RPC_HOST:-rpc-dew.fadosoft.com}
       - FAUCET_HOST=${FAUCET_HOST:-faucet-dew.fadosoft.com}
       - EXPLORER_HOST=${EXPLORER_HOST:-explorer-dew.fadosoft.com}
+      - GUESTBOOK_HOST=${GUESTBOOK_HOST:-guestbook-dew.fadosoft.com}
       - CERTBOT_ISSUE_RETRY_SEC=${CERTBOT_ISSUE_RETRY_SEC:-120}
       - CERTBOT_RENEW_INTERVAL_SEC=${CERTBOT_RENEW_INTERVAL_SEC:-43200}
       - CERTBOT_DNS_PROPAGATION_SECONDS=${CERTBOT_DNS_PROPAGATION_SECONDS:-30}
