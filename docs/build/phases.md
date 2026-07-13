@@ -213,7 +213,7 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Packages:** `mempool/`, `node/` (`SendRawTransaction` / `SendDewRawTransaction` admit then optional auto-mine)
 
-**Notes:** Unified pool (`mempool.Pool`) for EVM + DewTx. Defaults: global 4096, per-sender 16, max tx 128 KiB, min gas 1 gwei, min tip 1 wei, min Dew fee = `params.MinDewTxFeeWei`, RBF +10% price bump (`PriceBumpPercent=0` disables RBF). Under global pressure, a strictly cheaper pending tx may be evicted for a higher-priced newcomer. **Multi-tx (C1 residual, July 2026):** `DefaultMaxTxsPerBlock=64`; fee auction over continuous per-sender nonce chains; EVM + DewTx nonce-gap queues (`nonce >= account`); auto-mine packs ready pending into one block for both paths. DewTx remains receipt/index-backed with empty EVM body until a tagged-union body (out of public-testnet-v1 wire freeze).
+**Notes:** Unified pool (`mempool.Pool`) for EVM + DewTx. Defaults: global 4096, per-sender 16, max tx 128 KiB, min gas 1 gwei, min tip 1 wei, min Dew fee = `params.MinDewTxFeeWei`, RBF +10% price bump (`PriceBumpPercent=0` disables RBF). Under global pressure, a strictly cheaper pending tx may be evicted for a higher-priced newcomer. **Multi-tx (C1 residual, July 2026):** `DefaultMaxTxsPerBlock=64`; fee auction over continuous per-sender nonce chains; EVM + DewTx nonce-gap queues (`nonce >= account`); auto-mine packs ready pending into one block for both paths. Proposal path skips hard-failing sims and re-selects (`simulateAndFilterLocked`). DewTx remains receipt/index-backed with empty EVM body until a tagged-union body (out of public-testnet-v1 wire freeze).
 
 ---
 

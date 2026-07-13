@@ -409,7 +409,7 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 // Caller must hold n.mu. No-op (nil error) if nothing is executable yet.
 func (n *Node) sealReadyFromPoolLocked() error {
 	parent := n.header.Copy()
-	txs := n.selectPendingTxsForBlockLocked(DefaultMaxTxsPerBlock, parent.GasLimit)
+	txs := n.selectPendingTxsForBlockLocked(DefaultMaxTxsPerBlock, parent.GasLimit, nil)
 	if len(txs) == 0 {
 		return nil
 	}

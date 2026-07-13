@@ -322,3 +322,118 @@ func TestSendDewRawTransaction_NonceTooLow(t *testing.T) {
 		t.Fatal("expected nonce too low")
 	}
 }
+
+// TestBuildBlockFromPool_PartialFilter keeps a good tx when a later bad candidate fails sim.
+func TestBuildBlockFromPool_PartialFilter(t *testing.T) {
+	n := node.OpenTest(t, testGenesis(t))
+	n.SetAutoMine(false)
+
+	user2, err := ethcrypto.HexToECDSA(devnet.PrivHex2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	to := ethcrypto.PubkeyToAddress(user2.PublicKey)
+	chainID := n.ChainID()
+
+	// Funded Anvil #0 — executable.
+	good := signLegacyTransfer(t, devnet.PrivHex0, chainID, 0, to, big.NewInt(1), big.NewInt(1_000_000_000))
+	// Unfunded random key — admits to pool, fails at simulation (insufficient balance for gas).
+	badKey, err := ethcrypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	badTx := ethtypes.NewTx(&ethtypes.LegacyTx{
+		Nonce:    0,
+		GasPrice: big.NewInt(1_000_000_000),
+		Gas:      21_000,
+		To:       &to,
+		Value:    big.NewInt(1),
+	})
+	badSigned, err := ethtypes.SignTx(badTx, ethtypes.LatestSignerForChainID(chainID), badKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	badRaw, err := badSigned.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := n.SendRawTransaction(good); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := n.SendRawTransaction(badRaw); err != nil {
+		t.Fatal(err)
+	}
+
+	parent := n.CurrentHeader()
+	blk, err := n.BuildBlockFromPool(parent.Number+1, parent, parent.Proposer, 8)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(blk.Transactions()) != 1 {
+		t.Fatalf("txs=%d want 1 (good kept, bad filtered)", len(blk.Transactions()))
+	}
+	root, err := n.ValidateAndExecuteBlock(parent, blk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root != blk.Header().StateRoot {
+		t.Fatalf("state root mismatch")
+	}
+}
+
+// TestBuildBlockFromPool_ReselectAfterAllFail: high-priced unfunded tx wins maxTxs=1,
+// fails sim, re-select should pick the lower-priced funded tx.
+func TestBuildBlockFromPool_ReselectAfterAllFail(t *testing.T) {
+	n := node.OpenTest(t, testGenesis(t))
+	n.SetAutoMine(false)
+
+	user2, err := ethcrypto.HexToECDSA(devnet.PrivHex2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	to := ethcrypto.PubkeyToAddress(user2.PublicKey)
+	chainID := n.ChainID()
+
+	good := signLegacyTransfer(t, devnet.PrivHex0, chainID, 0, to, big.NewInt(1), big.NewInt(1_000_000_000))
+
+	badKey, err := ethcrypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	badTx := ethtypes.NewTx(&ethtypes.LegacyTx{
+		Nonce:    0,
+		GasPrice: big.NewInt(2_000_000_000), // higher than good → selected first when maxTxs=1
+		Gas:      21_000,
+		To:       &to,
+		Value:    big.NewInt(1),
+	})
+	badSigned, err := ethtypes.SignTx(badTx, ethtypes.LatestSignerForChainID(chainID), badKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	badRaw, err := badSigned.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := n.SendRawTransaction(good); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := n.SendRawTransaction(badRaw); err != nil {
+		t.Fatal(err)
+	}
+
+	parent := n.CurrentHeader()
+	blk, err := n.BuildBlockFromPool(parent.Number+1, parent, parent.Proposer, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(blk.Transactions()) != 1 {
+		t.Fatalf("txs=%d want 1 after re-select", len(blk.Transactions()))
+	}
+	got := blk.Transactions()[0].GasFeeCap
+	if got == nil || got.Cmp(big.NewInt(1_000_000_000)) != 0 {
+		t.Fatalf("expected funded low-price tx after re-select, gasFeeCap=%v", got)
+	}
+}

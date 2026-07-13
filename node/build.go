@@ -17,8 +17,14 @@ import (
 // DefaultMaxTxsPerBlock is the default proposal / auto-mine pack cap (C1 multi-tx).
 const DefaultMaxTxsPerBlock = 64
 
+// maxProposalSimAttempts bounds select→simulate→exclude loops when pending
+// entries fail execution (C1 residual: partial re-select).
+const maxProposalSimAttempts = 16
+
 // BuildBlockFromPool builds a proposal block from pending mempool entries.
 // Execution runs on a state snapshot; live chain head and pool are unchanged.
+// Txs that fail simulation are skipped; remaining successes stay in the block.
+// If a full selection fails, failed hashes are excluded and selection retries.
 func (n *Node) BuildBlockFromPool(height uint64, parent *dewtypes.Header, proposer dewcrypto.Address, maxTxs int) (*dewtypes.Block, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -50,17 +56,27 @@ func (n *Node) BuildBlockFromPool(height uint64, parent *dewtypes.Header, propos
 		newHeader.Timestamp = parent.Timestamp + 1
 	}
 
-	txs := n.selectPendingTxsForBlockLocked(maxTxs, parent.GasLimit)
-
-	// Drop txs that fail simulation so one bad pending entry cannot halt proposals.
-	if len(txs) > 0 {
-		root, totalGas, err := n.simulateBlockExecutionLocked(newHeader, txs)
-		if err != nil {
-			txs = nil
-		} else {
+	exclude := make(map[dewtypes.Hash]struct{})
+	var txs []*dewtypes.Transaction
+	for attempt := 0; attempt < maxProposalSimAttempts; attempt++ {
+		cand := n.selectPendingTxsForBlockLocked(maxTxs, parent.GasLimit, exclude)
+		if len(cand) == 0 {
+			break
+		}
+		kept, root, totalGas, failed := n.simulateAndFilterLocked(newHeader, cand)
+		for h := range failed {
+			exclude[h] = struct{}{}
+		}
+		if len(kept) > 0 {
+			txs = kept
 			newHeader.StateRoot = root
 			newHeader.GasUsed = totalGas
 			newHeader.TxRoot = dewtypes.TxRoot(txs)
+			break
+		}
+		// Entire selection failed — exclude failures and re-select.
+		if len(failed) == 0 {
+			break
 		}
 	}
 	if len(txs) == 0 {
@@ -118,7 +134,7 @@ func (n *Node) executeBlockLocked(parent *dewtypes.Header, block *dewtypes.Block
 }
 
 // simulateBlockExecutionLocked executes block txs on a throwaway state copy.
-// Caller must hold n.mu.
+// Caller must hold n.mu. All-or-nothing (used by ValidateAndExecuteBlock).
 func (n *Node) simulateBlockExecutionLocked(hdr *dewtypes.Header, txs []*dewtypes.Transaction) (dewtypes.Hash, uint64, error) {
 	workDB := n.statedb.Copy()
 	saved := n.statedb
@@ -136,16 +152,64 @@ func (n *Node) simulateBlockExecutionLocked(hdr *dewtypes.Header, txs []*dewtype
 	return root, totalGas, nil
 }
 
+// simulateAndFilterLocked executes candidates on a throwaway state copy.
+// Hard-failing txs are skipped; later candidates still run (partial inclusion).
+// failed maps hashes that error'd (for exclude / re-select). Caller must hold n.mu.
+func (n *Node) simulateAndFilterLocked(hdr *dewtypes.Header, txs []*dewtypes.Transaction) (
+	kept []*dewtypes.Transaction,
+	root dewtypes.Hash,
+	totalGas uint64,
+	failed map[dewtypes.Hash]struct{},
+) {
+	failed = make(map[dewtypes.Hash]struct{})
+	if len(txs) == 0 {
+		return nil, dewtypes.Hash{}, 0, failed
+	}
+
+	workDB := n.statedb.Copy()
+	saved := n.statedb
+	n.statedb = workDB
+	defer func() { n.statedb = saved }()
+
+	var cumulative uint64
+	for _, tx := range txs {
+		if tx == nil {
+			continue
+		}
+		_, used, err := n.executeEVMTxLocked(hdr, tx, uint(len(kept)), cumulative)
+		if err != nil {
+			failed[tx.Hash()] = struct{}{}
+			continue
+		}
+		kept = append(kept, tx)
+		cumulative = used
+	}
+	if len(kept) == 0 {
+		return nil, dewtypes.Hash{}, 0, failed
+	}
+	root, err := workDB.IntermediateRoot()
+	if err != nil {
+		// Treat root failure as total; mark every candidate failed so re-select excludes them.
+		for _, tx := range txs {
+			if tx != nil {
+				failed[tx.Hash()] = struct{}{}
+			}
+		}
+		return nil, dewtypes.Hash{}, 0, failed
+	}
+	return kept, root, cumulative, failed
+}
+
 // selectPendingTxsForBlockLocked returns up to maxTxs executable EVM transactions.
 // Selection is a fee auction over continuous per-sender nonce chains: among each
 // sender's next executable nonce, pick the highest Price, advance that sender,
 // repeat until maxTxs or gasLimit. Nonce gaps leave later txs pending.
-// Caller must hold n.mu.
-func (n *Node) selectPendingTxsForBlockLocked(maxTxs int, gasLimit uint64) []*dewtypes.Transaction {
+// exclude skips hashes (failed simulation) during re-select. Caller must hold n.mu.
+func (n *Node) selectPendingTxsForBlockLocked(maxTxs int, gasLimit uint64, exclude map[dewtypes.Hash]struct{}) []*dewtypes.Transaction {
 	if maxTxs <= 0 {
 		return nil
 	}
-	bySender := groupPendingBySender(n.pool.Pending(), mempool.KindEVM)
+	bySender := groupPendingBySender(n.pool.Pending(), mempool.KindEVM, exclude)
 
 	nextNonce := make(map[dewcrypto.Address]uint64, len(bySender))
 	for from := range bySender {
@@ -192,7 +256,7 @@ func (n *Node) selectPendingDewTxsForBlockLocked(maxTxs int) []*dewtypes.DewTx {
 	if maxTxs <= 0 {
 		return nil
 	}
-	bySender := groupPendingBySender(n.pool.Pending(), mempool.KindDew)
+	bySender := groupPendingBySender(n.pool.Pending(), mempool.KindDew, nil)
 
 	nextNonce := make(map[dewcrypto.Address]uint64, len(bySender))
 	for from := range bySender {
@@ -217,11 +281,17 @@ func (n *Node) selectPendingDewTxsForBlockLocked(maxTxs int) []*dewtypes.DewTx {
 }
 
 // groupPendingBySender buckets pool entries of kind, each list sorted by nonce.
-func groupPendingBySender(pending []*mempool.Entry, kind mempool.Kind) map[dewcrypto.Address][]*mempool.Entry {
+// exclude skips known-bad hashes (nil means none).
+func groupPendingBySender(pending []*mempool.Entry, kind mempool.Kind, exclude map[dewtypes.Hash]struct{}) map[dewcrypto.Address][]*mempool.Entry {
 	bySender := make(map[dewcrypto.Address][]*mempool.Entry)
 	for _, e := range pending {
 		if e == nil || e.Kind != kind {
 			continue
+		}
+		if exclude != nil {
+			if _, skip := exclude[e.Hash]; skip {
+				continue
+			}
 		}
 		bySender[e.From] = append(bySender[e.From], e)
 	}
