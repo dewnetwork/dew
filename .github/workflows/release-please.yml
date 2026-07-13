@@ -1,5 +1,5 @@
 # Google Release Please: Conventional Commits → Release PR → tag + GitHub Release.
-# On release_created, also cross-build dew / dewcli / dewfaucet and attach artifacts.
+# On release_created: attach Go binaries + push multi-arch images to GHCR.
 # See docs/build/go-project-layout.md § Release.
 
 name: Release Please
@@ -13,6 +13,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  packages: write
 
 concurrency:
   group: release-please-${{ github.ref }}
@@ -35,7 +36,7 @@ jobs:
           # Optional PAT (repo secret RELEASE_PLEASE_TOKEN) so the Release PR
           # triggers CI and the tag push can fire other workflows. Default
           # GITHUB_TOKEN still creates the Release PR + GitHub Release; binary
-          # upload runs in this workflow via release_created.
+          # + GHCR publish run in this workflow via release_created.
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
@@ -123,3 +124,15 @@ jobs:
             sha256sum dew_*.tar.gz | tee checksums.txt
           )
           gh release upload "$TAG" dist/checksums.txt --clobber
+
+  publish-images:
+    name: Publish GHCR images
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/release-images.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    permissions:
+      contents: write
+      packages: write
+    secrets: inherit

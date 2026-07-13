@@ -157,8 +157,9 @@ Layout after merge:
 | [`.github/workflows/ci-web.yml`](./.github/workflows/ci-web.yml) | Docs/landing site + explorer + faucet-web builds (PR + `main`) |
 | [`.github/workflows/security.yml`](./.github/workflows/security.yml) | govulncheck, fuzz, pnpm audit, CodeQL, Trivy (PR + `main` + weekly) |
 | [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) | Deploy combined `dist/` to GitHub Pages (`main` only) |
-| [`.github/workflows/release-please.yml`](./.github/workflows/release-please.yml) | Release Please (Conventional Commits → tag) + attach Go binaries |
+| [`.github/workflows/release-please.yml`](./.github/workflows/release-please.yml) | Release Please (Conventional Commits → tag) + binaries + GHCR images |
 | [`.github/workflows/release-binaries.yml`](./.github/workflows/release-binaries.yml) | Re-upload release binaries for tag `v*` / manual |
+| [`.github/workflows/release-images.yml`](./.github/workflows/release-images.yml) | Multi-arch Docker images → GHCR (`dew`, faucet, explorer, guestbook) |
 | [`.github/dependabot.yml`](./.github/dependabot.yml) | Weekly dependency update PRs (Go / npm / Actions) |
 
 Layout notes: [docs/build/go-project-layout.md](./docs/build/go-project-layout.md) § CI · § Release.

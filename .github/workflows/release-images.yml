@@ -1,0 +1,194 @@
+# Build and push multi-arch deploy images to GHCR on release.
+# Triggered by:
+#   - workflow_call (from release-please.yml when release_created)
+#   - push tags v* (when tag is created with a PAT)
+#   - workflow_dispatch (re-push for an existing tag)
+# See docs/build/go-project-layout.md § Release.
+
+name: Release images
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.2.0)"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to build images for (e.g. v0.2.0)"
+        required: true
+        type: string
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: release-images-${{ github.workflow }}-${{ inputs.tag || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-images:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Path B public genesis (faucet alloc only) — matches deploy/docker-compose.yml
+          - image: dew
+            dockerfile: deploy/node/Dockerfile
+            build_args: |
+              GENESIS_FILE=genesis.public.json
+          - image: dew-faucet
+            dockerfile: deploy/faucet/Dockerfile
+            build_args: ""
+          # SPA PUBLIC_* bake path B hostnames (browser-facing; no secrets).
+          # Rebuild with different args for alternate domains.
+          - image: dew-faucet-web
+            dockerfile: deploy/faucet/Dockerfile.web
+            build_args: |
+              PUBLIC_FAUCET_API_URL=/api
+              PUBLIC_EXPLORER_URL=https://explorer-dew.fadosoft.com
+          - image: dew-explorer
+            dockerfile: deploy/explorer/Dockerfile
+            build_args: |
+              PUBLIC_RPC_URL=https://rpc-dew.fadosoft.com
+              PUBLIC_CHAIN_ID=2205
+              PUBLIC_EXPLORER_BASE=https://explorer-dew.fadosoft.com
+          - image: dew-guestbook
+            dockerfile: deploy/guestbook/Dockerfile
+            build_args: |
+              PUBLIC_RPC_URL=https://rpc-dew.fadosoft.com
+              PUBLIC_GUESTBOOK=0x83bB4E539BE46503481E66094b01b854990BF84a
+              PUBLIC_EXPLORER_URL=https://explorer-dew.fadosoft.com
+              PUBLIC_CHAIN_ID=2205
+    steps:
+      - name: Resolve tag and registry
+        id: meta
+        run: |
+          set -euo pipefail
+          # workflow_call / workflow_dispatch pass inputs.tag; push tags use ref name.
+          # (Reusable workflows keep the caller's event_name, so do not key on it.)
+          TAG="${{ inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          if [[ ! "$TAG" =~ ^v[0-9] ]]; then
+            echo "Tag must look like vX.Y.Z (got: $TAG)"
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          {
+            echo "tag=$TAG"
+            echo "version=$VERSION"
+            echo "owner=$OWNER"
+            echo "image=ghcr.io/${OWNER}/${{ matrix.image }}"
+          } >> "$GITHUB_OUTPUT"
+          # latest only for non-prerelease (e.g. not 0.2.0-rc.1)
+          if [[ "$VERSION" != *-* ]]; then
+            echo "is_stable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_stable=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.tag }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: docker_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.meta.outputs.image }}
+          tags: |
+            type=raw,value=${{ steps.meta.outputs.version }}
+            type=raw,value=${{ steps.meta.outputs.tag }}
+            type=raw,value=latest,enable=${{ steps.meta.outputs.is_stable == 'true' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          build-args: ${{ matrix.build_args }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          provenance: false
+
+  publish-image-list:
+    name: Attach image list to release
+    needs: publish-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Resolve tag
+        id: meta
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          VERSION="${TAG#v}"
+          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          {
+            echo "tag=$TAG"
+            echo "version=$VERSION"
+            echo "owner=$OWNER"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write images.txt and upload
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          OWNER: ${{ steps.meta.outputs.owner }}
+        run: |
+          set -euo pipefail
+          {
+            echo "# Dew container images for ${TAG}"
+            echo "# Registry: ghcr.io/${OWNER}"
+            echo "# Platforms: linux/amd64, linux/arm64"
+            echo "#"
+            echo "# Node image bakes genesis.public.json (path B)."
+            echo "# SPA images bake path B PUBLIC_* URLs (see release-images.yml)."
+            echo
+            for name in dew dew-faucet dew-faucet-web dew-explorer dew-guestbook; do
+              echo "ghcr.io/${OWNER}/${name}:${VERSION}"
+              echo "ghcr.io/${OWNER}/${name}:${TAG}"
+            done
+          } > images.txt
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" images.txt --clobber
+          else
+            echo "No GitHub Release for $TAG yet — skipping asset upload (images are on GHCR)."
+          fi
+          cat images.txt

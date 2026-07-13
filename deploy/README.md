@@ -42,19 +42,31 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 - Or Go 1.25+ for host binary builds (see root `go.mod`)
 - Node only for smoke scripts (`scripts/smoke-rpc.mjs`)
 
-### Prebuilt release binaries
+### Prebuilt release artifacts
 
-GitHub Releases (semver `vX.Y.Z`) attach cross-built `dew` / `dewcli` / `dewfaucet` archives plus `checksums.txt`. Versioning is driven by [Release Please](https://github.com/googleapis/release-please) on `main` — see [go-project-layout § Release](../docs/build/go-project-layout.md#release). Protocol freeze remains **`public-testnet-v1`** ([public-testnet](../docs/ops/public-testnet.md)); package tags do not change wire formats.
+GitHub Releases (semver `vX.Y.Z`) attach:
+
+- Cross-built `dew` / `dewcli` / `dewfaucet` archives + `checksums.txt`
+- `images.txt` listing GHCR tags
+
+Versioning is driven by [Release Please](https://github.com/googleapis/release-please) on `main` — see [go-project-layout § Release](../docs/build/go-project-layout.md#release). Protocol freeze remains **`public-testnet-v1`** ([public-testnet](../docs/ops/public-testnet.md)); package tags do not change wire formats.
 
 ```bash
-# Example after a release exists on GitHub:
+# Binaries (example):
 # curl -fsSL -O https://github.com/dewnetwork/dew/releases/download/v0.2.0/dew_v0.2.0_linux_amd64.tar.gz
 # curl -fsSL -O https://github.com/dewnetwork/dew/releases/download/v0.2.0/checksums.txt
 # sha256sum -c checksums.txt --ignore-missing
 # tar -xzf dew_v0.2.0_linux_amd64.tar.gz
+
+# GHCR images (linux/amd64 + arm64; package may need to be Public for anonymous pull):
+# docker pull ghcr.io/dewnetwork/dew:0.2.0
+# docker pull ghcr.io/dewnetwork/dew-faucet:0.2.0
+# docker pull ghcr.io/dewnetwork/dew-faucet-web:0.2.0
+# docker pull ghcr.io/dewnetwork/dew-explorer:0.2.0
+# docker pull ghcr.io/dewnetwork/dew-guestbook:0.2.0
 ```
 
-Compose path B / soak still builds from Dockerfiles when you use `docker compose … --build`.
+Compose path B / soak can still `docker compose … --build` from Dockerfiles, or point `image:` at a GHCR tag after release.
 
 ## Quick private soak
 

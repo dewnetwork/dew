@@ -125,8 +125,9 @@ Root scripts: `docs:dev` · `docs:build` · `docs:preview` · `site:build` (land
 | [`ci-web.yml`](../../.github/workflows/ci-web.yml) | PR + push `main` | typecheck + `site:build`; explorer + faucet-web builds |
 | [`security.yml`](../../.github/workflows/security.yml) | PR + push `main` + weekly | govulncheck, fuzz, pnpm audit, CodeQL, Trivy (HIGH/CRITICAL; SARIF limited to same severities) |
 | [`pages.yml`](../../.github/workflows/pages.yml) | push `main` | GitHub Pages deploy of `dist/` |
-| [`release-please.yml`](../../.github/workflows/release-please.yml) | push `main` | [Release Please](https://github.com/googleapis/release-please) PR + tag; attach Go binaries on release |
+| [`release-please.yml`](../../.github/workflows/release-please.yml) | push `main` | [Release Please](https://github.com/googleapis/release-please) PR + tag; attach Go binaries + GHCR images on release |
 | [`release-binaries.yml`](../../.github/workflows/release-binaries.yml) | tag `v*` / manual | Re-upload cross-built `dew` / `dewcli` / `dewfaucet` + checksums |
+| [`release-images.yml`](../../.github/workflows/release-images.yml) | tag `v*` / call / manual | Multi-arch Docker images → `ghcr.io/<owner>/dew*` |
 
 Heavy multiproc soak (`DEW_HEAVY_INTEGRATION=1`) is not required on every PR.
 
@@ -139,10 +140,24 @@ Software versions are **semver** tags (`vX.Y.Z`), independent of the protocol fr
 1. Merge work to `main` using [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …).
 2. On each push to `main`, Release Please opens or updates a **Release PR** (version bump in [`.release-please-manifest.json`](../../.release-please-manifest.json) + [`CHANGELOG.md`](../../CHANGELOG.md)).
 3. When you are ready to ship, **merge the Release PR**.
-4. Release Please creates tag `vX.Y.Z` and a GitHub Release; the same workflow cross-builds binaries and attaches:
+4. Release Please creates tag `vX.Y.Z` and a GitHub Release; the same workflow publishes:
+
+   **Binaries**
 
    - `dew_vX.Y.Z_{linux,darwin}_{amd64,arm64}.tar.gz` (each archive: `dew`, `dewcli`, `dewfaucet`)
    - `checksums.txt` (SHA-256)
+
+   **Container images** (`linux/amd64` + `linux/arm64` → GHCR)
+
+   | Image | Dockerfile | Notes |
+   | :--- | :--- | :--- |
+   | `ghcr.io/<owner>/dew` | `deploy/node/Dockerfile` | Bakes `genesis.public.json` (path B) |
+   | `ghcr.io/<owner>/dew-faucet` | `deploy/faucet/Dockerfile` | Go faucet |
+   | `ghcr.io/<owner>/dew-faucet-web` | `deploy/faucet/Dockerfile.web` | SPA; `PUBLIC_*` path B defaults |
+   | `ghcr.io/<owner>/dew-explorer` | `deploy/explorer/Dockerfile` | SPA; RPC/base path B defaults |
+   | `ghcr.io/<owner>/dew-guestbook` | `deploy/guestbook/Dockerfile` | SPA; guestbook + RPC path B defaults |
+
+   Tags per image: `vX.Y.Z`, `X.Y.Z`, and `latest` (stable only, no `-rc`). Release asset `images.txt` lists refs.
 
 Config: [`release-please-config.json`](../../release-please-config.json) (`release-type: go`, `bump-minor-pre-major: true`).
 
@@ -151,11 +166,22 @@ Config: [`release-please-config.json`](../../release-please-config.json) (`relea
 | Item | Detail |
 | :--- | :--- |
 | Commit style | Prefer `feat(scope):`, `fix(scope):` — drives minor/patch under pre-1.0 |
-| Optional PAT | Repo secret `RELEASE_PLEASE_TOKEN` (contents + PRs) so the Release PR runs CI and tag pushes can trigger other workflows; default `GITHUB_TOKEN` still cuts the release and uploads binaries in-workflow |
+| Optional PAT | Repo secret `RELEASE_PLEASE_TOKEN` (contents + PRs) so the Release PR runs CI and tag pushes can trigger other workflows; default `GITHUB_TOKEN` still cuts the release and publishes binaries + GHCR in-workflow |
 | Repo setting | **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests** |
-| Re-upload binaries | Actions → **Release binaries** → Run workflow → enter tag, or push tag with a PAT |
-| Path B deploy | Still operator-side (`deploy/`); release artifacts do not auto-deploy public hosts |
-| Docker / GHCR | Not in v1 release pipeline — build from `deploy/*/Dockerfile` as today |
+| GHCR visibility | First push creates packages under the org/user; set **Public** if anonymous pull is required (**Packages → package → Package settings**) |
+| Re-upload binaries | Actions → **Release binaries** → Run workflow → enter tag |
+| Re-push images | Actions → **Release images** → Run workflow → enter tag |
+| Path B deploy | Operator-side (`deploy/`); pull GHCR tags or keep `docker compose … --build` |
+| SPA rebuild | Path B URLs are **build-time**; other domains need a rebuild with different `PUBLIC_*` args |
+
+Pull example (after a release):
+
+```bash
+TAG=v0.2.0
+docker pull ghcr.io/dewnetwork/dew:${TAG#v}
+docker pull ghcr.io/dewnetwork/dew-faucet:${TAG#v}
+docker pull ghcr.io/dewnetwork/dew-explorer:${TAG#v}
+```
 
 Local binary build (no release):
 

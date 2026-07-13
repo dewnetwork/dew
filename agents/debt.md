@@ -57,7 +57,8 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] Production faucet service (rate limits, captcha) outside monorepo core — `faucet/` + `cmd/dewfaucet` (D2); see [docs/product/faucet.md](../docs/product/faucet.md)
 - [x] Longer continuous fuzz in CI (`-fuzztime` schedules) — [`.github/workflows/security.yml`](../.github/workflows/security.yml) (PR short; weekly/manual 2m+1m)
 - [x] GitHub Release Please + cross-platform Go binaries (`release-please.yml` / `release-binaries.yml`) — July 2026
-- [ ] Optional: GHCR image push on release (`dew`, faucet, explorer, guestbook)
+- [x] GHCR multi-arch image push on release (`release-images.yml`: dew, faucet, explorer, guestbook) — July 2026
+- [ ] Optional: compose samples default to `image: ghcr.io/...:tag` instead of `build:` for path B
 - [ ] Optional: `ldflags` version injection for `dew` / `dewcli` / `web3_clientVersion`
 
 ## Deferred / mainnet
