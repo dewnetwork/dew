@@ -7,6 +7,23 @@ Software releases use **semver** tags (`vX.Y.Z`) managed by
 The protocol freeze tag **`public-testnet-v1`** is independent of package versions
 (see [Public testnet freeze](./docs/ops/public-testnet.md)).
 
+## [0.3.0](https://github.com/dewnetwork/dew/compare/v0.2.0...v0.3.0) (2026-07-13)
+
+
+### Features
+
+* implement version injection via ldflags and add version reporting for CLI and RPC ([8956f86](https://github.com/dewnetwork/dew/commit/8956f8603f96c2050a05021a14648067bb3157d4))
+
+
+### Bug Fixes
+
+* set GH_REPO in release workflows to prevent git repository errors in checkout-less jobs ([a73250c](https://github.com/dewnetwork/dew/commit/a73250c1e688cee3110425790668cd5e7852e1e7))
+
+
+### Documentation
+
+* close product-v1 live path B deploy checkbox ([1ce217b](https://github.com/dewnetwork/dew/commit/1ce217bc1005138d131880e02b80741917022165))
+
 ## [0.2.0](https://github.com/dewnetwork/dew/compare/v0.1.0...v0.2.0) (2026-07-13)
 
 
