@@ -89,7 +89,7 @@ Path B (`deploy/node/docker-compose.yml`) keeps **auto-mine** on one host unless
 | :--- | :---: | :---: | :---: | :--- |
 | **Validator** | yes (BFT) | optional, **no auto-mine** | yes | Private / Path A hosts |
 | **Full (RPC)** | no | yes | yes (sync + gossip) | Public or private RPC |
-| **Dev auto-mine** | yes (per-tx) | yes | optional | Path B, local DX |
+| **Dev auto-mine** | yes (pack ready pending, ≤64 txs) | yes | optional | Path B, local DX |
 
 Role is selected by CLI flags (see below). Default for `dew run` without validator flags remains **dev auto-mine** (path B compatible).
 
@@ -167,11 +167,11 @@ SetAutoMine(enabled bool)
 
 | Component | D3a implementation |
 | :--- | :--- |
-| `BlockBuilder` | `MempoolBlockBuilder` — drain up to `MaxTxsPerBlock` (config, default 1 for parity with dev auto-mine tests first; raise in follow-up) from unified mempool, execute sequentially, set `StateRoot` / `TxRoot` / `ReceiptRoot` |
+| `BlockBuilder` | `MempoolBlockBuilder` — drain up to `MaxTxs` (default **64**, fee auction over continuous nonce chains) from unified mempool, execute sequentially, set `StateRoot` / `TxRoot` / `ReceiptRoot` |
 | `ProposalValidator` | `ExecutionValidator` — re-execute proposed txs against parent state; prevote nil on root mismatch or execution failure |
 | Proposer | Stake-weighted round-robin from static genesis valset (`consensus.ValidatorSet`) |
 
-Phase 1 may ship **single-tx blocks** (behavioral match with current auto-mine) before multi-tx blocks.
+Multi-tx packing (C1) is implemented for EVM: `node.DefaultMaxTxsPerBlock = 64`, nonce-gap queue, auto-mine pack on admit when the next nonce is ready.
 
 ### P2P bridge
 

@@ -26,7 +26,8 @@ func (b *MempoolBlockBuilder) BuildProposal(height uint64, parent *types.Header,
 	}
 	maxTxs := b.MaxTxs
 	if maxTxs <= 0 {
-		maxTxs = 1
+		// Keep in sync with node.DefaultMaxTxsPerBlock (avoid importing node).
+		maxTxs = 64
 	}
 	return b.Exec.BuildBlockFromPool(height, parent, proposer, maxTxs)
 }

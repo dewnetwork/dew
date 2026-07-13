@@ -113,7 +113,7 @@ func StartStack(cfg StackConfig) (*Stack, error) {
 			Parent:     parent,
 			Builder: &consensus.MempoolBlockBuilder{
 				Exec:   cfg.Node,
-				MaxTxs: 1,
+				MaxTxs: DefaultMaxTxsPerBlock,
 			},
 			Validator:   &consensus.ExecutionValidator{Exec: cfg.Node},
 			ProposeRoot: parent.StateRoot,

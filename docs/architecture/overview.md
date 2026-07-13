@@ -109,7 +109,7 @@ Parallel execution must not change the post-state root consensus votes on.
 | :--- | :---: | :---: | :---: | :---: |
 | Validator (`--validator`) | optional | yes | when selected | yes |
 | Full node (sync) | yes | yes | no | no (follows commits) |
-| Dev / Path B auto-mine | yes | optional | local per-tx seal | n/a |
+| Dev / Path B auto-mine | yes | optional | pack ready pending (≤64) | n/a |
 
 ```mermaid
 flowchart TB

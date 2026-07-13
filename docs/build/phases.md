@@ -83,7 +83,7 @@ High-level order: [Roadmap](./roadmap.md).
 - [x] HTTP RPC on 8545
 - [x] Methods in [JSON-RPC required list](../api/json-rpc.md)
 - [x] MetaMask shows balance _(dev: connect http://127.0.0.1:8545, chainId 2205)_
-- [x] Foundry/Hardhat deploy succeeds against local node _(dev auto-mine per tx)_
+- [x] Foundry/Hardhat deploy succeeds against local node _(dev auto-mine packs ready txs)_
 - [x] Optional: Node smoke script under monorepo `scripts/` hits `eth_chainId`
 
 **Packages:** `node/`, `rpc/`, `cmd/dew`, `scripts/smoke-rpc.mjs`
@@ -211,9 +211,9 @@ High-level order: [Roadmap](./roadmap.md).
 - [x] Unit tests for eviction / replace-by-fee (or documented no-RBF rule)
 - [x] DewTx path uses the same admission surface as EVM txs (or explicitly documented dual pools)
 
-**Packages:** `mempool/`, `node/` (`SendRawTransaction` / `SendDewRawTransaction` admit then auto-mine)
+**Packages:** `mempool/`, `node/` (`SendRawTransaction` / `SendDewRawTransaction` admit then optional auto-mine)
 
-**Notes:** Unified pool (`mempool.Pool`) for EVM + DewTx. Defaults: global 4096, per-sender 16, max tx 128 KiB, min gas 1 gwei, min tip 1 wei, min Dew fee = `params.MinDewTxFeeWei`, RBF +10% price bump (`PriceBumpPercent=0` disables RBF). Under global pressure, a strictly cheaper pending tx may be evicted for a higher-priced newcomer. Full fee auction still deferred.
+**Notes:** Unified pool (`mempool.Pool`) for EVM + DewTx. Defaults: global 4096, per-sender 16, max tx 128 KiB, min gas 1 gwei, min tip 1 wei, min Dew fee = `params.MinDewTxFeeWei`, RBF +10% price bump (`PriceBumpPercent=0` disables RBF). Under global pressure, a strictly cheaper pending tx may be evicted for a higher-priced newcomer. **Multi-tx (C1 residual, July 2026):** `DefaultMaxTxsPerBlock=64`; fee auction over continuous per-sender nonce chains; EVM nonce-gap queue (`nonce >= account`); auto-mine packs ready pending into one block. DewTx auto-mine still one-tx-per-seal.
 
 ---
 

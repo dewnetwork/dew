@@ -58,7 +58,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1:8545
 | :--- | :--- |
 | Chain ID | `2205` (`0x89d`) |
 | JSON-RPC | `http://127.0.0.1:8545` |
-| Block production | Auto-mine per accepted tx (dev) |
+| Block production | Auto-mine packs ready pending EVM txs (nonce chains, up to 64 / block) |
 | Details | [Local devnet](./devnet.md) |
 
 ---

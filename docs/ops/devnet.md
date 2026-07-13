@@ -39,7 +39,7 @@ go test ./devnet/ -count=1 -v    # BFT + P2P + ERC-20 over RPC
 | **JSON-RPC** | `http://127.0.0.1:8545` (override `--http.port`) |
 | **P2P** | Loopback mesh (ephemeral ports; in-process hosts) |
 | **Consensus** | Dew-BFT, 3 validators, equal voting power |
-| **Block production (RPC txs)** | Dev auto-mine per `eth_sendRawTransaction` |
+| **Block production (RPC txs)** | Dev auto-mine packs **ready** pending EVM txs (up to 64) per admit; nonce ≥ account queued |
 | **BFT** | LocalCluster commits empty heights (liveness demo) |
 
 ## Topology

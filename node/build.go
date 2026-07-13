@@ -13,8 +13,8 @@ import (
 	"github.com/dewnetwork/dew/mempool"
 )
 
-// DefaultMaxTxsPerBlock is the phase-1 proposal cap (parity with dev auto-mine).
-const DefaultMaxTxsPerBlock = 1
+// DefaultMaxTxsPerBlock is the default proposal / auto-mine pack cap (C1 multi-tx).
+const DefaultMaxTxsPerBlock = 64
 
 // BuildBlockFromPool builds a proposal block from pending mempool entries.
 // Execution runs on a state snapshot; live chain head and pool are unchanged.
@@ -49,7 +49,7 @@ func (n *Node) BuildBlockFromPool(height uint64, parent *dewtypes.Header, propos
 		newHeader.Timestamp = parent.Timestamp + 1
 	}
 
-	txs := n.selectPendingTxsForBlockLocked(maxTxs)
+	txs := n.selectPendingTxsForBlockLocked(maxTxs, parent.GasLimit)
 
 	// Drop txs that fail simulation so one bad pending entry cannot halt proposals.
 	if len(txs) > 0 {
@@ -59,6 +59,7 @@ func (n *Node) BuildBlockFromPool(height uint64, parent *dewtypes.Header, propos
 		} else {
 			newHeader.StateRoot = root
 			newHeader.GasUsed = totalGas
+			newHeader.TxRoot = dewtypes.TxRoot(txs)
 		}
 	}
 	if len(txs) == 0 {
@@ -71,6 +72,7 @@ func (n *Node) BuildBlockFromPool(height uint64, parent *dewtypes.Header, propos
 			}
 			newHeader.StateRoot = root
 		}
+		newHeader.TxRoot = dewtypes.EmptyTxRoot
 	}
 
 	return dewtypes.NewBlock(newHeader, txs), nil
@@ -133,35 +135,95 @@ func (n *Node) simulateBlockExecutionLocked(hdr *dewtypes.Header, txs []*dewtype
 	return root, totalGas, nil
 }
 
-// selectPendingTxsForBlockLocked returns up to maxTxs executable EVM transactions,
-// choosing highest price first among entries whose nonce matches current state.
+// selectPendingTxsForBlockLocked returns up to maxTxs executable EVM transactions.
+// Selection is a fee auction over continuous per-sender nonce chains: among each
+// sender's next executable nonce, pick the highest Price, advance that sender,
+// repeat until maxTxs or gasLimit. Nonce gaps leave later txs pending.
 // Caller must hold n.mu.
-func (n *Node) selectPendingTxsForBlockLocked(maxTxs int) []*dewtypes.Transaction {
+func (n *Node) selectPendingTxsForBlockLocked(maxTxs int, gasLimit uint64) []*dewtypes.Transaction {
+	if maxTxs <= 0 {
+		return nil
+	}
 	pending := n.pool.Pending()
-	sort.Slice(pending, func(i, j int) bool {
-		return pending[i].Price.Cmp(pending[j].Price) > 0
-	})
-
-	var out []*dewtypes.Transaction
+	bySender := make(map[dewcrypto.Address][]*mempool.Entry)
 	for _, e := range pending {
-		if len(out) >= maxTxs {
+		if e == nil || e.Kind != mempool.KindEVM {
+			continue
+		}
+		bySender[e.From] = append(bySender[e.From], e)
+	}
+	for _, list := range bySender {
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Nonce < list[j].Nonce
+		})
+	}
+
+	nextNonce := make(map[dewcrypto.Address]uint64, len(bySender))
+	for from := range bySender {
+		nextNonce[from] = n.statedb.GetNonce(from)
+	}
+
+	var (
+		out      []*dewtypes.Transaction
+		totalGas uint64
+	)
+	for len(out) < maxTxs {
+		var best *mempool.Entry
+		var bestFrom dewcrypto.Address
+		for from, list := range bySender {
+			want := nextNonce[from]
+			var found *mempool.Entry
+			for _, e := range list {
+				if e.Nonce < want {
+					continue
+				}
+				if e.Nonce > want {
+					break // gap — nothing ready from this sender
+				}
+				found = e
+				break
+			}
+			if found == nil {
+				continue
+			}
+			if best == nil || found.Price.Cmp(best.Price) > 0 {
+				best = found
+				bestFrom = from
+			}
+		}
+		if best == nil {
 			break
 		}
-		if e.Kind != mempool.KindEVM {
-			continue
-		}
-		if e.Nonce != n.statedb.GetNonce(e.From) {
-			continue
-		}
+
 		ethTx := new(ethtypes.Transaction)
-		if err := ethTx.UnmarshalBinary(e.Raw); err != nil {
+		if err := ethTx.UnmarshalBinary(best.Raw); err != nil {
+			// Drop unreadable entry from further consideration.
+			bySender[bestFrom] = filterEntry(bySender[bestFrom], best.Hash)
+			continue
+		}
+		if gasLimit > 0 && totalGas+ethTx.Gas() > gasLimit {
+			// Cannot fit; stop considering this sender for this block.
+			delete(bySender, bestFrom)
 			continue
 		}
 		dewTx, err := ethTxToDew(ethTx)
 		if err != nil {
+			bySender[bestFrom] = filterEntry(bySender[bestFrom], best.Hash)
 			continue
 		}
 		out = append(out, dewTx)
+		totalGas += ethTx.Gas()
+		nextNonce[bestFrom]++
+	}
+	return out
+}
+
+func filterEntry(list []*mempool.Entry, hash dewtypes.Hash) []*mempool.Entry {
+	out := list[:0]
+	for _, e := range list {
+		if e != nil && e.Hash != hash {
+			out = append(out, e)
+		}
 	}
 	return out
 }

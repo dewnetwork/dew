@@ -1,5 +1,5 @@
 // Package node is the in-process Dew full-node backend used by JSON-RPC (Phase A4+).
-// Dev mode auto-seals one block per accepted transaction.
+// Dev auto-mine packs ready pending txs (nonce chains + fee order) into sealed blocks.
 package node
 
 import (
@@ -52,7 +52,7 @@ type Node struct {
 	// Phase C1: unified mempool admission (EVM + DewTx)
 	pool *mempool.Pool
 
-	// Dev auto-mine: seal one block per accepted tx (default true).
+	// Dev auto-mine: seal a block of ready pending txs on admit (default true).
 	autoMine bool
 }
 
@@ -361,7 +361,10 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	return txHash, nil
 }
 
-// SendRawTransaction decodes, admits via mempool, validates, executes, and auto-mines.
+// SendRawTransaction decodes, admits via mempool, and optionally auto-mines.
+// Nonce rules: reject only if nonce < account nonce (too low). Higher nonces are
+// queued in the pool (gap queue). With auto-mine, a block is sealed when at least
+// one ready (nonce-chain) tx exists — packing up to DefaultMaxTxsPerBlock.
 func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	tx := new(ethtypes.Transaction)
 	if err := tx.UnmarshalBinary(raw); err != nil {
@@ -381,9 +384,9 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	if tx.ChainId() != nil && tx.ChainId().Sign() != 0 && tx.ChainId().Cmp(n.chainID) != 0 {
 		return dewtypes.Hash{}, fmt.Errorf("wrong chain id: got %s want %s", tx.ChainId(), n.chainID)
 	}
-	nonce := n.statedb.GetNonce(from)
-	if tx.Nonce() != nonce {
-		return dewtypes.Hash{}, fmt.Errorf("nonce too low/high: got %d want %d", tx.Nonce(), nonce)
+	accountNonce := n.statedb.GetNonce(from)
+	if tx.Nonce() < accountNonce {
+		return dewtypes.Hash{}, fmt.Errorf("nonce too low: got %d want >= %d", tx.Nonce(), accountNonce)
 	}
 
 	// C1 admission (shared surface with DewTx): size / fee / pool limits / RBF.
@@ -394,9 +397,26 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	if !n.autoMine {
 		return txHash, nil
 	}
-	defer n.pool.Remove(txHash)
+	// Future nonce only: stay pending until the gap is filled.
+	if tx.Nonce() > accountNonce {
+		return txHash, nil
+	}
+	if err := n.sealReadyFromPoolLocked(); err != nil {
+		// Tx remains admitted; surface seal failure to the caller.
+		return dewtypes.Hash{}, err
+	}
+	return txHash, nil
+}
 
+// sealReadyFromPoolLocked packs ready pending EVM txs into one block and commits.
+// Caller must hold n.mu. No-op (nil error) if nothing is executable yet.
+func (n *Node) sealReadyFromPoolLocked() error {
 	parent := n.header.Copy()
+	txs := n.selectPendingTxsForBlockLocked(DefaultMaxTxsPerBlock, parent.GasLimit)
+	if len(txs) == 0 {
+		return nil
+	}
+
 	newHeader := &dewtypes.Header{
 		ParentHash:  parent.Hash(),
 		Number:      parent.Number + 1,
@@ -413,33 +433,31 @@ func (n *Node) SendRawTransaction(raw []byte) (dewtypes.Hash, error) {
 		newHeader.Timestamp = parent.Timestamp + 1
 	}
 
-	dewTx, err := ethTxToDew(tx)
-	if err != nil {
-		return dewtypes.Hash{}, err
-	}
 	snap := n.statedb.Snapshot()
-	execRes, gasUsed, err := n.executeEVMTxLocked(newHeader, dewTx, 0, 0)
+	results, gasUsed, err := n.executeBlockTxsLocked(newHeader, txs)
 	if err != nil {
 		n.statedb.RevertToSnapshot(snap)
-		return dewtypes.Hash{}, err
+		return err
 	}
 	newHeader.GasUsed = gasUsed
 
 	root, err := n.statedb.IntermediateRoot()
 	if err != nil {
 		n.statedb.RevertToSnapshot(snap)
-		return dewtypes.Hash{}, err
+		return err
 	}
 	newHeader.StateRoot = root
-	newHeader.TxRoot = dewtypes.Keccak256Hash(txHash.Bytes())
+	newHeader.TxRoot = dewtypes.TxRoot(txs)
 
-	block := dewtypes.NewBlock(newHeader, []*dewtypes.Transaction{dewTx})
-	if err := n.persistBlockLocked(block, []txExecResult{execRes}); err != nil {
+	block := dewtypes.NewBlock(newHeader, txs)
+	if err := n.persistBlockLocked(block, results); err != nil {
 		n.statedb.RevertToSnapshot(snap)
-		return dewtypes.Hash{}, err
+		return err
 	}
-
-	return txHash, nil
+	for _, res := range results {
+		n.pool.Remove(res.txHash)
+	}
+	return nil
 }
 
 // TransactionsInBlock returns tx lookups for a block number.
