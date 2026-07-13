@@ -125,8 +125,45 @@ Root scripts: `docs:dev` · `docs:build` · `docs:preview` · `site:build` (land
 | [`ci-web.yml`](../../.github/workflows/ci-web.yml) | PR + push `main` | typecheck + `site:build`; explorer + faucet-web builds |
 | [`security.yml`](../../.github/workflows/security.yml) | PR + push `main` + weekly | govulncheck, fuzz, pnpm audit, CodeQL, Trivy (HIGH/CRITICAL; SARIF limited to same severities) |
 | [`pages.yml`](../../.github/workflows/pages.yml) | push `main` | GitHub Pages deploy of `dist/` |
+| [`release-please.yml`](../../.github/workflows/release-please.yml) | push `main` | [Release Please](https://github.com/googleapis/release-please) PR + tag; attach Go binaries on release |
+| [`release-binaries.yml`](../../.github/workflows/release-binaries.yml) | tag `v*` / manual | Re-upload cross-built `dew` / `dewcli` / `dewfaucet` + checksums |
 
 Heavy multiproc soak (`DEW_HEAVY_INTEGRATION=1`) is not required on every PR.
+
+## Release
+
+Software versions are **semver** tags (`vX.Y.Z`), independent of the protocol freeze tag **`public-testnet-v1`** (see [Public testnet freeze](../ops/public-testnet.md)).
+
+### Flow ([Release Please](https://github.com/googleapis/release-please))
+
+1. Merge work to `main` using [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …).
+2. On each push to `main`, Release Please opens or updates a **Release PR** (version bump in [`.release-please-manifest.json`](../../.release-please-manifest.json) + [`CHANGELOG.md`](../../CHANGELOG.md)).
+3. When you are ready to ship, **merge the Release PR**.
+4. Release Please creates tag `vX.Y.Z` and a GitHub Release; the same workflow cross-builds binaries and attaches:
+
+   - `dew_vX.Y.Z_{linux,darwin}_{amd64,arm64}.tar.gz` (each archive: `dew`, `dewcli`, `dewfaucet`)
+   - `checksums.txt` (SHA-256)
+
+Config: [`release-please-config.json`](../../release-please-config.json) (`release-type: go`, `bump-minor-pre-major: true`).
+
+### Operator notes
+
+| Item | Detail |
+| :--- | :--- |
+| Commit style | Prefer `feat(scope):`, `fix(scope):` — drives minor/patch under pre-1.0 |
+| Optional PAT | Repo secret `RELEASE_PLEASE_TOKEN` (contents + PRs) so the Release PR runs CI and tag pushes can trigger other workflows; default `GITHUB_TOKEN` still cuts the release and uploads binaries in-workflow |
+| Repo setting | **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests** |
+| Re-upload binaries | Actions → **Release binaries** → Run workflow → enter tag, or push tag with a PAT |
+| Path B deploy | Still operator-side (`deploy/`); release artifacts do not auto-deploy public hosts |
+| Docker / GHCR | Not in v1 release pipeline — build from `deploy/*/Dockerfile` as today |
+
+Local binary build (no release):
+
+```bash
+go build -o bin/dew ./cmd/dew
+go build -o bin/dewcli ./cmd/dewcli
+go build -o bin/dewfaucet ./cmd/dewfaucet
+```
 
 ## What is not multi-repo
 

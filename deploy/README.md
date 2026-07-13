@@ -42,6 +42,20 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 - Or Go 1.25+ for host binary builds (see root `go.mod`)
 - Node only for smoke scripts (`scripts/smoke-rpc.mjs`)
 
+### Prebuilt release binaries
+
+GitHub Releases (semver `vX.Y.Z`) attach cross-built `dew` / `dewcli` / `dewfaucet` archives plus `checksums.txt`. Versioning is driven by [Release Please](https://github.com/googleapis/release-please) on `main` — see [go-project-layout § Release](../docs/build/go-project-layout.md#release). Protocol freeze remains **`public-testnet-v1`** ([public-testnet](../docs/ops/public-testnet.md)); package tags do not change wire formats.
+
+```bash
+# Example after a release exists on GitHub:
+# curl -fsSL -O https://github.com/dewnetwork/dew/releases/download/v0.2.0/dew_v0.2.0_linux_amd64.tar.gz
+# curl -fsSL -O https://github.com/dewnetwork/dew/releases/download/v0.2.0/checksums.txt
+# sha256sum -c checksums.txt --ignore-missing
+# tar -xzf dew_v0.2.0_linux_amd64.tar.gz
+```
+
+Compose path B / soak still builds from Dockerfiles when you use `docker compose … --build`.
+
 ## Quick private soak
 
 From **repo root**:

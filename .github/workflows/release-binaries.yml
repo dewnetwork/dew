@@ -1,0 +1,124 @@
+# Cross-build dew / dewcli / dewfaucet and attach to an existing GitHub Release.
+# Primary path is release-please.yml (on release_created). This workflow covers:
+#   - push of tags v* (when created with a PAT, not GITHUB_TOKEN)
+#   - manual re-upload via workflow_dispatch
+# See docs/build/go-project-layout.md § Release.
+
+name: Release binaries
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to attach binaries to (e.g. v0.2.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-binaries-${{ github.ref }}-${{ inputs.tag || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-binaries:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+    steps:
+      - name: Resolve tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.tag }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+          check-latest: true
+          cache: true
+
+      - name: Build binaries
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          out="dist/dew_${TAG}_${GOOS}_${GOARCH}"
+          mkdir -p "$out"
+          ldflags="-s -w"
+          go build -trimpath -ldflags="$ldflags" -o "$out/dew" ./cmd/dew
+          go build -trimpath -ldflags="$ldflags" -o "$out/dewcli" ./cmd/dewcli
+          go build -trimpath -ldflags="$ldflags" -o "$out/dewfaucet" ./cmd/dewfaucet
+          tar -C "$out" -czf "${out}.tar.gz" dew dewcli dewfaucet
+          rm -rf "$out"
+
+      - name: Upload to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # Tag must already have a GitHub Release (Release Please or manual).
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "No GitHub Release for $TAG — create one first (merge Release Please PR)."
+            exit 1
+          fi
+          archive="dist/dew_${TAG}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz"
+          gh release upload "$TAG" "$archive" --clobber
+
+  publish-checksums:
+    name: Publish checksums
+    needs: publish-binaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download release assets and write checksums
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          gh release download "$TAG" -D dist -p 'dew_*.tar.gz'
+          (
+            cd dist
+            sha256sum dew_*.tar.gz | tee checksums.txt
+          )
+          gh release upload "$TAG" dist/checksums.txt --clobber
