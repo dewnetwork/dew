@@ -171,7 +171,7 @@ SetAutoMine(enabled bool)
 | `ProposalValidator` | `ExecutionValidator` — re-execute proposed txs against parent state; prevote nil on root mismatch or execution failure |
 | Proposer | Stake-weighted round-robin from static genesis valset (`consensus.ValidatorSet`) |
 
-Multi-tx packing (C1) is implemented for EVM: `node.DefaultMaxTxsPerBlock = 64`, nonce-gap queue, auto-mine pack on admit when the next nonce is ready.
+Multi-tx packing (C1) is implemented for EVM and DewTx auto-mine: `node.DefaultMaxTxsPerBlock = 64`, nonce-gap queue, auto-mine pack on admit when the next nonce is ready (DewTx still empty body + receipt index under public-testnet-v1).
 
 ### P2P bridge
 

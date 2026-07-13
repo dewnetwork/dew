@@ -23,7 +23,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 - [x] Multi-tx block packing + fee auction over continuous nonce chains (`selectPendingTxsForBlockLocked`, `DefaultMaxTxsPerBlock=64`, auto-mine pack) — July 2026
 - [x] Pending nonce-gap queue (`nonce >= account`; future nonces stay pending until gap filled) — July 2026
-- [ ] Optional: multi-tx / gap for **DewTx** auto-mine path (EVM path done; Dew still per-tx when auto-mine)
+- [x] Multi-tx / gap for **DewTx** auto-mine path (`selectPendingDewTxsForBlockLocked`, `sealReadyDewFromPoolLocked`; body still empty under public-testnet-v1) — July 2026
 - [ ] Optional: partial re-select when simulation fails mid-block (today drops all pending selection on sim error)
 
 ## C4 residuals

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 
 	dewtypes "github.com/dewnetwork/dew/core/types"
 	dewcrypto "github.com/dewnetwork/dew/crypto"
@@ -144,19 +145,7 @@ func (n *Node) selectPendingTxsForBlockLocked(maxTxs int, gasLimit uint64) []*de
 	if maxTxs <= 0 {
 		return nil
 	}
-	pending := n.pool.Pending()
-	bySender := make(map[dewcrypto.Address][]*mempool.Entry)
-	for _, e := range pending {
-		if e == nil || e.Kind != mempool.KindEVM {
-			continue
-		}
-		bySender[e.From] = append(bySender[e.From], e)
-	}
-	for _, list := range bySender {
-		sort.Slice(list, func(i, j int) bool {
-			return list[i].Nonce < list[j].Nonce
-		})
-	}
+	bySender := groupPendingBySender(n.pool.Pending(), mempool.KindEVM)
 
 	nextNonce := make(map[dewcrypto.Address]uint64, len(bySender))
 	for from := range bySender {
@@ -168,30 +157,8 @@ func (n *Node) selectPendingTxsForBlockLocked(maxTxs int, gasLimit uint64) []*de
 		totalGas uint64
 	)
 	for len(out) < maxTxs {
-		var best *mempool.Entry
-		var bestFrom dewcrypto.Address
-		for from, list := range bySender {
-			want := nextNonce[from]
-			var found *mempool.Entry
-			for _, e := range list {
-				if e.Nonce < want {
-					continue
-				}
-				if e.Nonce > want {
-					break // gap — nothing ready from this sender
-				}
-				found = e
-				break
-			}
-			if found == nil {
-				continue
-			}
-			if best == nil || found.Price.Cmp(best.Price) > 0 {
-				best = found
-				bestFrom = from
-			}
-		}
-		if best == nil {
+		best, bestFrom, ok := pickBestReady(bySender, nextNonce)
+		if !ok {
 			break
 		}
 
@@ -216,6 +183,103 @@ func (n *Node) selectPendingTxsForBlockLocked(maxTxs int, gasLimit uint64) []*de
 		nextNonce[bestFrom]++
 	}
 	return out
+}
+
+// selectPendingDewTxsForBlockLocked returns up to maxTxs executable DewTx entries
+// with the same fee-auction / continuous-nonce selection as the EVM path.
+// Flat-fee native txs do not consume EVM gas. Caller must hold n.mu.
+func (n *Node) selectPendingDewTxsForBlockLocked(maxTxs int) []*dewtypes.DewTx {
+	if maxTxs <= 0 {
+		return nil
+	}
+	bySender := groupPendingBySender(n.pool.Pending(), mempool.KindDew)
+
+	nextNonce := make(map[dewcrypto.Address]uint64, len(bySender))
+	for from := range bySender {
+		nextNonce[from] = n.statedb.GetNonce(from)
+	}
+
+	var out []*dewtypes.DewTx
+	for len(out) < maxTxs {
+		best, bestFrom, ok := pickBestReady(bySender, nextNonce)
+		if !ok {
+			break
+		}
+		dtx := new(dewtypes.DewTx)
+		if err := dtx.UnmarshalBinary(best.Raw); err != nil {
+			bySender[bestFrom] = filterEntry(bySender[bestFrom], best.Hash)
+			continue
+		}
+		out = append(out, dtx)
+		nextNonce[bestFrom]++
+	}
+	return out
+}
+
+// groupPendingBySender buckets pool entries of kind, each list sorted by nonce.
+func groupPendingBySender(pending []*mempool.Entry, kind mempool.Kind) map[dewcrypto.Address][]*mempool.Entry {
+	bySender := make(map[dewcrypto.Address][]*mempool.Entry)
+	for _, e := range pending {
+		if e == nil || e.Kind != kind {
+			continue
+		}
+		bySender[e.From] = append(bySender[e.From], e)
+	}
+	for _, list := range bySender {
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Nonce < list[j].Nonce
+		})
+	}
+	return bySender
+}
+
+// pickBestReady finds the highest-Price entry whose nonce equals nextNonce[from].
+func pickBestReady(
+	bySender map[dewcrypto.Address][]*mempool.Entry,
+	nextNonce map[dewcrypto.Address]uint64,
+) (best *mempool.Entry, bestFrom dewcrypto.Address, ok bool) {
+	for from, list := range bySender {
+		want := nextNonce[from]
+		var found *mempool.Entry
+		for _, e := range list {
+			if e.Nonce < want {
+				continue
+			}
+			if e.Nonce > want {
+				break // gap — nothing ready from this sender
+			}
+			found = e
+			break
+		}
+		if found == nil {
+			continue
+		}
+		if best == nil || found.Price.Cmp(best.Price) > 0 {
+			best = found
+			bestFrom = from
+		}
+	}
+	if best == nil {
+		return nil, dewcrypto.Address{}, false
+	}
+	return best, bestFrom, true
+}
+
+// dewHashListRoot commits ordered DewTx inclusion when the block body is empty.
+// Same scheme as types.TxRoot: Keccak256(RLP([hash0, hash1, ...])).
+func dewHashListRoot(results []txExecResult) dewtypes.Hash {
+	if len(results) == 0 {
+		return dewtypes.EmptyTxRoot
+	}
+	hashes := make([][]byte, len(results))
+	for i, res := range results {
+		hashes[i] = res.txHash.Bytes()
+	}
+	enc, err := rlp.EncodeToBytes(hashes)
+	if err != nil {
+		panic("node: dew hash list rlp: " + err.Error())
+	}
+	return dewtypes.Keccak256Hash(enc)
 }
 
 func filterEntry(list []*mempool.Entry, hash dewtypes.Hash) []*mempool.Entry {

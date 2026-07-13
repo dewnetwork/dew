@@ -13,7 +13,6 @@ import (
 	"github.com/holiman/uint256"
 
 	"github.com/dewnetwork/dew/config"
-	"github.com/dewnetwork/dew/core/native"
 	"github.com/dewnetwork/dew/core/state"
 	dewtypes "github.com/dewnetwork/dew/core/types"
 	"github.com/dewnetwork/dew/core/vm"
@@ -263,7 +262,10 @@ func (n *Node) GetReceipt(hash dewtypes.Hash) *dewtypes.Receipt {
 	return n.receipts[hash]
 }
 
-// SendDewRawTransaction decodes a signed DewTx, admits via mempool, executes, and auto-mines.
+// SendDewRawTransaction decodes a signed DewTx, admits via mempool, and optionally auto-mines.
+// Nonce rules match EVM: reject nonce < account; higher nonces stay pending (gap queue).
+// With auto-mine, ready continuous nonce chains pack up to DefaultMaxTxsPerBlock (C1 residual).
+// DewTx is still indexed via receipts/tx lookup; block body remains EVM-only under public-testnet-v1.
 func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -281,6 +283,11 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 		return dewtypes.Hash{}, fmt.Errorf("invalid signature: %w", err)
 	}
 
+	accountNonce := n.statedb.GetNonce(tx.Sender)
+	if tx.Nonce < accountNonce {
+		return dewtypes.Hash{}, fmt.Errorf("nonce too low: got %d want >= %d", tx.Nonce, accountNonce)
+	}
+
 	// C1 admission (shared surface with EVM): size / fee / pool limits.
 	hash, err := n.pool.AddDew(tx, raw, n.chainID)
 	if err != nil {
@@ -289,25 +296,25 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 	if !n.autoMine {
 		return hash, nil
 	}
-	// Dev auto-mine path: drop from pool once we attempt inclusion.
-	defer n.pool.Remove(hash)
-
-	snap := n.statedb.Snapshot()
-	feeSink := n.header.Proposer
-	exec := native.NewExecutor(n.statedb, feeSink)
-	result, err := exec.ApplyDewTx(tx)
-	if err != nil {
-		n.statedb.RevertToSnapshot(snap)
-		return dewtypes.Hash{}, err
+	// Future nonce only: stay pending until the gap is filled.
+	if tx.Nonce > accountNonce {
+		return hash, nil
 	}
-	if result.Failed {
-		// Fail-closed incomplete access list: do not mine a success block;
-		// surface as RPC error (tx not included).
-		n.statedb.RevertToSnapshot(snap)
-		return dewtypes.Hash{}, result.Err
+	if err := n.sealReadyDewFromPoolLocked(); err != nil {
+		return hash, err
 	}
+	return hash, nil
+}
 
+// sealReadyDewFromPoolLocked packs ready pending DewTxs into one block and commits.
+// Caller must hold n.mu. Body stays empty (no tagged-union wire yet); results go to tx index.
+func (n *Node) sealReadyDewFromPoolLocked() error {
 	parent := n.header.Copy()
+	dtxs := n.selectPendingDewTxsForBlockLocked(DefaultMaxTxsPerBlock)
+	if len(dtxs) == 0 {
+		return nil
+	}
+
 	newHeader := &dewtypes.Header{
 		ParentHash:  parent.Hash(),
 		Number:      parent.Number + 1,
@@ -324,41 +331,31 @@ func (n *Node) SendDewRawTransaction(raw []byte) (dewtypes.Hash, error) {
 		newHeader.Timestamp = parent.Timestamp + 1
 	}
 
-	txHash := tx.Hash()
+	snap := n.statedb.Snapshot()
+	results := make([]txExecResult, 0, len(dtxs))
+	for i, dtx := range dtxs {
+		res, err := n.executeDewTxLocked(newHeader, dtx, uint(i))
+		if err != nil {
+			n.statedb.RevertToSnapshot(snap)
+			return err
+		}
+		results = append(results, res)
+	}
+
 	root, err := n.statedb.IntermediateRoot()
 	if err != nil {
 		n.statedb.RevertToSnapshot(snap)
-		return dewtypes.Hash{}, err
+		return err
 	}
 	newHeader.StateRoot = root
-	newHeader.TxRoot = dewtypes.Keccak256Hash(txHash.Bytes())
+	newHeader.TxRoot = dewHashListRoot(results)
 
 	block := dewtypes.NewBlock(newHeader, nil)
-	blockHash := block.Hash()
-
-	receipt := &dewtypes.Receipt{
-		Type:              dewtypes.DewTxType,
-		Status:            1,
-		CumulativeGasUsed: 0,
-		GasUsed:           0,
-		EffectiveGasPrice: big.NewInt(0),
-		Logs:              nil,
-		TxHash:            txHash,
-		BlockHash:         blockHash,
-		BlockNumber:       newHeader.Number,
-		TransactionIndex:  0,
-	}
-	execRes := txExecResult{
-		txHash:  txHash,
-		dewTx:   tx,
-		from:    tx.Sender,
-		receipt: receipt,
-	}
-	if err := n.persistBlockLocked(block, []txExecResult{execRes}); err != nil {
+	if err := n.persistBlockLocked(block, results); err != nil {
 		n.statedb.RevertToSnapshot(snap)
-		return dewtypes.Hash{}, err
+		return err
 	}
-	return txHash, nil
+	return nil
 }
 
 // SendRawTransaction decodes, admits via mempool, and optionally auto-mines.

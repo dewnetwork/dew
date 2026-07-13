@@ -1,16 +1,45 @@
 package node_test
 
 import (
+	"encoding/hex"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/holiman/uint256"
 
+	dewtypes "github.com/dewnetwork/dew/core/types"
+	dewcrypto "github.com/dewnetwork/dew/crypto"
 	"github.com/dewnetwork/dew/devnet"
 	"github.com/dewnetwork/dew/node"
+	"github.com/dewnetwork/dew/params"
 )
+
+func signDewTransfer(t *testing.T, privHex string, chainID *big.Int, nonce uint64, to dewcrypto.Address, amount *uint256.Int, fee uint64) []byte {
+	t.Helper()
+	keyBytes, err := hex.DecodeString(privHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	priv, err := dewcrypto.ToECDSA(keyBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	from := ethcrypto.PubkeyToAddress(priv.PublicKey)
+	var sender dewcrypto.Address
+	copy(sender[:], from[:])
+	tx := dewtypes.NewDewTx(chainID, nonce, sender, to, amount, fee, nil, nil)
+	if err := dewtypes.SignDewTx(tx, priv); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := tx.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
 
 func signLegacyTransfer(t *testing.T, privHex string, chainID *big.Int, nonce uint64, to common.Address, value, gasPrice *big.Int) []byte {
 	t.Helper()
@@ -198,5 +227,98 @@ func TestAutoMine_PacksReadyMultiTx(t *testing.T) {
 	blk := n.GetBlockByNumber(1)
 	if blk == nil || len(blk.Transactions()) != 2 {
 		t.Fatalf("block txs=%v", blk)
+	}
+}
+
+func TestAutoMine_DewTx_PacksReadyMultiTx(t *testing.T) {
+	n := node.OpenTest(t, testGenesis(t))
+	// native default on; autoMine default true
+
+	to := dewcrypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	chainID := n.ChainID()
+	fee := params.DefaultDewTxFeeWei
+	amt := uint256.NewInt(1)
+
+	// Queue future nonce first (stays pending under autoMine).
+	raw1 := signDewTransfer(t, devnet.PrivHex0, chainID, 1, to, amt, fee)
+	h1, err := n.SendDewRawTransaction(raw1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n.GetReceipt(h1) != nil {
+		t.Fatal("future nonce should not mine yet")
+	}
+	if n.BlockNumber() != 0 {
+		t.Fatalf("height=%d want 0", n.BlockNumber())
+	}
+	if got, _ := n.MempoolStats(); got != 1 {
+		t.Fatalf("mempool=%d want 1", got)
+	}
+
+	// Exact nonce packs both into one block.
+	raw0 := signDewTransfer(t, devnet.PrivHex0, chainID, 0, to, amt, fee)
+	h0, err := n.SendDewRawTransaction(raw0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n.BlockNumber() != 1 {
+		t.Fatalf("height=%d want 1 after packing", n.BlockNumber())
+	}
+	if n.GetReceipt(h0) == nil || n.GetReceipt(h1) == nil {
+		t.Fatal("both DewTxs should have receipts after pack")
+	}
+	r0 := n.GetReceipt(h0)
+	r1 := n.GetReceipt(h1)
+	if r0.TransactionIndex != 0 || r1.TransactionIndex != 1 {
+		t.Fatalf("tx indices: r0=%d r1=%d want 0,1", r0.TransactionIndex, r1.TransactionIndex)
+	}
+	if got, _ := n.MempoolStats(); got != 0 {
+		t.Fatalf("mempool=%d want 0 after seal", got)
+	}
+	// Body remains empty (DewTx not in EVM body under public-testnet-v1).
+	blk := n.GetBlockByNumber(1)
+	if blk == nil || len(blk.Transactions()) != 0 {
+		t.Fatalf("body txs=%v want empty", blk)
+	}
+}
+
+func TestSendDewRawTransaction_NonceGapQueued(t *testing.T) {
+	n := node.OpenTest(t, testGenesis(t))
+	n.SetAutoMine(false)
+
+	to := dewcrypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	chainID := n.ChainID()
+	fee := params.DefaultDewTxFeeWei
+	amt := uint256.NewInt(1)
+
+	raw1 := signDewTransfer(t, devnet.PrivHex0, chainID, 1, to, amt, fee)
+	if _, err := n.SendDewRawTransaction(raw1); err != nil {
+		t.Fatalf("future nonce admit: %v", err)
+	}
+	raw0 := signDewTransfer(t, devnet.PrivHex0, chainID, 0, to, amt, fee)
+	if _, err := n.SendDewRawTransaction(raw0); err != nil {
+		t.Fatalf("fill gap: %v", err)
+	}
+	if got, _ := n.MempoolStats(); got != 2 {
+		t.Fatalf("mempool=%d want 2", got)
+	}
+}
+
+func TestSendDewRawTransaction_NonceTooLow(t *testing.T) {
+	n := node.OpenTest(t, testGenesis(t))
+
+	to := dewcrypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	chainID := n.ChainID()
+	fee := params.DefaultDewTxFeeWei
+	amt := uint256.NewInt(1)
+
+	raw0 := signDewTransfer(t, devnet.PrivHex0, chainID, 0, to, amt, fee)
+	if _, err := n.SendDewRawTransaction(raw0); err != nil {
+		t.Fatal(err)
+	}
+	// Reuse nonce 0 after it was mined.
+	rawDup := signDewTransfer(t, devnet.PrivHex0, chainID, 0, to, amt, fee)
+	if _, err := n.SendDewRawTransaction(rawDup); err == nil {
+		t.Fatal("expected nonce too low")
 	}
 }
