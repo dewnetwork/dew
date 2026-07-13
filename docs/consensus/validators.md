@@ -3,38 +3,45 @@ title: Validators and Staking
 description: Validator set selection, delegation, and epochs.
 category: consensus
 order: 20
-status: draft
+status: stable
 ---
 
 # Validators and Staking
 
 ## Roles
 
-| Role                    | Description                                       |
-| :---------------------- | :------------------------------------------------ |
-| **Validator candidate** | Account that self-staked ≥ minimum and registered |
-| **Active validator**    | Top \(K\) by voting power for the current epoch   |
-| **Delegator**           | Bonds DEW to a candidate to increase its power    |
+| Role | Description | Status |
+| :--- | :--- | :--- |
+| **Genesis / static validator** | Entry in genesis `initialValidators` | **Live** BFT set today |
+| **Validator candidate** | Self-staked ≥ minimum via `0x102` bond | Module on; flag default **off** |
+| **Active validator (module)** | Top \(K\) by voting power among candidates | `ActiveSet()` readable; **not** auto-rotated into live BFT yet (D3c) |
+| **Delegator** | Bonds DEW to a candidate | **Not implemented** (D3c residual) |
 
 ## Voting power
+
+Today (BFT): voting power from genesis `votingPower` (and equal weights on local `dew init` nets).
+
+Target (module):
 
 $$
 VP_i = S_{\text{self},i} + \sum S_{\text{delegated},i}
 $$
 
-Quorum and proposer weight use \(VP_i\).
+Quorum and proposer weight use \(VP_i\) once ActiveSet is wired each epoch.
 
 ## Minimum self-stake
 
-- **100,000 DEW** (public-testnet-v1 freeze; also genesis `minValidatorStake`)
-- Denominated in wei in config: `100000 * 10^18`
+- **100,000 DEW** (public-testnet-v1; `params.MinValidatorStakeWei`)
+- Genesis field: `minValidatorStake` as wei string
 
-## Epoch rotation
+## Epoch rotation (target; D3c)
 
-1. Epoch length: **86,400 blocks** (public-testnet-v1)
+1. Epoch length: **86,400 blocks**
 2. At epoch boundary, rank candidates by \(VP\)
-3. Top \(K\) become active set for next epoch
+3. Top \(K\) (default **100**) become active set for next epoch
 4. In-epoch stake changes apply at next boundary (unless emergency jail)
+
+Until D3c lands, multiproc / Path A nets use the **static** genesis set.
 
 ```mermaid
 flowchart TD
@@ -54,23 +61,15 @@ Exact algorithm should be one pure function in `consensus/` with unit tests for 
 
 ## Delegation economics
 
-- Validators set a **commission rate** (e.g. 5%)
-- Block rewards + tips: validator takes commission; remainder pro-rata to delegators
-- See [Tokenomics](../economics/tokenomics.md)
+**Deferred (D3c).** Design target: commission rate + pro-rata share of rewards/tips. See [Tokenomics](../economics/tokenomics.md) (issuance numbers still tentative).
 
 ## Unbonding
 
-| Parameter        | Value       | Unit                 |
-| :--------------- | :---------- | :------------------- |
-| Unbonding period | **604,800** | **seconds** (7 days) |
+| Parameter | Value | Unit |
+| :--- | :--- | :--- |
+| Unbonding period (param) | **604,800** | **seconds** (7 days) |
 
-Do **not** document this as “604,800 blocks” unless block time is guaranteed 1s forever. Implementation should use **time or block height consistently** — prefer **block height delta** derived from `ceil(604800 / blockTime)` at genesis freeze, stored as a single unit in code.
-
-During unbonding:
-
-- No rewards
-- No transfer of bonded funds
-- No governance voting power (_if_ governance exists)
+Documented as seconds in genesis (`unbondingPeriodSeconds`). **Enforcement before withdraw is not complete** (immediate return residual — D3c). Do not treat “604,800 blocks” as the unit unless code stores a height delta explicitly.
 
 ## Genesis validators
 

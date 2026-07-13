@@ -3,7 +3,7 @@ title: Ethereum Compatibility
 description: What is compatible in Phase A, what is deferred, and what deliberately differs.
 category: overview
 order: 30
-status: draft
+status: stable
 ---
 
 # Ethereum Compatibility
@@ -12,18 +12,18 @@ status: draft
 
 Dew should feel like a **custom EVM chain** to developers: same keys, same contracts, same RPC habits. Differences appear in consensus, finality, fees level, and (later) optional native APIs.
 
-## Compatible in Phase A
+## Compatible today (public-testnet-v1)
 
-| Area             | Compatibility                                                       |
-| :--------------- | :------------------------------------------------------------------ |
-| Keys & addresses | secp256k1, Keccak-256, 20-byte `0x` addresses                       |
-| Account model    | Nonce, balance, code, storage                                       |
-| Smart contracts  | Solidity / Vyper → EVM bytecode                                     |
-| Tx types         | EIP-1559 (type `0x02`); legacy support optional but recommended     |
-| Signing          | ECDSA; EIP-155 / EIP-1559 chain ID rules                            |
-| JSON-RPC         | Core `eth_*`, `net_*`, `web3_*` for wallets and deploy tools        |
-| Tooling          | MetaMask custom network, Hardhat, Foundry, ethers, viem, web3.js    |
-| Gas model        | Gas units + EIP-1559 base fee / tip (gas _schedule_ may be cheaper) |
+| Area | Compatibility |
+| :--- | :--- |
+| Keys & addresses | secp256k1, Keccak-256, 20-byte `0x` addresses |
+| Account model | Nonce, balance, code, storage |
+| Smart contracts | Solidity / Vyper → EVM bytecode |
+| Tx types | EIP-1559 (type `0x02`) and legacy type 0 |
+| Signing | ECDSA; EIP-155 / EIP-1559 chain ID rules |
+| JSON-RPC | Core `eth_*`, `net_*`, `web3_*` for wallets and deploy tools |
+| Tooling | MetaMask custom network, Hardhat, Foundry, ethers, viem, web3.js |
+| Gas model | Gas units + EIP-1559 base fee / tip |
 
 ## Deliberately different (still “EVM compatible”)
 
@@ -31,7 +31,7 @@ Dew should feel like a **custom EVM chain** to developers: same keys, same contr
 | :------------ | :--------------- | :--------------------------------------- |
 | Consensus     | Gasper (PoS)     | Dew-BFT (PoSA / bonded validators)       |
 | Finality      | Epoch-based      | Instant on commit                        |
-| Block time    | ~12s target      | ~1s target (_tentative_)                 |
+| Block time    | ~12s target      | ~1s multiproc BFT pace (Path B: auto-mine on admit) |
 | State backend | MPT primary path | Flat DB + SMT commitment                 |
 | Chain ID      | 1 (mainnet)      | `2205` public-testnet-v1 (frozen C6)     |
 | Token         | ETH              | DEW (18 decimals)                        |
@@ -53,16 +53,19 @@ Dew should feel like a **custom EVM chain** to developers: same keys, same contr
 
 MetaMask: add custom network with the RPC URL above; block explorer URL = explorer base only. Full publish template: [Launch checklist](../ops/launch-checklist.md). Browser-only path: [Try public testnet](../ops/try-public.md).
 
-## Deferred to Phase B (not required for first devnet)
+## Dew-specific (optional; does not block ETH tooling)
 
-- `DewTx` binary transactions and `dew_sendRawTransaction`
-- Parallel execution engine (Dew-PE / Block-STM)
-- Custom precompiles (native DEX, staking bridge from Solidity)
-- Dew address namespace for native modules (`0xe0…`–`0xff…`)
+| Surface | Status |
+| :--- | :--- |
+| `DewTx` + `dew_sendRawTransaction` | Shipped; default native path on |
+| Dew-PE parallel execution | Shipped (fork+overlay; serial-equivalent) |
+| Precompiles `0x100` / `0x102` | Shipped; staking default **off** |
+| Mixed DewTx in EVM block body | Not under public-testnet-v1 (index/receipt path) |
+| Dew address namespace `0xe0…`–`0xff…` | Reserved for future modules |
 
 ## Minimum RPC for “MetaMask + Foundry works”
 
-Must work before claiming Phase A complete:
+Required surface (shipped):
 
 - `eth_chainId`, `net_version`, `web3_clientVersion`
 - `eth_blockNumber`, `eth_getBalance`, `eth_getTransactionCount`, `eth_getCode`

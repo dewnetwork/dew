@@ -3,7 +3,7 @@ title: Gossip and Sync
 description: Transaction/block propagation and catching up historical blocks.
 category: networking
 order: 20
-status: draft
+status: stable
 ---
 
 # Gossip and Sync

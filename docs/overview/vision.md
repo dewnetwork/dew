@@ -3,7 +3,7 @@ title: Vision
 description: Why Dew exists and what success looks like.
 category: overview
 order: 10
-status: draft
+status: stable
 ---
 
 # Vision
@@ -21,21 +21,23 @@ L2s help scale execution, but they introduce bridges, different security assumpt
 
 ## What Dew is
 
-**Dew** is a Layer 1 blockchain written **from scratch** in a **Go + Node monorepo** (protocol in Go; **Node builds the docs website** and later tooling):
+**Dew** is a Layer 1 blockchain written **from scratch** in a **Go + Node monorepo** (protocol in Go; Node builds docs, explorer, faucet UI, and DX demos):
 
 1. **EVM-compatible** — same accounts, signatures, Solidity contracts, and JSON-RPC surface for standard tooling.
 2. **BFT finality** — Dew-BFT commits blocks with instant finality under the protocol’s honesty assumptions.
-3. **Performance-oriented storage** — flat key-value state for execution; Merkle structure for commitments, not for every opcode.
-4. **Phased sophistication** — ship Ethereum parity first; add Dew-native paths and parallel execution after the base chain is correct.
+3. **Performance-oriented storage** — flat key-value state for execution; Sparse Merkle Tree for `StateRoot`, not for every opcode.
+4. **Phased sophistication** — Ethereum parity first; native path, parallel execution, and public-testnet freeze next; product surface and scale on demand.
+
+**Today (public-testnet-v1):** chain ID **2205**, live Path B RPC / explorer / faucet. See [Try public](../ops/try-public.md).
 
 ## Success criteria
 
 | Dimension    | Target (direction)                                                                        |
 | :----------- | :---------------------------------------------------------------------------------------- |
-| **Speed**    | ~1s block time; multi-thousand TPS path after parallel execution                          |
-| **Security** | Instant finality; slash double-sign; clear validator incentives                           |
-| **Cost**     | Lower effective gas for common ops vs mainnet Ethereum; micro-fees for native txs later   |
-| **DX**       | Deploy existing Solidity with MetaMask / Foundry / Hardhat against local and public nodes |
+| **Speed**    | ~1s multiproc BFT pace; higher effective capacity via PE when txs do not conflict         |
+| **Security** | Instant finality under BFT assumptions; slashing design; external audit before mainnet    |
+| **Cost**     | High gas limit + flat state; DewTx flat micro-fee for native payments                     |
+| **DX**       | MetaMask / Foundry / Hardhat / Guestbook against local and public nodes                   |
 
 ## Non-goals (near term)
 
@@ -48,9 +50,8 @@ L2s help scale execution, but they introduce bridges, different security assumpt
 
 ```mermaid
 flowchart LR
-  A[Phase A<br/>Correct & compatible] --> T[Tune<br/>Fast enough]
-  T --> B[Phase B<br/>Native & parallel]
-  B --> C[Phase C<br/>Testnet ready]
+  A[A–C shipped<br/>public-testnet-v1] --> D[Phase D<br/>Product & scale]
+  D --> M[Mainnet gate<br/>audit + Path A]
 ```
 
 Every design choice should answer: _Does this make Dew faster, safer, or cheaper without breaking the Ethereum developer path?_

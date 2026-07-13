@@ -3,10 +3,10 @@ title: Local Devnet
 description: Run a 3-validator Dew localnet with JSON-RPC, faucet, and ERC-20 demo.
 category: ops
 order: 40
-status: draft
+status: stable
 ---
 
-# Local Devnet (Phase A7)
+# Local Devnet
 
 End-to-end local network: **3 Dew-BFT validators**, loopback **P2P** mesh, and **1 JSON-RPC** execution node with a documented faucet.
 
@@ -39,7 +39,7 @@ go test ./devnet/ -count=1 -v    # BFT + P2P + ERC-20 over RPC
 | **JSON-RPC** | `http://127.0.0.1:8545` (override `--http.port`) |
 | **P2P** | Loopback mesh (ephemeral ports; in-process hosts) |
 | **Consensus** | Dew-BFT, 3 validators, equal voting power |
-| **Block production (RPC txs)** | Dev auto-mine packs **ready** pending EVM txs (up to 64) per admit; nonce ≥ account queued |
+| **Block production (RPC txs)** | Dev auto-mine packs **ready** pending EVM **and** DewTx (up to 64) per admit; nonce ≥ account queued |
 | **BFT** | LocalCluster commits empty heights (liveness demo) |
 
 ## Topology

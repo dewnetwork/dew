@@ -3,7 +3,7 @@ title: Consensus
 description: Dew-BFT, validators, and slashing.
 category: consensus
 order: 5
-status: draft
+status: stable
 ---
 
 # Consensus

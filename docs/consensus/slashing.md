@@ -3,12 +3,12 @@ title: Slashing
 description: Penalties for double-signing and downtime.
 category: consensus
 order: 30
-status: draft
+status: stable
 ---
 
 # Slashing
 
-Slashing aligns security with stake. Parameters below are **tentative** until economic review.
+Slashing aligns security with stake. **Penalty percentages below remain tentative** (economics review / mainnet). On-chain surfaces today: jail via precompile evidence path; full double-sign verify is a residual.
 
 ## Offenses
 

@@ -3,7 +3,7 @@ title: Design Principles
 description: Engineering principles that guide protocol and implementation choices.
 category: overview
 order: 20
-status: draft
+status: stable
 ---
 
 # Design Principles
@@ -24,9 +24,9 @@ Dew-specific features must not break the default Ethereum path.
 Dew is a **monorepo**:
 
 - **Go** — canonical L1 (node, consensus, P2P, state, EVM, RPC server, CLI)
-- **Node.js** — **build the documentation website** from `docs/`; also scripts, localnet, RPC tests, later SDK
+- **Node.js** — docs site (`docs/`), explorer, faucet UI, Guestbook SPA, smoke scripts
 
-Do not split node / docs / SDK into separate product repos without a strong reason. Node must not reimplement consensus or state transition. For the chain it only talks to the Go node (RPC / process orchestration). For docs it only compiles and serves markdown already in the monorepo.
+Do not split node / docs / product surfaces into separate product repos without a strong reason. Node must not reimplement consensus or state transition. For the chain it only talks to the Go node (RPC / process orchestration).
 
 ## 3. Build from scratch, reuse battle-tested pieces
 
@@ -46,12 +46,13 @@ Dew-BFT targets **one-block finality**. No probabilistic reorg game for dapps un
 
 ## 6. Phase complexity
 
-| Layer        | Phase A                           | Phase B                               |
-| :----------- | :-------------------------------- | :------------------------------------ |
-| Transactions | EVM (EIP-1559 / legacy as needed) | + `DewTx` native format               |
-| Execution    | Sequential, correct               | Optimistic parallel (Block-STM style) |
-| RPC          | `eth_*` minimum for MetaMask      | + `dew_*` metrics and native submit   |
-| Precompiles  | Standard Ethereum set             | + Dew system precompiles              |
+| Layer | Base (shipped) | Optional / later |
+| :--- | :--- | :--- |
+| Transactions | EVM EIP-1559 + legacy | + `DewTx` (`0xdf`) |
+| Execution | Sequential EVM | Dew-PE (fork+overlay; serial-equivalent) |
+| RPC | `eth_*` / `net_*` / `web3_*` | + `dew_*` native submit + metrics |
+| Precompiles | Cancun set | + `0x100` / `0x102` (staking flag off by default) |
+| Consensus | Dew-BFT multiproc or Path B auto-mine | Path A multi-host public; stake-weighted set rotation (D3c) |
 
 Do not couple consensus correctness to parallel scheduler sophistication.
 
@@ -68,8 +69,7 @@ Fees, inflation, staking minimums, and slash percentages must live in **normativ
 
 ## 9. Operational model (Go node + Node docs/tooling)
 
-- Single Go binary node (`dew`) + CLI (`dewcli`)
-- Node.js to **build/preview web docs** (VitePress: `docs:dev` / `docs:build`) and later localnet, smoke tests, SDK
-- Config via files + flags
-- Observability hooks from day one (logs, basic metrics)
-- Tests as acceptance for each roadmap phase (Go unit/integration + docs build + optional Node RPC checks)
+- Go binaries: `dew`, `dewcli`, `dewfaucet`
+- Node.js: VitePress docs, explorer, faucet-web, guestbook-web, smoke scripts
+- Config via files + flags; durable chaindata under `--datadir`
+- Tests as acceptance (Go unit/integration/devnet + optional Node RPC checks)

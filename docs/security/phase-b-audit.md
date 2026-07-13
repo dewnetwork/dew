@@ -3,7 +3,7 @@ title: Phase B Security Audit (internal)
 description: Checklist and findings for Dew-PE, DewTx, and system precompiles before broader review.
 category: security
 order: 30
-status: draft
+status: stable
 ---
 
 # Phase B Security Audit (internal)

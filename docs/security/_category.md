@@ -3,7 +3,7 @@ title: Security
 description: Threat model and security principles.
 category: security
 order: 13
-status: draft
+status: stable
 ---
 
 # Security

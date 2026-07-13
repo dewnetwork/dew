@@ -3,12 +3,12 @@ title: Dew RPC Extensions
 description: Phase B dew_* namespace for native txs and engine stats.
 category: api
 order: 20
-status: draft
+status: stable
 ---
 
 # Dew RPC Extensions
 
-> **Phase B.** Do not block Ethereum tooling on these methods. Implemented alongside `eth_*` on the same HTTP server.
+> Optional Dew methods. Do not block Ethereum tooling on these. Implemented alongside `eth_*` on the same HTTP server.
 
 Namespace: `dew_*`.
 
@@ -16,10 +16,12 @@ Namespace: `dew_*`.
 
 Submit a signed `DewTx` (hex envelope `0xdf || RLP(...)`).
 
-- **Params**: `[serializedHex]`  
-- **Result**: 32-byte tx hash  
+- **Params**: `[serializedHex]`
+- **Result**: 32-byte tx hash
 
-Reject if native path feature flag is off (`Node.SetNativeEnabled(false)`). Dev mode auto-mines one block per accepted DewTx (same as `eth_sendRawTransaction`).
+Reject if native path feature flag is off (`Node.SetNativeEnabled(false)`).
+
+With **auto-mine** (Path B / local default): admits via the unified mempool, queues future nonces, and packs ready continuous nonce chains into one seal (up to 64), same packing rules as `eth_sendRawTransaction`. Wire and fees: [Transactions](../protocol/transactions.md).
 
 ## `dew_getExecutionStats`
 
@@ -43,10 +45,10 @@ Operational metrics for Dew-PE and DB:
 
 Extra fields are additive (non-breaking).
 
-## `dew_getValidators`
+## Other methods
 
-Active validator set: address, voting power, jailed flag, optional proposed-block counters.
+Add methods additively under `dew_*`. Breaking changes require a new method name or explicit API version field before mainnet freeze. Validator-set RPC (if added) should reflect the live BFT set vs staking `ActiveSet` explicitly once D3c lands.
 
 ## Versioning
 
-Add methods additively. Breaking changes require a new method name or explicit API version field before mainnet freeze.
+Prefer additive fields on existing responses (e.g. `dew_getExecutionStats`) over renames.

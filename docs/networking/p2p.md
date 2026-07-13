@@ -3,7 +3,7 @@ title: P2P Layer
 description: Transport, node identity, discovery, and message framing.
 category: networking
 order: 10
-status: draft
+status: stable
 ---
 
 # P2P Layer
@@ -62,7 +62,7 @@ Bootstrap → Handshake → GetPeers → Dial more → Maintain peer count
          ↘ load peers.json ↗          ↘ on disconnect: schedule redial
 ```
 
-## Message type IDs (_draft allocation_)
+## Message type IDs (allocated; avoid renumber under public-testnet-v1)
 
 | ID            | Name                             | Category      |
 | :------------ | :------------------------------- | :------------ |

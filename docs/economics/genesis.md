@@ -3,7 +3,7 @@ title: Genesis
 description: Genesis block schema, alloc, and initial validators.
 category: economics
 order: 20
-status: draft
+status: stable
 ---
 
 # Genesis
@@ -77,15 +77,25 @@ Genesis supply should sum to the intended 1B DEW (or documented exception for te
 
 Minimum **3** validators recommended for local BFT testing.
 
-## Init command (target UX)
+## Init and run (operator UX)
 
 ```bash
-dew init --genesis ./genesis.json --datadir ./data
+# Write sample genesis (3 Anvil-compatible validators + faucet alloc)
+dew init --out genesis.json
+
+# Devnet (in-process BFT + RPC)
+dew devnet --http.port 8545
+
+# Durable single/multi node
+dew run --genesis genesis.json --datadir ./data \
+  --http.port 8545
 ```
 
-Effects:
+Effects of first open with genesis:
 
-1. Write genesis block (height 0)
-2. Apply `alloc` to state DB
-3. Persist initial validator set
-4. Ready for `dew start`
+1. Write genesis block (height 0) into `<datadir>/chaindata`
+2. Apply `alloc` to flat state
+3. Persist tip + indexes
+4. Ready for JSON-RPC and optional `--validator` BFT
+
+See [Durable chaindata](../ops/durable-chaindata.md), [Local Devnet](../ops/devnet.md).

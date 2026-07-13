@@ -3,14 +3,14 @@ title: Security Principles
 description: Engineering practices that make Dew safer than a rushed chain fork.
 category: security
 order: 20
-status: draft
+status: stable
 ---
 
 # Security Principles
 
 ## 1. Prefer boring crypto
 
-Use standard secp256k1 + Keccak and audited libraries. No novel curves in Phase A.
+Use standard secp256k1 + Keccak and audited libraries. No novel curves for user or consensus signing.
 
 ## 2. Domain separation
 

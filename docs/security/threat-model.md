@@ -3,7 +3,7 @@ title: Threat Model
 description: Assets, adversaries, and trust assumptions for Dew.
 category: security
 order: 10
-status: draft
+status: stable
 ---
 
 # Threat Model

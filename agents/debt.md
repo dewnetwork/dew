@@ -69,4 +69,5 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] Landing polish — mobile nav sheet, OG image (`public/og.png` + `og.svg`), dual-tab Builder terminal (July 2026)
 - [ ] VitePress is pinned to **2.0.0-alpha.18** (Vite 8) so `pnpm audit --audit-level=high` is clean; mermaid via `vitepress-mermaid-renderer` (no VitePress 1 peer). Revisit when VitePress 2 stable ships — drop alpha pin and re-check mermaid + theme.
 - [x] Promote protocol/execution pages from `status: draft` to `stable` after prose pass (aligned to public-testnet-v1) — July 2026
-- [ ] Promote remaining draft categories (overview, consensus, networking, security, economics, some ops) when those surfaces get a similar pass
+- [x] Promote overview, architecture category, consensus, networking, security, api, genesis, ops devnet/private-testnet to `stable` — July 2026
+- [ ] `docs/economics/tokenomics.md` stays **draft** until issuance / inflation / reward-split numbers freeze for mainnet

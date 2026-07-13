@@ -1,12 +1,14 @@
 ---
 title: Tokenomics
-description: DEW supply, rewards, fees, and staking economics.
+description: DEW supply, rewards, fees, and staking economics (issuance numbers still tentative).
 category: economics
 order: 10
 status: draft
 ---
 
 # Tokenomics
+
+> **Status:** asset/fee structure is stable enough to document; **issuance / inflation / reward-split numbers remain tentative** and are not part of the public-testnet-v1 wire freeze. See `agents/debt.md`.
 
 ## Native asset
 
@@ -63,7 +65,7 @@ flowchart LR
 
 | Parameter                | Value         | Notes                                                  |
 | :----------------------- | :------------ | :----------------------------------------------------- |
-| Min validator self-stake | 100,000 DEW   | Tentative                                              |
+| Min validator self-stake | 100,000 DEW   | Frozen candidate public-testnet-v1                     |
 | Unbonding                | 7 days        | Prefer seconds or fixed block delta — one unit in code |
 | Commission               | Validator-set | Bounded range e.g. 0–100%                              |
 

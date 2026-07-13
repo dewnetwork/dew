@@ -3,7 +3,7 @@ title: Architecture
 description: Node architecture and component boundaries.
 category: architecture
 order: 2
-status: draft
+status: stable
 ---
 
 # Architecture

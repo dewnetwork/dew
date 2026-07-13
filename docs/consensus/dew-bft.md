@@ -3,31 +3,32 @@ title: Dew-BFT
 description: Byzantine fault tolerant consensus protocol for Dew.
 category: consensus
 order: 10
-status: draft
+status: stable
 ---
 
 # Dew-BFT
 
-Dew-BFT is a **Proof-of-Staked Authority (PoSA)** BFT engine: bonded validators vote by stake-weighted power; commits are **final**.
+Dew-BFT is a **Proof-of-Staked Authority (PoSA)** BFT engine: validators vote by voting power; commits are **final**.
 
 ## Goals
 
-| Goal                     | Mechanism                          |
-| :----------------------- | :--------------------------------- |
-| Faster than ETH finality | 1-block finality on commit         |
-| Safety                   | \(> 2/3\) voting power quorums     |
-| Liveness                 | Round timeouts + proposer rotation |
-| Accountability           | Slashing on double-sign            |
+| Goal | Mechanism |
+| :--- | :--- |
+| Faster than ETH finality | 1-block finality on commit |
+| Safety | \(> 2/3\) voting power quorums |
+| Liveness | Round timeouts + proposer rotation |
+| Accountability | Slashing / jail on double-sign (evidence path) |
 
-## Parameters (_tentative_)
+## Parameters
 
-| Parameter             | Value                          |
-| :-------------------- | :----------------------------- |
-| Block time target     | 1s                             |
-| Fault tolerance       | \(N \ge 3F + 1\)               |
-| Quorum                | \(> 2/3\) voting power         |
-| Active set size \(K\) | 21 (testnet); configurable     |
-| Epoch length          | 86,400 **blocks** (~24h at 1s) |
+| Parameter | public-testnet-v1 practice |
+| :--- | :--- |
+| Multiproc min block interval | **1s** default (`MinBlockInterval`) |
+| Fault tolerance | \(N \ge 3F + 1\) |
+| Quorum | strict \(> 2/3\) voting power |
+| Active set size \(K\) | module default **100** (`DefaultActiveValidatorCap`); sample genesis may use smaller |
+| Epoch length | **86,400 blocks** (module param) |
+| Live valset source | Genesis `initialValidators` today; **ActiveSet → epoch rotation** is D3c residual |
 
 ## Round state machine
 
@@ -48,7 +49,7 @@ stateDiagram-v2
 ### Propose
 
 - Proposer for \((H, R)\) chosen by **stake-weighted round-robin** (deterministic; same on all honest nodes).
-- Proposer packs mempool txs, executes (or uses speculative execution), fills roots + `BaseFee`, signs proposal, broadcasts `Proposal`.
+- Proposer builds from the mempool (`BuildBlockFromPool`: fee auction, sim filter / re-select), fills roots + `BaseFee`, signs proposal, broadcasts `Proposal`.
 
 ### Prevote
 
@@ -68,21 +69,20 @@ stateDiagram-v2
 
 ## Locking (Tendermint-style)
 
-To prevent safety bugs across rounds, validators SHOULD implement **PoLC locking**: once precommitting \(B\) after a polka, do not prevote a conflicting block at the same height unless a newer polka justifies unlock. Full lock rules to be mirrored from Tendermint/CometBFT semantics before mainnet.
+To prevent safety bugs across rounds, validators use **Tendermint-style locking** (PoLC): once precommitting \(B\) after a polka, do not prevote a conflicting block at the same height unless a newer polka justifies unlock. Treat CometBFT lock semantics as the reference for mainnet audit.
 
 ## Consensus messages (wire)
 
 These are **separate** from block/tx gossip types:
 
-| Message                     | Purpose                               |
-| :-------------------------- | :------------------------------------ |
-| `Proposal`                  | Block (or hash + parts) for \((H,R)\) |
-| `Prevote`                   | Vote for hash or nil                  |
-| `Precommit`                 | Vote for hash or nil                  |
-| `NewRoundStep` / heartbeats | Optional coordination                 |
-| `Evidence`                  | Double-sign proofs                    |
+| Message | Purpose |
+| :--- | :--- |
+| `Proposal` | Block for \((H,R)\) |
+| `Prevote` | Vote for hash or nil |
+| `Precommit` | Vote for hash or nil |
+| `Evidence` | Double-sign proofs (path exists; full verify residual) |
 
-Transport: same P2P framing as [Networking](../networking/p2p.md), distinct message type IDs.
+Transport: encrypted P2P by default; consensus types `0x10`–`0x12`. See [P2P](../networking/p2p.md).
 
 ## Empty blocks
 

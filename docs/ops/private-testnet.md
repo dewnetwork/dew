@@ -3,10 +3,10 @@ title: Private multi-host testnet
 description: Topology, ops runbook stubs, and chaos expectations beyond in-process devnet.
 category: ops
 order: 45
-status: draft
+status: stable
 ---
 
-# Private multi-host testnet (Phase C5)
+# Private multi-host testnet
 
 Local `dew devnet` remains the fastest DX path (one process). **Private testnet** means operators run **separate hosts** (machines or containers) with **encrypted P2P by default**, restart discipline, and a short runbook.
 
