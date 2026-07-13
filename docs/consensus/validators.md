@@ -14,7 +14,7 @@ status: stable
 | :--- | :--- | :--- |
 | **Genesis / static validator** | Entry in genesis `initialValidators` | **Live** BFT set today |
 | **Validator candidate** | Self-staked ≥ minimum via `0x102` bond | Module on; flag default **off** |
-| **Active validator (module)** | Top \(K\) by voting power among candidates | `ActiveSet()` readable; **not** auto-rotated into live BFT yet (D3c) |
+| **Active validator (module)** | Top \(K\) by voting power among candidates | `ActiveSet()` readable; **rotated into live BFT** at epoch boundaries when staking on and set non-empty (D3c) |
 | **Delegator** | Bonds DEW to a candidate | **Not implemented** (D3c residual) |
 
 ## Voting power
@@ -41,7 +41,7 @@ Quorum and proposer weight use \(VP_i\) once ActiveSet is wired each epoch.
 3. Top \(K\) (default **100**) become active set for next epoch
 4. In-epoch stake changes apply at next boundary (unless emergency jail)
 
-Until D3c lands, multiproc / Path A nets use the **static** genesis set.
+When staking is **off** (default public-testnet-v1), multiproc / Path A nets keep the **static** genesis set. With staking **on**, at each epoch boundary (`height % epochLength == 0`) `ActiveSet()` rebuilds BFT voting power if at least one candidate is bonded.
 
 ```mermaid
 flowchart TD

@@ -132,6 +132,12 @@ func StartStack(cfg StackConfig) (*Stack, error) {
 					if err := cfg.Node.ImportCommittedBlock(ev.Block); err != nil {
 						return err
 					}
+					// D3c: at epoch boundary, rebuild BFT set from staking ActiveSet when non-empty.
+					if vs, err := cfg.Node.TryRotateValidatorSet(ev.Block.Number()); err == nil && vs != nil {
+						if err := engine.ReplaceValSet(vs); err != nil {
+							return err
+						}
+					}
 				}
 				if stack.Host != nil {
 					_ = stack.Host.GossipBlock(ev.BlockHash)

@@ -4,7 +4,7 @@ import "math/big"
 
 // Staking parameters — frozen candidates for public-testnet-v1 (Phase C6).
 // Align with docs/consensus/validators.md and docs/ops/public-testnet.md.
-// Residual: ActiveSet not wired into live BFT each epoch; double-sign evidence still placeholder.
+// Residual: delegation/commission; slash burn percentages; zero-value nested unbond actor.
 
 const (
 	// StakingPrecompileGasBond is gas for bond / self-stake register.

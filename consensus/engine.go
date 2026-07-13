@@ -132,6 +132,25 @@ func NewEngine(cfg EngineConfig) (*Engine, error) {
 // Address returns this validator's address.
 func (e *Engine) Address() crypto.Address { return e.address }
 
+// ValSet returns the current validator set (read-only snapshot under lock).
+func (e *Engine) ValSet() *ValidatorSet {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.valSet
+}
+
+// ReplaceValSet swaps the active BFT set (D3c epoch rotation). Local engines
+// whose address is no longer in the set stop proposing but still process messages.
+func (e *Engine) ReplaceValSet(vs *ValidatorSet) error {
+	if vs == nil || vs.Size() == 0 {
+		return fmt.Errorf("consensus: cannot replace with empty validator set")
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.valSet = vs
+	return nil
+}
+
 // Height returns the current consensus height.
 func (e *Engine) Height() uint64 {
 	e.mu.Lock()

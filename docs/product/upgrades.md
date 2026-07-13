@@ -107,10 +107,10 @@ Only when `--staking` is intentionally enabled. Public-testnet-v1 keeps staking 
 
 | Item | Packages |
 | :--- | :--- |
-| Unbonding period before withdraw | **Done** — queue + `0x08` withdraw (`core/native`, `core/vm`) |
-| Double-sign evidence verification | `consensus/`, `core/native` |
-| ActiveSet → BFT epoch rotation | `consensus/`, `node/` |
-| Nested CALL bond (`msg.sender`) | `core/vm` |
+| Unbonding period before withdraw | **Done** — queue + `0x08` withdraw |
+| Double-sign evidence verification | **Done** — dual-vote verify + jail |
+| ActiveSet → BFT epoch rotation | **Done** — epoch boundary when staking on |
+| Nested CALL bond (`msg.sender`) | **Done** — Transfer-hook value payer |
 | Delegation / commission | Deferred unless scoped |
 
 Full acceptance: [D3c](../scale/d3-scale.md#d3c--staking-residuals-c4) · [debt C4](../../agents/debt.md#c4-residuals).

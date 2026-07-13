@@ -6,7 +6,9 @@ import (
 
 	"github.com/holiman/uint256"
 
+	"github.com/dewnetwork/dew/consensus"
 	"github.com/dewnetwork/dew/core/state"
+	"github.com/dewnetwork/dew/core/types"
 	"github.com/dewnetwork/dew/crypto"
 	"github.com/dewnetwork/dew/db"
 	"github.com/dewnetwork/dew/params"
@@ -189,11 +191,37 @@ func TestStakingPrecompile_BondUnbondActiveSet(t *testing.T) {
 		t.Fatalf("active count %x", res.ReturnData)
 	}
 
-	// jail with evidence
-	var ev [32]byte
-	ev[0] = 0xab
-	jailIn := append([]byte{StakeMethodJail}, caller[:]...)
-	jailIn = append(jailIn, ev[:]...)
+	// Dual-vote double-sign evidence jails the signed offender (D3c).
+	key, err := crypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	offender := crypto.PubkeyToAddress(&key.PublicKey)
+	fund2 := new(uint256.Int).Add(min, uint256.NewInt(1_000_000_000_000_000_000))
+	statedb.SetBalance(offender, fund2)
+	res, err = exec.ApplyMessage(Message{
+		From: offender, To: &stakeAddr,
+		Value: new(uint256.Int).Set(min), GasLimit: 200_000, GasPrice: big.NewInt(0),
+		Data: []byte{StakeMethodBond},
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("bond offender: %v %v", err, res.Err)
+	}
+	var ha, hb types.Hash
+	ha[0], hb[0] = 0x01, 0x02
+	va := &consensus.Vote{Type: consensus.VotePrecommit, Height: 1, Round: 0, BlockHash: ha}
+	vb := &consensus.Vote{Type: consensus.VotePrecommit, Height: 1, Round: 0, BlockHash: hb}
+	if err := consensus.SignVote(va, key); err != nil {
+		t.Fatal(err)
+	}
+	if err := consensus.SignVote(vb, key); err != nil {
+		t.Fatal(err)
+	}
+	wire, err := consensus.EncodeDoubleSignEvidenceWire(va, vb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jailIn := append([]byte{StakeMethodJail}, wire...)
 	res, err = exec.ApplyMessage(Message{
 		From: caller, To: &stakeAddr,
 		Value: uint256.NewInt(0), GasLimit: 100_000, GasPrice: big.NewInt(0),
@@ -202,6 +230,7 @@ func TestStakingPrecompile_BondUnbondActiveSet(t *testing.T) {
 	if err != nil || res.Failed {
 		t.Fatalf("jail: %v %v", err, res.Err)
 	}
+	// Active set: caller remains; offender jailed out → count 1
 	res, err = exec.ApplyMessage(Message{
 		From: caller, To: &stakeAddr,
 		Value: uint256.NewInt(0), GasLimit: 50_000, GasPrice: big.NewInt(0),
@@ -210,7 +239,57 @@ func TestStakingPrecompile_BondUnbondActiveSet(t *testing.T) {
 	if err != nil || res.Failed {
 		t.Fatal(err, res.Err)
 	}
-	if new(uint256.Int).SetBytes(res.ReturnData).Uint64() != 0 {
-		t.Fatal("jailed should leave active set")
+	if new(uint256.Int).SetBytes(res.ReturnData).Uint64() != 1 {
+		t.Fatalf("active count after jail %x want 1", res.ReturnData)
+	}
+	qJail := append([]byte{StakeMethodIsJailed}, offender[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: caller, To: &stakeAddr,
+		Value: uint256.NewInt(0), GasLimit: 50_000, GasPrice: big.NewInt(0),
+		Data: qJail,
+	})
+	if err != nil || res.Failed {
+		t.Fatal(err, res.Err)
+	}
+	if new(uint256.Int).SetBytes(res.ReturnData).Uint64() != 1 {
+		t.Fatal("offender should be jailed")
+	}
+}
+
+func TestStakingBond_CreditsImmediateCallerViaTransfer(t *testing.T) {
+	// Top-level EOA bond credits the payer recorded by Transfer (same as msg.sender for direct CALL).
+	mdb := db.OpenTest(t)
+	statedb := state.New(mdb)
+	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	min := uint256.MustFromBig(params.MinValidatorStakeWei())
+	statedb.SetBalance(caller, new(uint256.Int).Add(min, uint256.NewInt(1e18)))
+	exec := NewExecutor(statedb, BlockContext{
+		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
+		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
+		ChainID:  big.NewInt(2205),
+	})
+	exec.EnableDewPrecompiles(true)
+	exec.EnableStaking(true)
+	var stakeAddr crypto.Address
+	copy(stakeAddr[:], StakingPrecompile[:])
+	res, err := exec.ApplyMessage(Message{
+		From: caller, To: &stakeAddr,
+		Value: new(uint256.Int).Set(min), GasLimit: 200_000, GasPrice: big.NewInt(0),
+		Data: []byte{StakeMethodBond},
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("bond: %v %v", err, res.Err)
+	}
+	q := append([]byte{StakeMethodGetSelfStake}, caller[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: caller, To: &stakeAddr,
+		Value: uint256.NewInt(0), GasLimit: 50_000, GasPrice: big.NewInt(0),
+		Data: q,
+	})
+	if err != nil || res.Failed {
+		t.Fatal(err, res.Err)
+	}
+	if new(uint256.Int).SetBytes(res.ReturnData).Cmp(min) != 0 {
+		t.Fatalf("stake %x", res.ReturnData)
 	}
 }

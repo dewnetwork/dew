@@ -5,9 +5,12 @@ import (
 	"math/big"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
+	ethcore "github.com/ethereum/go-ethereum/core"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
 
+	"github.com/dewnetwork/dew/consensus"
 	"github.com/dewnetwork/dew/core/native"
 	"github.com/dewnetwork/dew/core/state"
 	"github.com/dewnetwork/dew/crypto"
@@ -39,7 +42,7 @@ const (
 	StakeMethodActiveCount byte = 0x04
 	// StakeMethodActiveAt — input = [0x05 || index uint256]. returns address left-padded 32
 	StakeMethodActiveAt byte = 0x05
-	// StakeMethodJail — input = [0x06 || address 20 || evidenceHash 32]. jails validator
+	// StakeMethodJail — input = [0x06 || voteA wire 114 || voteB wire 114] double-sign evidence (D3c).
 	StakeMethodJail byte = 0x06
 	// StakeMethodIsJailed — input = [0x07 || address 20]. returns 0/1 uint256
 	StakeMethodIsJailed byte = 0x07
@@ -84,19 +87,40 @@ func (p *nativeTransferPrecompile) Run(input []byte) ([]byte, error) {
 	return ethcommon.LeftPadBytes(bal.ToBig().Bytes(), 32), nil
 }
 
-// stakingPrecompile implements 0x102 (Phase C4).
-//
-// Caller and callValue are the top-level tx sender / value for this ApplyMessage
-// (EOA self-stake path). Nested contract staking is residual debt.
+// stakeValueCtx records the latest value transfer into 0x102 for this ApplyMessage.
+// EVM Transfer runs before precompile Run, so Bond can credit the immediate caller
+// (nested CALL msg.sender) rather than only the top-level tx origin (D3c).
+type stakeValueCtx struct {
+	from   crypto.Address
+	amount *uint256.Int
+}
+
+// stakingPrecompile implements 0x102 (Phase C4 / D3c).
 type stakingPrecompile struct {
-	statedb   *state.StateDB
-	self      crypto.Address
-	caller    crypto.Address
-	callValue *uint256.Int
+	statedb *state.StateDB
+	self    crypto.Address
+	// origin is the top-level tx sender (fallback for zero-value methods).
+	origin crypto.Address
+	// valueCtx is filled by the BlockContext.Transfer hook for payable calls.
+	valueCtx *stakeValueCtx
 	// blockTime is unix seconds from the current block header (for unbonding).
 	blockTime uint64
 	enabled   bool
 	cfg       native.StakingConfig
+}
+
+// bondCaller returns immediate CALL payer when present, else tx origin.
+func (p *stakingPrecompile) bondCaller() (crypto.Address, *uint256.Int, error) {
+	if p.valueCtx != nil && p.valueCtx.amount != nil && !p.valueCtx.amount.IsZero() {
+		return p.valueCtx.from, p.valueCtx.amount, nil
+	}
+	return crypto.Address{}, nil, fmt.Errorf("staking: bond requires non-zero value")
+}
+
+// actor for unbond/withdraw: prefer last value-payer is wrong; use origin for zero-value.
+// Nested zero-value unbond still uses origin until EVM exposes call stack to precompiles.
+func (p *stakingPrecompile) actor() crypto.Address {
+	return p.origin
 }
 
 func (p *stakingPrecompile) RequiredGas(input []byte) uint64 {
@@ -129,17 +153,20 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 	mod := native.NewStakingModule(p.statedb, p.cfg)
 	switch input[0] {
 	case StakeMethodBond:
-		// CALLVALUE already transferred to 0x102 by EVM; credit only this call's value.
+		// CALLVALUE already transferred to 0x102 by EVM; credit immediate CALL payer (D3c nested).
 		if len(input) != 1 {
 			return nil, fmt.Errorf("staking: bond input must be single method byte")
 		}
-		amt := p.callValue
-		if amt == nil || amt.IsZero() {
-			return nil, fmt.Errorf("staking: bond requires non-zero value")
-		}
-		// Keep value locked at module address; record stake for caller.
-		if err := mod.Bond(p.caller, amt); err != nil {
+		bonder, amt, err := p.bondCaller()
+		if err != nil {
 			return nil, err
+		}
+		if err := mod.Bond(bonder, amt); err != nil {
+			return nil, err
+		}
+		// Consume value ctx so a second bond in the same call path cannot double-credit.
+		if p.valueCtx != nil {
+			p.valueCtx.amount = uint256.NewInt(0)
 		}
 		return ethcommon.LeftPadBytes(amt.ToBig().Bytes(), 32), nil
 
@@ -149,7 +176,7 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 		}
 		amount := new(uint256.Int).SetBytes(input[1:33])
 		// Queue unbonding; funds stay at module until Withdraw after period (D3c).
-		if err := mod.Unbond(p.caller, amount, p.blockTime); err != nil {
+		if err := mod.Unbond(p.actor(), amount, p.blockTime); err != nil {
 			return nil, err
 		}
 		return ethcommon.LeftPadBytes(amount.ToBig().Bytes(), 32), nil
@@ -158,7 +185,7 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 		if len(input) != 1 {
 			return nil, fmt.Errorf("staking: withdraw takes no args")
 		}
-		out, err := mod.Withdraw(p.caller, p.blockTime)
+		out, err := mod.Withdraw(p.actor(), p.blockTime)
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +194,7 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 			return nil, fmt.Errorf("staking: module escrow insolvent")
 		}
 		p.statedb.SubBalance(p.self, out)
-		p.statedb.AddBalancePrev(p.caller, out)
+		p.statedb.AddBalancePrev(p.actor(), out)
 		return ethcommon.LeftPadBytes(out.ToBig().Bytes(), 32), nil
 
 	case StakeMethodPendingUnbond:
@@ -214,20 +241,19 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 		return ethcommon.LeftPadBytes(set[idx].Address.Bytes(), 32), nil
 
 	case StakeMethodJail:
-		// evidence: method || addr(20) || evidenceHash(32); hash must be non-zero
-		if len(input) != 1+20+32 {
-			return nil, fmt.Errorf("staking: jail needs address + evidence hash")
+		// D3c: method || voteA(114) || voteB(114) — dual signed votes, verified.
+		const need = 1 + 2*consensus.VoteWireSize
+		if len(input) != need {
+			return nil, fmt.Errorf("staking: jail needs dual-vote evidence (%d bytes, got %d)", need, len(input))
 		}
-		var addr crypto.Address
-		copy(addr[:], input[1:21])
-		var ev typesHash
-		copy(ev[:], input[21:53])
-		if ev.isZero() {
-			return nil, fmt.Errorf("staking: empty evidence rejected")
+		ev, err := consensus.DecodeDoubleSignEvidenceWire(input[1:])
+		if err != nil {
+			return nil, fmt.Errorf("staking: evidence decode: %w", err)
 		}
-		// Fail closed on malformed; accept any non-zero evidence hash as placeholder
-		// until full double-sign verification lands (must not silently ignore).
-		mod.Jail(addr)
+		if err := ev.Verify(); err != nil {
+			return nil, fmt.Errorf("staking: evidence verify: %w", err)
+		}
+		mod.Jail(ev.Offender())
 		return u256Pad(uint256.NewInt(1)), nil
 
 	case StakeMethodIsJailed:
@@ -244,17 +270,6 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("staking: unknown method 0x%02x", input[0])
 	}
-}
-
-type typesHash [32]byte
-
-func (h typesHash) isZero() bool {
-	for _, b := range h {
-		if b != 0 {
-			return false
-		}
-	}
-	return true
 }
 
 func readAddr(input []byte) (crypto.Address, error) {
@@ -279,14 +294,15 @@ func DewPrecompileAddresses() []ethcommon.Address {
 }
 
 // installDewPrecompiles copies the active fork precompiles and adds Dew system contracts.
+// valueCtx is shared with the BlockContext.Transfer hook for nested bond attribution.
 func installDewPrecompiles(
 	evm *ethvm.EVM,
 	statedb *state.StateDB,
 	enabled bool,
-	caller crypto.Address,
-	callValue *uint256.Int,
+	origin crypto.Address,
 	stakingEnabled bool,
 	stakingCfg native.StakingConfig,
+	valueCtx *stakeValueCtx,
 ) {
 	if !enabled {
 		return
@@ -305,20 +321,31 @@ func installDewPrecompiles(
 	}
 	var selfStake crypto.Address
 	copy(selfStake[:], StakingPrecompile[:])
-	cv := uint256.NewInt(0)
-	if callValue != nil {
-		cv = new(uint256.Int).Set(callValue)
-	}
 	merged[StakingPrecompile] = &stakingPrecompile{
 		statedb:   statedb,
 		self:      selfStake,
-		caller:    caller,
-		callValue: cv,
+		origin:    origin,
+		valueCtx:  valueCtx,
 		blockTime: evm.Context.Time,
 		enabled:   stakingEnabled,
 		cfg:       stakingCfg,
 	}
 	evm.SetPrecompiles(merged)
+}
+
+// wrapStakingTransfer records value transfers into 0x102 for nested CALL bond (D3c).
+func wrapStakingTransfer(valueCtx *stakeValueCtx) func(ethvm.StateDB, ethcommon.Address, ethcommon.Address, *uint256.Int, *ethparams.Rules) {
+	return func(db ethvm.StateDB, from, to ethcommon.Address, amount *uint256.Int, rules *ethparams.Rules) {
+		ethcore.Transfer(db, from, to, amount, rules)
+		if valueCtx == nil || amount == nil || amount.IsZero() {
+			return
+		}
+		if to != StakingPrecompile {
+			return
+		}
+		valueCtx.from = fromEthAddr(from)
+		valueCtx.amount = new(uint256.Int).Set(amount)
+	}
 }
 
 // EnableDewPrecompiles sets the executor feature flag for 0x100+ precompiles.

@@ -150,9 +150,10 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 
 	// Random non-nil → merge/shanghai/cancun rules active
 	random := ethcommon.Hash{0x01}
+	stakeVal := &stakeValueCtx{}
 	blockCtx := ethvm.BlockContext{
 		CanTransfer: ethcore.CanTransfer,
-		Transfer:    ethcore.Transfer,
+		Transfer:    wrapStakingTransfer(stakeVal),
 		GetHash:     e.block.GetHashFn,
 		Coinbase:    toEthAddr(e.block.Coinbase),
 		GasLimit:    e.block.GasLimit,
@@ -170,7 +171,7 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 		Origin:   toEthAddr(msg.From),
 		GasPrice: gp,
 	})
-	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles, msg.From, msg.Value, e.stakingEnabled, e.stakingCfg)
+	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles, msg.From, e.stakingEnabled, e.stakingCfg, stakeVal)
 
 	// Prepare access lists (Berlin+)
 	rules := e.config.Rules(blockCtx.BlockNumber, true, blockCtx.Time)

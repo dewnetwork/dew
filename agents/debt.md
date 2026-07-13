@@ -33,9 +33,11 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 Owned by D3c — see [d3-scale.md](../docs/scale/d3-scale.md#d3c--staking-residuals-c4).
 
 - [x] Enforce unbonding period (block timestamp) before stake withdrawal — unbond queue + `0x08` withdraw + `0x09` pending (July 2026)
-- [ ] Full double-sign evidence verification (not only non-zero hash placeholder)
-- [ ] Nested CALL caller for bond (currently top-level tx sender)
-- [ ] Wire ActiveSet into live Dew-BFT set rotation each epoch
+- [x] Full double-sign evidence verification (dual-vote wire + VerifyDoubleSign) (July 2026)
+- [x] Nested CALL bond credits immediate value-payer (Transfer hook) (July 2026)
+- [x] Wire ActiveSet into live Dew-BFT set rotation each epoch (when staking on) (July 2026)
+- [ ] On-chain slash burn percentages (economics still tentative)
+- [ ] Zero-value nested unbond/withdraw still use tx origin (EVM precompile has no call stack)
 - [ ] Delegation / commission
 
 ## C5 residuals

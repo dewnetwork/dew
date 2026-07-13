@@ -267,7 +267,7 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Packages:** `core/native/staking.go`, `core/vm/precompiles.go`, `params/staking.go`, `node` flag
 
-**Notes:** Self-stake only (no liquid staking). `ActiveSet()` ranks candidates for BFT selection. Jail requires non-zero evidence hash (placeholder until full double-sign verify). **Unbonding period enforced** (queue + `withdraw` / `0x08`). Default `EnableStaking=false`.
+**Notes:** Self-stake only (no liquid staking). `ActiveSet()` ranks candidates; **rotates into BFT** at epoch boundaries when staking on. Jail requires **verified dual-vote** double-sign evidence. **Unbonding period enforced** (queue + `withdraw` / `0x08`). Bond credits immediate CALL payer. Default `EnableStaking=false`.
 
 ---
 
@@ -371,7 +371,7 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 | :--- | :--- |
 | **D3a — C5 multi-process BFT** | ≥3 `dew run --validator` processes share one canonical chain; optional full RPC syncs commits; compose `multi` + ERC-20 smoke ([d3-scale](../scale/d3-scale.md#d3a--multi-process-dew-bft)) |
 | **D3b — peer store / redial** | Restart recovery without manual redial; documented data dir ([d3-scale](../scale/d3-scale.md#d3b--peer-store-and-auto-redial)) — **done** July 2026 (`peers.json`, Host redial loop, `--datadir`) |
-| **D3c — C4 staking residuals** | Unbonding enforced; double-sign evidence; ActiveSet → BFT epoch rotation ([d3-scale](../scale/d3-scale.md#d3c--staking-residuals-c4), [debt](../../agents/debt.md) C4) |
+| **D3c — C4 staking residuals** | Unbonding, dual-vote jail, nested bond, ActiveSet→BFT epoch — **MVP done**; delegation deferred ([d3-scale](../scale/d3-scale.md#d3c--staking-residuals-c4)) |
 | **D3d — Path A multi-host public** | ≥3 validators + optional RPC; new keys; bootnodes published ([launch-checklist](../ops/launch-checklist.md) path A, [d3-scale](../scale/d3-scale.md#d3d--path-a-multi-host-public)) |
 | **D3e — external audit** | Scoped audit pack before mainnet ([phase-b-audit](../security/phase-b-audit.md), [d3-scale](../scale/d3-scale.md#d3e--external-audit-prep)) |
 

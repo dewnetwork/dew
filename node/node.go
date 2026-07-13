@@ -13,6 +13,7 @@ import (
 	"github.com/holiman/uint256"
 
 	"github.com/dewnetwork/dew/config"
+	"github.com/dewnetwork/dew/consensus"
 	"github.com/dewnetwork/dew/core/native"
 	"github.com/dewnetwork/dew/core/state"
 	dewtypes "github.com/dewnetwork/dew/core/types"
@@ -171,6 +172,27 @@ func (n *Node) configureExecutor(exec *vm.Executor) {
 	exec.EnableDewPrecompiles(n.enablePrecompiles)
 	exec.EnableStaking(n.enableStaking)
 	exec.SetStakingConfig(n.stakingConfigFromGenesis())
+}
+
+// TryRotateValidatorSet returns a new BFT set from staking ActiveSet at epoch
+// boundaries when staking is enabled. nil,nil means keep the current set.
+func (n *Node) TryRotateValidatorSet(height uint64) (*consensus.ValidatorSet, error) {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	if !n.enableStaking {
+		return nil, nil
+	}
+	cfg := n.stakingConfigFromGenesis()
+	if !consensus.ShouldRotateEpoch(height, cfg.EpochLength) {
+		return nil, nil
+	}
+	mod := native.NewStakingModule(n.statedb, cfg)
+	active := mod.ActiveSet()
+	if len(active) == 0 {
+		// No bonded candidates — keep genesis/static set.
+		return nil, nil
+	}
+	return consensus.ActiveSetToValidatorSet(active)
 }
 
 // SetAutoMine toggles dev per-tx sealing (default true in NewFromGenesis).

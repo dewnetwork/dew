@@ -8,7 +8,7 @@ status: stable
 
 # Slashing
 
-Slashing aligns security with stake. **Penalty percentages below remain tentative** (economics review / mainnet). On-chain surfaces today: jail via precompile evidence path; full double-sign verify is a residual.
+Slashing aligns security with stake. **Penalty percentages below remain tentative** (economics review / mainnet). On-chain today: **double-sign evidence is verified** (dual signed prevote/precommit at same height/round, distinct hashes) then jail via `0x102` method `0x06`. Stake burn percentages still not applied on-chain.
 
 ## Offenses
 
