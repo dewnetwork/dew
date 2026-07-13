@@ -7,6 +7,13 @@ Software releases use **semver** tags (`vX.Y.Z`) managed by
 The protocol freeze tag **`public-testnet-v1`** is independent of package versions
 (see [Public testnet freeze](./docs/ops/public-testnet.md)).
 
+## [0.4.1](https://github.com/dewnetwork/dew/compare/v0.4.0...v0.4.1) (2026-07-13)
+
+
+### Documentation
+
+* document and implement GitHub Environment testnet variable injection for faucet captcha settings in release workflows ([23738ff](https://github.com/dewnetwork/dew/commit/23738ff4aee73e660679035e6cbdc46ba7b33078))
+
 ## [0.4.0](https://github.com/dewnetwork/dew/compare/v0.3.0...v0.4.0) (2026-07-13)
 
 
