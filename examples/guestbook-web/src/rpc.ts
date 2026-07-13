@@ -49,12 +49,47 @@ export async function fetchEntries(
   return { total, entries };
 }
 
-export function explorerAddressUrl(base: string, addr: string): string {
-  return `${base.replace(/\/$/, "")}/address/${addr}`;
+/**
+ * Sanitize a user-supplied explorer base URL.
+ * Only http(s) is allowed; reconstructs from URL parts so DOM-sourced input
+ * cannot become a javascript: (or other) href sink.
+ */
+export function sanitizeExplorerBase(base: string): string | null {
+  const raw = base.trim();
+  if (!raw) return null;
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") {
+    return null;
+  }
+  // Rebuild from protocol/host/pathname only (drop userinfo, hash, query).
+  const path = u.pathname.replace(/\/$/, "");
+  return `${u.protocol}//${u.host}${path === "/" ? "" : path}`;
 }
 
-export function explorerTxUrl(base: string, hash: string): string {
-  return `${base.replace(/\/$/, "")}/tx/${hash}`;
+const ETH_ADDR_RE = /^0x[0-9a-fA-F]{40}$/;
+const TX_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
+
+/** Safe explorer address URL, or null if base/addr is unusable. */
+export function explorerAddressUrl(base: string, addr: string): string | null {
+  const b = sanitizeExplorerBase(base);
+  if (!b) return null;
+  const a = addr.trim();
+  if (!ETH_ADDR_RE.test(a) && !isAddress(a)) return null;
+  return `${b}/address/${encodeURIComponent(a)}`;
+}
+
+/** Safe explorer tx URL, or null if base/hash is unusable. */
+export function explorerTxUrl(base: string, hash: string): string | null {
+  const b = sanitizeExplorerBase(base);
+  if (!b) return null;
+  const h = hash.trim();
+  if (!TX_HASH_RE.test(h)) return null;
+  return `${b}/tx/${encodeURIComponent(h)}`;
 }
 
 export function shortAddr(addr: string): string {

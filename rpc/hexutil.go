@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -143,15 +144,25 @@ func ParseBlockNumber(v interface{}) (BlockNumberTag, error) {
 			if err != nil {
 				return 0, err
 			}
+			// BlockNumberTag is int64; reject values that would wrap on cast.
+			if n > math.MaxInt64 {
+				return 0, fmt.Errorf("block number %d exceeds max int64", n)
+			}
 			return BlockNumberTag(n), nil
 		}
 	case float64:
-		// JSON numbers
-		return BlockNumberTag(uint64(x)), nil
+		// JSON numbers — only finite, non-negative values in int64 range.
+		if math.IsNaN(x) || math.IsInf(x, 0) || x < 0 || x > float64(math.MaxInt64) {
+			return 0, fmt.Errorf("invalid block number %v", x)
+		}
+		return BlockNumberTag(int64(x)), nil
 	case json.Number:
 		n, err := x.Int64()
 		if err != nil {
 			return 0, err
+		}
+		if n < 0 {
+			return 0, fmt.Errorf("invalid block number %d", n)
 		}
 		return BlockNumberTag(n), nil
 	default:

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   DEFAULT_CHAIN_ID,
   DEFAULT_EXPLORER,
@@ -12,6 +12,7 @@ import {
   fetchChainId,
   fetchEntries,
   formatTs,
+  sanitizeExplorerBase,
   shortAddr,
   type GuestbookEntry,
 } from "./rpc";
@@ -181,6 +182,7 @@ export default function App() {
   };
 
   const contractHref = explorerAddressUrl(explorer, guestbook.trim());
+  const explorerHome = sanitizeExplorerBase(explorer);
   const msgBytes = new TextEncoder().encode(message).length;
   const walletOk = hasInjectedProvider();
 
@@ -238,14 +240,23 @@ export default function App() {
           >
             {loading ? "Loading…" : "Refresh"}
           </button>
-          <a
-            href={contractHref}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-lg border border-line-strong px-4 py-2 text-sm font-medium text-frost transition hover:border-cyan hover:text-cyan"
-          >
-            Explorer
-          </a>
+          {contractHref ? (
+            <a
+              href={contractHref}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-line-strong px-4 py-2 text-sm font-medium text-frost transition hover:border-cyan hover:text-cyan"
+            >
+              Explorer
+            </a>
+          ) : (
+            <span
+              title="Set a valid https explorer base and guestbook address"
+              className="rounded-lg border border-line-strong px-4 py-2 text-sm font-medium text-muted opacity-60"
+            >
+              Explorer
+            </span>
+          )}
         </div>
       </header>
 
@@ -308,14 +319,9 @@ export default function App() {
         {lastTx && (
           <p className="mt-3 text-sm text-success">
             Posted.{" "}
-            <a
-              className="font-mono underline-offset-2 hover:underline"
-              href={explorerTxUrl(explorer, lastTx)}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <SafeExplorerLink href={explorerTxUrl(explorer, lastTx)} className="font-mono underline-offset-2 hover:underline">
               {shortAddr(lastTx)}
-            </a>
+            </SafeExplorerLink>
           </p>
         )}
         {lastBurst && (
@@ -330,23 +336,19 @@ export default function App() {
               .
             </p>
             <p className="font-mono text-xs">
-              <a
-                className="underline-offset-2 hover:underline"
+              <SafeExplorerLink
                 href={explorerTxUrl(explorer, lastBurst.hashes[0])}
-                target="_blank"
-                rel="noreferrer"
+                className="underline-offset-2 hover:underline"
               >
                 {shortAddr(lastBurst.hashes[0])}
-              </a>
+              </SafeExplorerLink>
               {" · "}
-              <a
-                className="underline-offset-2 hover:underline"
+              <SafeExplorerLink
                 href={explorerTxUrl(explorer, lastBurst.hashes[1])}
-                target="_blank"
-                rel="noreferrer"
+                className="underline-offset-2 hover:underline"
               >
                 {shortAddr(lastBurst.hashes[1])}
-              </a>
+              </SafeExplorerLink>
             </p>
           </div>
         )}
@@ -513,15 +515,13 @@ export default function App() {
                 {e.message}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                <a
+                <SafeExplorerLink
                   className="font-mono text-mist underline-offset-2 hover:text-cyan hover:underline"
                   href={explorerAddressUrl(explorer, e.author)}
-                  target="_blank"
-                  rel="noreferrer"
                   title={e.author}
                 >
                   {shortAddr(e.author)}
-                </a>
+                </SafeExplorerLink>
               </div>
             </li>
           ))}
@@ -539,10 +539,36 @@ export default function App() {
           faucet
         </a>
         {" · "}
-        <a className="text-slate hover:text-cyan" href={explorer} target="_blank" rel="noreferrer">
+        <SafeExplorerLink className="text-slate hover:text-cyan" href={explorerHome}>
           explorer
-        </a>
+        </SafeExplorerLink>
       </footer>
     </div>
+  );
+}
+
+/** Renders an external link only when href is a pre-validated http(s) URL. */
+function SafeExplorerLink({
+  href,
+  className,
+  title,
+  children,
+}: {
+  href: string | null;
+  className?: string;
+  title?: string;
+  children: ReactNode;
+}) {
+  if (!href) {
+    return (
+      <span className={className} title={title}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <a className={className} href={href} target="_blank" rel="noreferrer" title={title}>
+      {children}
+    </a>
   );
 }
