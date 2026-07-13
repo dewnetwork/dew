@@ -14,6 +14,8 @@ export const qk = {
     ["address", rpc, addr.toLowerCase()] as const,
   erc20: (addr: string, rpc = config.rpcUrl) =>
     ["erc20", rpc, addr.toLowerCase()] as const,
+  knownTokenBalances: (owner: string, rpc = config.rpcUrl) =>
+    ["knownTokenBalances", rpc, owner.toLowerCase(), config.knownTokens.map((t) => t.address).join(",")] as const,
   recent: (head: number, n: number, rpc = config.rpcUrl) =>
     ["recent", rpc, head, n] as const,
   networkStats: (rpc = config.rpcUrl) => ["networkStats", rpc] as const,

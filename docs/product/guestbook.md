@@ -60,8 +60,9 @@ Client-side only (no new contract methods):
 | :--- | :--- |
 | Filter box | Case-insensitive match on author address substring or message text |
 | **Mine** | When wallet connected, show only entries from the connected address |
+| **Share / `?author=`** | Filter syncs to URL query; Share copies link; open with `?author=0x…` pre-fills |
 
-Backlog (share query param, reactions): [upgrades.md](./upgrades.md).
+Backlog (reactions): [upgrades.md](./upgrades.md).
 
 ## Explorer deep-links
 

@@ -43,8 +43,29 @@ export default function App() {
   const [signError, setSignError] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<string | null>(null);
   const [lastBurst, setLastBurst] = useState<BurstResult | null>(null);
-  const [authorFilter, setAuthorFilter] = useState("");
+  const [authorFilter, setAuthorFilter] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return new URLSearchParams(window.location.search).get("author")?.trim() ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [mineOnly, setMineOnly] = useState(false);
+
+  /** Keep ?author= in the URL for shareable filters (P3b). */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const t = authorFilter.trim();
+    if (t) url.searchParams.set("author", t);
+    else url.searchParams.delete("author");
+    const next = url.pathname + url.search + url.hash;
+    const cur = window.location.pathname + window.location.search + window.location.hash;
+    if (next !== cur) {
+      window.history.replaceState(null, "", next);
+    }
+  }, [authorFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -429,6 +450,25 @@ export default function App() {
               }`}
             >
               Mine
+            </button>
+            <button
+              type="button"
+              title="Copy share URL with current author filter"
+              disabled={!authorFilter.trim()}
+              onClick={async () => {
+                const url = new URL(window.location.href);
+                const t = authorFilter.trim();
+                if (t) url.searchParams.set("author", t);
+                else url.searchParams.delete("author");
+                try {
+                  await navigator.clipboard.writeText(url.toString());
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="rounded-lg border border-line-strong px-3 py-1.5 text-xs font-medium text-frost transition hover:border-cyan hover:text-cyan disabled:opacity-40"
+            >
+              Share
             </button>
           </div>
         </div>

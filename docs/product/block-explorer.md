@@ -50,8 +50,9 @@ Search resolves address / tx hash / block number (and block hash when applicable
 | Method labels | Common selectors (`transfer`, `approve`, …) on tx overview |
 | Token transfers tab | Decode ERC-20 `Transfer` / `Approval` logs from receipt |
 | Recent search | Up to 8 queries in `localStorage` (`dew-explorer-ui`) |
+| Known-token balances | `PUBLIC_KNOWN_TOKENS` (`SYMBOL:0xaddr` list) → `balanceOf` tab on address page |
 
-Upgrade backlog (P1d+): [upgrades.md](./upgrades.md).
+Env: `PUBLIC_KNOWN_TOKENS` optional. Upgrade backlog: [upgrades.md](./upgrades.md).
 
 ### Deep-links from demos
 

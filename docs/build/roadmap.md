@@ -19,7 +19,7 @@ All phases land in the **same monorepo** (Go core + Node for **web docs**, explo
 | **DX demos** | Done — Foundry recipes, [Guestbook SPA](../product/guestbook.md), C1 multi-tx pack · [Try public](../ops/try-public.md) |
 | **D3a / D3b / durable chaindata** | Done — multiproc BFT, peers.json redial, Pebble `chaindata/` |
 | **D3c–D3e** | Pending on demand — staking residuals, Path A multi-host, external audit |
-| **Product-v1** | Shipped slices — explorer ERC-20 + transfers + recent search; faucet success UX; Guestbook filter ([upgrades](../product/upgrades.md)) |
+| **Product-v1** | Shipped through v1.1 — explorer ERC-20 + known tokens; faucet wallet paste; Guestbook `?author=` ([upgrades](../product/upgrades.md)) |
 
 **Live path B:** [Public testnet freeze](../ops/public-testnet.md#live-network-path-b) · RPC · explorer · faucet · Guestbook.
 

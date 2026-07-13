@@ -30,6 +30,8 @@ export default function App() {
   const [success, setSuccess] = useState<DripResponse | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedField, setCopiedField] = useState<"from" | "tx" | null>(null);
+  const [walletBusy, setWalletBusy] = useState(false);
 
   const captchaWidgetRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -201,19 +203,51 @@ export default function App() {
     }
   };
 
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
-    setAddress(value);
-
-    if (value === "") {
+  const applyAddress = (value: string) => {
+    const cleaned = value.trim();
+    setAddress(cleaned);
+    if (cleaned === "") {
       setValidationError(null);
       return;
     }
-
-    if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
+    if (!/^0x[a-fA-F0-9]{40}$/.test(cleaned)) {
       setValidationError("Invalid address (must start with 0x and be 40 hex characters)");
     } else {
       setValidationError(null);
+    }
+  };
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    applyAddress(e.target.value);
+  };
+
+  const hasInjectedWallet =
+    typeof window !== "undefined" && typeof window.ethereum?.request === "function";
+
+  const useConnectedWallet = async () => {
+    setError(null);
+    if (!window.ethereum?.request) {
+      setError("No injected wallet found. Install MetaMask or paste an address.");
+      return;
+    }
+    setWalletBusy(true);
+    try {
+      const accounts = (await window.ethereum.request({
+        method: "eth_requestAccounts",
+      })) as string[];
+      const acc = accounts?.[0];
+      if (!acc) {
+        setError("Wallet returned no accounts.");
+        return;
+      }
+      applyAddress(acc);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg.includes("reject") || msg.includes("denied")
+        ? "Wallet connection rejected."
+        : msg);
+    } finally {
+      setWalletBusy(false);
     }
   };
 
@@ -274,8 +308,6 @@ export default function App() {
       setLoading(false);
     }
   };
-
-  const [copiedField, setCopiedField] = useState<"from" | "tx" | null>(null);
 
   const copyToClipboard = (text: string, field: "from" | "tx" = "from") => {
     void navigator.clipboard.writeText(text);
@@ -472,9 +504,23 @@ export default function App() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="address" className="mb-2 block text-sm font-medium text-frost">
-                  Wallet address
-                </label>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <label htmlFor="address" className="block text-sm font-medium text-frost">
+                    Wallet address
+                  </label>
+                  {hasInjectedWallet ? (
+                    <button
+                      type="button"
+                      disabled={loading || walletBusy}
+                      onClick={() => void useConnectedWallet()}
+                      className="btn-ghost !px-2.5 !py-1 text-[11px] font-semibold text-cyan hover:text-mist"
+                    >
+                      {walletBusy ? "Connecting…" : "Use connected wallet"}
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-muted">Paste address or install MetaMask</span>
+                  )}
+                </div>
                 <input
                   type="text"
                   id="address"

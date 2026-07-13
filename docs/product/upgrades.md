@@ -55,7 +55,7 @@ Ops / DX web only. Freeze tag and chain ID stay **public-testnet-v1** / **2205**
 | **P1a — Contract & ERC-20 metadata** | On address page: detect ERC-20 via `eth_call` (`name` / `symbol` / `decimals` / `totalSupply`); badge Token | No | **Shipped** (product-v1) |
 | **P1b — Tx method & token transfers** | Human method labels (selector table); decode `Transfer` / `Approval` logs into readable rows | No | **Shipped** (product-v1) |
 | **P1c — Search UX** | Recent searches chips; keep address / tx / block resolution | No | **Shipped** (product-v1) |
-| **P1d — Token balance tab** | Optional known-token list + `balanceOf` for an address (config or env) | No | Planned |
+| **P1d — Token balance tab** | Optional known-token list + `balanceOf` for an address (`PUBLIC_KNOWN_TOKENS`) | No | **Shipped** (product-v1.1) |
 | **P1e — Internal txs / full history** | Requires log/tx indexer — **out of no-indexer MVP** | Yes | Deferred |
 | **P1f — Verified source / ABI** | Source upload or IPFS — product phase after indexer | Optional | Deferred |
 
@@ -73,7 +73,7 @@ Design bar remains in [Block explorer](./block-explorer.md).
 | :--- | :--- | :--- |
 | **P2a — Success actions** | Copy tx hash; explorer deep-link; address deep-link when explorer URL set | **Shipped** (product-v1) |
 | **P2b — Rate-limit copy** | Friendlier errors for per-address / per-IP windows from API text | **Shipped** (product-v1) |
-| **P2c — Wallet paste** | Optional “use connected wallet” via injected provider | Planned |
+| **P2c — Wallet paste** | “Use connected wallet” via injected provider (`eth_requestAccounts`) | **Shipped** (product-v1.1) |
 | **P2d — Balance preview** | Read faucet funding balance via public RPC (no keys) | Planned |
 
 Backend (`faucet/` + `dewfaucet`) stays policy source of truth — see [Faucet](./faucet.md).
@@ -83,7 +83,7 @@ Backend (`faucet/` + `dewfaucet`) stays policy source of truth — see [Faucet](
 | Slice | Goal | Status |
 | :--- | :--- | :--- |
 | **P3a — Author filter** | Client-side filter by address substring; “Mine” when wallet connected | **Shipped** (product-v1) |
-| **P3b — Share link** | Query param `?author=0x…` pre-filters feed | Planned |
+| **P3b — Share link** | Query param `?author=…` pre-filters feed; Share copies URL | **Shipped** (product-v1.1) |
 | **P3c — Reactions / replies** | New contract methods — **re-deploy** + SPA; not freeze wire | Deferred unless demo demand |
 
 See [Guestbook](./guestbook.md).
@@ -95,7 +95,9 @@ See [Guestbook](./guestbook.md).
 - [x] Faucet P2a–b  
 - [x] Guestbook P3a  
 - [x] App docs + product pages note product-v1 slices  
+- [x] product-v1.1: P1d known-token balances · P2c wallet paste · P3b `?author=` share  
 - [ ] Deploy rebuild of live path B surfaces (operator)  
+- [ ] P2d faucet funder balance preview (optional)
 
 ---
 

@@ -19,7 +19,7 @@ The **faucet** is an ops HTTP service that drips a **small fixed amount** of tes
 
 Policy baseline: [Public testnet freeze](../ops/public-testnet.md) · Launch: [Launch checklist](../ops/launch-checklist.md).
 
-**Product-v1 UI** (`faucet-web/`): copy tx hash on success; explorer deep-links for tx + recipient when `PUBLIC_EXPLORER_URL` is set; friendlier rate-limit / allowlist / captcha error copy. Backlog: [upgrades.md](./upgrades.md).
+**Product-v1 UI** (`faucet-web/`): copy tx hash on success; explorer deep-links for tx + recipient when `PUBLIC_EXPLORER_URL` is set; friendlier rate-limit / allowlist / captcha error copy; **Use connected wallet** (`eth_requestAccounts`) when MetaMask (or another injected provider) is present. Backlog: [upgrades.md](./upgrades.md).
 
 ## Design
 

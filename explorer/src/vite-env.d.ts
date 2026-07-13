@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly PUBLIC_DEW_PRICE_CHANGE_24H?: string;
   readonly PUBLIC_DEW_MARKET_CAP_USD?: string;
   readonly PUBLIC_DEW_TOTAL_SUPPLY?: string;
+  /** Comma-separated `0xaddr` or `SYMBOL:0xaddr` for address token balances */
+  readonly PUBLIC_KNOWN_TOKENS?: string;
 }
 
 interface ImportMeta {

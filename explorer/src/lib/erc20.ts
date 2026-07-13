@@ -12,7 +12,15 @@ const SEL = {
   symbol: "0x95d89b41",
   decimals: "0x313ce567",
   totalSupply: "0x18160ddd",
+  /** balanceOf(address) — pad address to 32 bytes after selector */
+  balanceOf: "0x70a08231",
 } as const;
+
+/** Encode balanceOf(owner) calldata. */
+export function balanceOfCalldata(owner: string): string {
+  const addr = owner.toLowerCase().replace(/^0x/, "").padStart(64, "0");
+  return `${SEL.balanceOf}${addr}`;
+}
 
 export type Erc20Meta = {
   name: string | null;
@@ -91,4 +99,50 @@ export function formatMaybeToken(
 ): string {
   const amt = decimals != null ? formatTokenAmount(raw, decimals) : formatDew(raw);
   return symbol ? `${amt} ${symbol}` : amt;
+}
+
+export type KnownTokenBalance = {
+  address: string;
+  label: string | null;
+  symbol: string | null;
+  decimals: number | null;
+  balance: bigint;
+  error?: string;
+};
+
+/**
+ * balanceOf + soft metadata for a configured known-token list.
+ * Does not hide zero balances (operator may want to see 0).
+ */
+export async function fetchKnownTokenBalances(
+  owner: string,
+  tokens: { address: string; label?: string | null }[],
+): Promise<KnownTokenBalance[]> {
+  const results = await Promise.all(
+    tokens.map(async (t): Promise<KnownTokenBalance> => {
+      const addr = t.address.toLowerCase();
+      try {
+        const balRaw = await ethCall(addr, balanceOfCalldata(owner));
+        const balance = balRaw ? (decodeAbiUint(balRaw) ?? 0n) : 0n;
+        const meta = await fetchErc20Meta(addr);
+        return {
+          address: addr,
+          label: t.label ?? null,
+          symbol: meta?.symbol ?? t.label ?? null,
+          decimals: meta?.decimals ?? null,
+          balance,
+        };
+      } catch (e) {
+        return {
+          address: addr,
+          label: t.label ?? null,
+          symbol: t.label ?? null,
+          decimals: null,
+          balance: 0n,
+          error: e instanceof Error ? e.message : String(e),
+        };
+      }
+    }),
+  );
+  return results;
 }

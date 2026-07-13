@@ -19,7 +19,7 @@ import {
 } from "@/lib/rpc";
 import { hexToNumber, isHexHash } from "@/lib/format";
 import { fetchNetworkStats } from "@/lib/network-stats";
-import { fetchErc20Meta } from "@/lib/erc20";
+import { fetchErc20Meta, fetchKnownTokenBalances } from "@/lib/erc20";
 
 const HEAD_MS = 4000;
 
@@ -110,6 +110,18 @@ export function useErc20Meta(addr: string, isContract: boolean) {
     enabled: Boolean(addr) && isContract,
     staleTime: 60_000,
     retry: false,
+  });
+}
+
+/** balanceOf against PUBLIC_KNOWN_TOKENS list (P1d). */
+export function useKnownTokenBalances(owner: string) {
+  const list = config.knownTokens;
+  return useQuery({
+    queryKey: qk.knownTokenBalances(owner),
+    queryFn: () => fetchKnownTokenBalances(owner, [...list]),
+    enabled: Boolean(owner) && list.length > 0,
+    staleTime: 15_000,
+    retry: 1,
   });
 }
 

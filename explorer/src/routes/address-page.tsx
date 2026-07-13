@@ -1,10 +1,11 @@
 import { useParams } from "@tanstack/react-router";
-import { useAddress, useErc20Meta } from "@/hooks/use-chain";
+import { useAddress, useErc20Meta, useKnownTokenBalances } from "@/hooks/use-chain";
 import { formatDew, hexToBigInt, hexToNumber, isHexAddress } from "@/lib/format";
 import { formatTokenAmount } from "@/lib/erc20";
 import { config } from "@/lib/config";
 import { Identicon } from "@/components/identicon";
 import {
+  AddressLink,
   CopyButton,
   DataField,
   EmptyState,
@@ -70,6 +71,8 @@ function AddressBody({
 }) {
   const erc20 = useErc20Meta(addr, isContract);
   const token = erc20.data;
+  const knownBal = useKnownTokenBalances(addr);
+  const hasKnown = config.knownTokens.length > 0;
 
   return (
     <div>
@@ -112,7 +115,9 @@ function AddressBody({
 
       <WarningBanner>
         Full address history needs an indexer. Showing on-chain balance, nonce, and code from
-        JSON-RPC{token ? "; ERC-20 metadata via eth_call" : ""}.
+        JSON-RPC
+        {token ? "; ERC-20 metadata via eth_call" : ""}
+        {hasKnown ? "; known-token balances via balanceOf" : ""}.
       </WarningBanner>
 
       <Tabs.Root defaultValue="overview">
@@ -120,6 +125,14 @@ function AddressBody({
           <Tabs.Trigger value="overview" className="tab-trigger">
             Overview
           </Tabs.Trigger>
+          {hasKnown ? (
+            <Tabs.Trigger value="tokens" className="tab-trigger">
+              Token balances
+              {knownBal.data
+                ? ` (${knownBal.data.filter((r) => r.balance > 0n).length})`
+                : ""}
+            </Tabs.Trigger>
+          ) : null}
           {token ? (
             <Tabs.Trigger value="token" className="tab-trigger">
               Token
@@ -154,6 +167,60 @@ function AddressBody({
             ) : null}
           </FieldList>
         </Tabs.Content>
+
+        {hasKnown ? (
+          <Tabs.Content value="tokens">
+            {knownBal.isLoading ? (
+              <LoadingBlock label="Loading token balances…" />
+            ) : knownBal.isError ? (
+              <EmptyState title="Failed to load token balances" detail={String(knownBal.error)} />
+            ) : !knownBal.data?.length ? (
+              <EmptyState
+                title="No known tokens configured"
+                detail="Set PUBLIC_KNOWN_TOKENS (e.g. SYMBOL:0xaddr,0x…) at build time."
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[28rem] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-line)] text-xs text-muted">
+                      <th className="pb-2 pr-3 font-medium">Token</th>
+                      <th className="pb-2 pr-3 font-medium">Contract</th>
+                      <th className="pb-2 text-right font-medium">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {knownBal.data.map((row) => (
+                      <tr
+                        key={row.address}
+                        className="border-b border-[var(--color-line)]/60 last:border-0"
+                      >
+                        <td className="py-2.5 pr-3">
+                          <span className="font-medium text-frost">
+                            {row.symbol ?? row.label ?? "Token"}
+                          </span>
+                          {row.error ? (
+                            <span className="mt-0.5 block text-[10px] text-danger">{row.error}</span>
+                          ) : null}
+                        </td>
+                        <td className="py-2.5 pr-3">
+                          <AddressLink address={row.address} />
+                        </td>
+                        <td className="mono py-2.5 text-right text-frost">
+                          {formatTokenAmount(row.balance, row.decimals)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="mt-3 text-xs text-muted">
+                  List from <span className="mono">PUBLIC_KNOWN_TOKENS</span> — not a full
+                  portfolio indexer.
+                </p>
+              </div>
+            )}
+          </Tabs.Content>
+        ) : null}
 
         {token ? (
           <Tabs.Content value="token">
