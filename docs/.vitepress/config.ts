@@ -1,4 +1,4 @@
-import { withMermaid } from 'vitepress-plugin-mermaid'
+import { defineConfig } from 'vitepress'
 import type { DefaultTheme } from 'vitepress'
 import { readFileSync, existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -64,7 +64,7 @@ const sidebar = loadSidebar()
 const docsBaseRaw = process.env.DOCS_BASE?.trim() || '/'
 const docsBase = docsBaseRaw.endsWith('/') ? docsBaseRaw : `${docsBaseRaw}/`
 
-export default withMermaid({
+export default defineConfig({
   title: 'Dew',
   description:
     'High-performance, EVM-compatible Layer 1 — protocol docs for the Go + Node monorepo.',
@@ -165,28 +165,6 @@ export default withMermaid({
     },
   },
 
-  mermaid: {
-    theme: 'base',
-    themeVariables: {
-      primaryColor: '#3db8a8',
-      primaryTextColor: '#0f1c2e',
-      primaryBorderColor: '#1a8f82',
-      lineColor: '#3d4f63',
-      secondaryColor: '#e8f0ed',
-      tertiaryColor: '#f7faf9',
-      fontFamily: 'Figtree, system-ui, sans-serif',
-    },
-    flowchart: {
-      curve: 'basis',
-      htmlLabels: true,
-      padding: 12,
-    },
-    sequence: {
-      actorMargin: 40,
-      messageMargin: 30,
-    },
-  },
-
   vite: {
     server: {
       port: 5173,
@@ -227,9 +205,7 @@ export default withMermaid({
       ],
     },
     ssr: {
-      noExternal: ['mermaid', 'dayjs', 'vitepress-plugin-mermaid'],
+      noExternal: ['mermaid', 'dayjs', 'vitepress-mermaid-renderer'],
     },
   },
 })
-
-
