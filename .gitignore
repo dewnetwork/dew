@@ -107,6 +107,14 @@ examples/foundry/out/
 examples/foundry/broadcast/
 examples/foundry/lib/
 
+# --- Hardhat (examples/hardhat; node_modules via npm install) ---
+examples/hardhat/cache/
+examples/hardhat/artifacts/
+examples/hardhat/typechain-types/
+examples/hardhat/coverage/
+# Reproducible npm install (root ignores package-lock.json globally)
+!examples/hardhat/package-lock.json
+
 # --- Test / fuzz artifacts ---
 testdata/generated/
 __debug_bin*

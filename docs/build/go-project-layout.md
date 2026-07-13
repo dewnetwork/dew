@@ -50,7 +50,7 @@ dew/                            # monorepo root
 ├── devnet/                     # Multi-validator + multiproc BFT tests
 ├── tests/                      # load + security suites
 ├── deploy/                     # Docker Compose, systemd, nginx samples
-├── examples/                   # Foundry samples + Guestbook SPA (read + MetaMask)
+├── examples/                   # Foundry + Hardhat samples + Guestbook SPA
 ├── scripts/                    # Node/shell helpers (smoke-rpc, build-site)
 ├── web/                        # Astro marketing landing
 ├── explorer/                   # Block explorer SPA (React/Vite)
@@ -89,6 +89,7 @@ Optional later (not present today): `packages/sdk`, `packages/localnet`.
 | Explorer / faucet UI | `explorer/`, `faucet-web/` |
 | Scripts | `scripts/smoke-rpc.mjs`, `devnet-erc20.mjs`, `build-site.mjs` |
 | Foundry sample | `examples/foundry/` — [Quick start](../ops/quickstart.md) · [Recipes](../ops/recipes.md) |
+| Hardhat sample | `examples/hardhat/` — same Token/Guestbook · [Quick start §3b](../ops/quickstart.md#3b-hardhat) |
 | Guestbook SPA | `examples/guestbook-web/` — [Guestbook product](../product/guestbook.md) · [Try public](../ops/try-public.md) |
 
 ### Docs web flow

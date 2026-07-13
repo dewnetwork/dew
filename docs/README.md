@@ -70,7 +70,7 @@ Details: [Public testnet freeze](./ops/public-testnet.md) · browser demo: [Try 
 1. [Try public testnet (5 minutes)](./ops/try-public.md) — faucet → MetaMask → Guestbook → explorer (no local node)  
 2. [Quick start (5 minutes)](./ops/quickstart.md) — `dew devnet` + MetaMask + Foundry  
 3. [Builder recipes](./ops/recipes.md) — Token, **Guestbook** demo, multi-tx batch  
-4. Sample project: [examples/foundry](../examples/foundry/) · SPA: [examples/guestbook-web](../examples/guestbook-web/)  
+4. Samples: [examples/foundry](../examples/foundry/) · [examples/hardhat](../examples/hardhat/) · SPA: [examples/guestbook-web](../examples/guestbook-web/)  
 5. Live public surface: [Public testnet freeze](./ops/public-testnet.md) · [Guestbook product](./product/guestbook.md)
 
 ## Suggested reading order

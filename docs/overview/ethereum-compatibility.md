@@ -84,7 +84,8 @@ See [JSON-RPC](../api/json-rpc.md) for the full matrix.
 **Copy-paste paths:**
 
 - Browser: [Try public testnet](../ops/try-public.md) (faucet → MetaMask → [Guestbook](../product/guestbook.md) → explorer)
-- Local + Foundry: [Quick start (5 minutes)](../ops/quickstart.md) and [examples/foundry](../../examples/foundry/) (ERC-20 + `forge script` against local or public RPC)
+- Local + Foundry: [Quick start](../ops/quickstart.md) · [examples/foundry](../../examples/foundry/)
+- Local + Hardhat: [Quick start §3b](../ops/quickstart.md#3b-hardhat) · [examples/hardhat](../../examples/hardhat/)
 - Recipes (Guestbook, multi-tx C1): [Builder recipes](../ops/recipes.md)
 
 Detailed vectors live under monorepo `tests/` / `devnet/` (Go) and Node scripts (`scripts/smoke-rpc.mjs`, `scripts/devnet-erc20.mjs`).

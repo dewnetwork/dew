@@ -1,6 +1,6 @@
 ---
 title: Quick start (5 minutes)
-description: Local dew devnet, MetaMask, and Foundry deploy on chain ID 2205.
+description: Local dew devnet, MetaMask, and Foundry or Hardhat deploy on chain ID 2205.
 category: ops
 order: 35
 status: stable
@@ -17,7 +17,7 @@ Ship a Solidity ERC-20 against **Dew** — local first, then optional public tes
 | 1. Node | `dew devnet` | already live |
 | 2. RPC | `http://127.0.0.1:8545` | `https://rpc-dew.fadosoft.com` |
 | 3. Funds | Anvil #0 pre-funded | [Faucet](https://faucet-dew.fadosoft.com) (captcha) |
-| 4. Deploy | [examples/foundry](../../examples/foundry/) | same project, different key + RPC |
+| 4. Deploy | [Foundry](../../examples/foundry/) or [Hardhat](../../examples/hardhat/) | same project, different key + RPC |
 
 Freeze tag: **`public-testnet-v1`**. Full operator surface: [Public testnet](./public-testnet.md).
 
@@ -28,11 +28,11 @@ Freeze tag: **`public-testnet-v1`**. Full operator surface: [Public testnet](./p
 | Tool | Why |
 | :--- | :--- |
 | **Go 1.25+** | Build `dew` (see root `go.mod`) |
-| **Foundry** (`forge`, `cast`) | [Install](https://book.getfoundry.sh/getting-started/installation) |
-| **Node 20+** (optional) | `scripts/smoke-rpc.mjs` |
+| **Foundry** *or* **Hardhat** | Deploy Solidity — pick one path below |
+| **Node 20+** | Hardhat kit · `scripts/smoke-rpc.mjs` |
 
 ```bash
-# Foundry (once)
+# Foundry (once) — skip if using Hardhat only
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
 forge --version
@@ -89,7 +89,11 @@ Address: `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` — balance should be **1,
 
 ---
 
-## 3. Foundry: build, test, deploy (≈3 min)
+## 3. Deploy Token — Foundry **or** Hardhat (≈3 min)
+
+Same contracts (Token · Guestbook). Use **one** toolchain.
+
+### 3a. Foundry
 
 ```bash
 cd examples/foundry
@@ -97,8 +101,6 @@ forge install foundry-rs/forge-std --no-git
 forge build
 forge test
 ```
-
-Deploy Token (1,000,000 DST to the deployer):
 
 ```bash
 export DEW_RPC_URL=http://127.0.0.1:8545
@@ -113,7 +115,7 @@ forge script script/Deploy.s.sol:Deploy \
   -vvv
 ```
 
-Optional: transfer `1000` DST to Anvil #1 on the same script run:
+Optional transfer `1000` DST to Anvil #1:
 
 ```bash
 export TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
@@ -123,8 +125,6 @@ forge script script/Deploy.s.sol:Deploy \
   -vvv
 ```
 
-Copy the logged `Token` address, then:
-
 ```bash
 export TOKEN=0x…   # from script output
 cast call $TOKEN "balanceOf(address)(uint256)" \
@@ -132,11 +132,30 @@ cast call $TOKEN "balanceOf(address)(uint256)" \
   --rpc-url $DEW_RPC_URL
 ```
 
-Project README: [examples/foundry/README.md](../../examples/foundry/README.md).
+Project: [examples/foundry/README.md](../../examples/foundry/README.md).
+
+### 3b. Hardhat
+
+```bash
+cd examples/hardhat
+npm install
+npm test
+npx hardhat run scripts/deploy-token.js --network dewLocal
+```
+
+Optional transfer:
+
+```bash
+TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
+  npx hardhat run scripts/deploy-token.js --network dewLocal
+```
+
+Networks: `dewLocal` (`:8545`) · `dewPublic` (faucet-funded `PRIVATE_KEY`).  
+Project: [examples/hardhat/README.md](../../examples/hardhat/README.md).
 
 **Next recipes** (Guestbook + multi-tx batch): [Builder recipes](./recipes.md).
 
-Without Foundry, the monorepo also has:
+Without Foundry/Hardhat, the monorepo also has:
 
 ```bash
 node scripts/devnet-erc20.mjs http://127.0.0.1:8545
@@ -168,6 +187,8 @@ node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com
 3. Request DEW from the faucet (captcha · 1 DEW / address / 24h).
 4. Deploy:
 
+Foundry:
+
 ```bash
 export DEW_RPC_URL=https://rpc-dew.fadosoft.com
 export PRIVATE_KEY=0xYOUR_FUNDED_KEY
@@ -176,6 +197,13 @@ forge script script/Deploy.s.sol:Deploy \
   --rpc-url $DEW_RPC_URL \
   --broadcast \
   -vvv
+```
+
+Hardhat:
+
+```bash
+export PRIVATE_KEY=0xYOUR_FUNDED_KEY
+npx hardhat run scripts/deploy-token.js --network dewPublic
 ```
 
 5. Open the tx or contract address on the explorer (`/tx/<hash>`, `/address/<addr>`).
@@ -203,6 +231,7 @@ Publish template and ops: [Launch checklist](./launch-checklist.md) · [Public t
 - [Builder recipes](./recipes.md) — Token, **Guestbook** demo, multi-tx batch
 - [Guestbook product](../product/guestbook.md)
 - [examples/foundry](../../examples/foundry/) — contracts + forge scripts
+- [examples/hardhat](../../examples/hardhat/) — same contracts + Hardhat/ethers
 - [Local devnet](./devnet.md) — faucet keys, topology, ERC-20 smoke
 - [Ethereum compatibility](../overview/ethereum-compatibility.md)
 - [JSON-RPC](../api/json-rpc.md)

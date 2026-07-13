@@ -6,6 +6,7 @@ Solidity samples for **local `dew devnet`** and **public-testnet-v1** (chain ID 
 | :--- | :--- |
 | 5-minute onboarding | [docs/ops/quickstart.md](../../docs/ops/quickstart.md) |
 | Recipes (Token · Guestbook · batch) | [docs/ops/recipes.md](../../docs/ops/recipes.md) |
+| Hardhat parity | [examples/hardhat](../hardhat/) |
 
 ## Prerequisites
 

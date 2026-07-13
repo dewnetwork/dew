@@ -1,6 +1,6 @@
 ---
 title: Builder recipes
-description: Copy-paste Foundry recipes on Dew chain 2205 — Token, Guestbook, multi-tx batch.
+description: Copy-paste Foundry and Hardhat recipes on Dew chain 2205 — Token, Guestbook, multi-tx batch.
 category: ops
 order: 36
 status: stable
@@ -8,9 +8,14 @@ status: stable
 
 # Builder recipes
 
-Three short recipes against **local `dew devnet`** or **public-testnet-v1** (chain ID **2205**). Project root: [examples/foundry](../../examples/foundry/).
+Three short recipes against **local `dew devnet`** or **public-testnet-v1** (chain ID **2205**).
 
-Setup once:
+| Toolchain | Root |
+| :--- | :--- |
+| **Foundry** (default below) | [examples/foundry](../../examples/foundry/) |
+| **Hardhat** | [examples/hardhat](../../examples/hardhat/) — same Token / Guestbook |
+
+### Foundry setup (once)
 
 ```bash
 go build -o bin/dew ./cmd/dew && ./bin/dew devnet --http.port 8545   # terminal 1
@@ -20,7 +25,14 @@ export DEW_RPC_URL=http://127.0.0.1:8545
 export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
-Public: set `DEW_RPC_URL=https://rpc-dew.fadosoft.com` and a **faucet-funded** key (never Anvil #0).  
+### Hardhat setup (once)
+
+```bash
+cd examples/hardhat && npm install
+# local uses --network dewLocal (Anvil #0). Public: PRIVATE_KEY + --network dewPublic
+```
+
+Public: faucet-funded key (never Anvil #0).  
 Browser-only demo: [Try public testnet](./try-public.md). Full tool path: [Quick start](./quickstart.md).
 
 ---
@@ -29,18 +41,29 @@ Browser-only demo: [Try public testnet](./try-public.md). Full tool path: [Quick
 
 Deploy minimal `Token` (DST) and optional transfer.
 
+**Foundry**
+
 ```bash
 forge script script/Deploy.s.sol:Deploy \
   --rpc-url $DEW_RPC_URL --broadcast -vvv
 
-# optional transfer on deploy
 export TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 forge script script/Deploy.s.sol:Deploy \
   --rpc-url $DEW_RPC_URL --broadcast -vvv
 ```
 
-| Contract | `src/Token.sol` |
-| Script | `script/Deploy.s.sol` |
+**Hardhat**
+
+```bash
+npx hardhat run scripts/deploy-token.js --network dewLocal
+TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
+  npx hardhat run scripts/deploy-token.js --network dewLocal
+```
+
+| | Foundry | Hardhat |
+| :--- | :--- | :--- |
+| Contract | `src/Token.sol` | `contracts/Token.sol` |
+| Deploy | `script/Deploy.s.sol` | `scripts/deploy-token.js` |
 
 ---
 
@@ -50,20 +73,38 @@ Append-only messages (max 280 bytes). Share the contract address + explorer link
 
 ### Deploy (+ first message)
 
+**Foundry**
+
 ```bash
 export MESSAGE="Hello Dew — first visitor"
 forge script script/DeployGuestbook.s.sol:DeployGuestbook \
   --rpc-url $DEW_RPC_URL --broadcast -vvv
-# copy logged Guestbook address → GUESTBOOK
 export GUESTBOOK=0x…   # from script output
 ```
 
+**Hardhat**
+
+```bash
+MESSAGE="Hello Dew — first visitor" \
+  npx hardhat run scripts/deploy-guestbook.js --network dewLocal
+export GUESTBOOK=0x…   # from logs
+```
+
 ### Sign another message
+
+**Foundry**
 
 ```bash
 export MESSAGE="second signature"
 forge script script/SignGuestbook.s.sol:SignGuestbook \
   --rpc-url $DEW_RPC_URL --broadcast -vvv
+```
+
+**Hardhat**
+
+```bash
+MESSAGE="second signature" \
+  npx hardhat run scripts/sign-guestbook.js --network dewLocal
 ```
 
 ### Read with cast
@@ -75,8 +116,10 @@ cast call $GUESTBOOK "getEntry(uint256)(address,uint64,string)" 0 --rpc-url $DEW
 
 Public explorer: `https://explorer-dew.fadosoft.com/address/<GUESTBOOK>` or `/tx/<hash>` from broadcast.
 
-| Contract | `src/Guestbook.sol` |
-| Scripts | `DeployGuestbook.s.sol`, `SignGuestbook.s.sol` |
+| | Foundry | Hardhat |
+| :--- | :--- | :--- |
+| Contract | `src/Guestbook.sol` | `contracts/Guestbook.sol` |
+| Scripts | `DeployGuestbook` / `SignGuestbook` | `deploy-guestbook.js` / `sign-guestbook.js` |
 
 **Why this demo:** one contract, faucet DEW, MetaMask-friendly, visible on explorer — good “I used Dew” story without bridges or staking.
 
@@ -91,8 +134,11 @@ Public explorer: `https://explorer-dew.fadosoft.com/address/<GUESTBOOK>` or `/tx
 # Use the live contract without redeploying
 export GUESTBOOK=0x83bB4E539BE46503481E66094b01b854990BF84a
 export MESSAGE="hello from recipes"
+# Foundry:
 forge script script/SignGuestbook.s.sol:SignGuestbook \
   --rpc-url $DEW_RPC_URL --broadcast -vvv
+# Hardhat:
+# npx hardhat run scripts/sign-guestbook.js --network dewPublic
 ```
 
 Product page: [Guestbook demo](../product/guestbook.md).
@@ -160,5 +206,6 @@ Import Anvil #0 **only** on local nets. Public: new wallet + [faucet](https://fa
 - [Quick start (5 minutes)](./quickstart.md)
 - [Guestbook product](../product/guestbook.md)
 - [examples/foundry](../../examples/foundry/)
+- [examples/hardhat](../../examples/hardhat/)
 - [Local devnet](./devnet.md)
 - [Public testnet](./public-testnet.md)

@@ -12,7 +12,7 @@ The **Guestbook** is the flagship public demo for **public-testnet-v1**: append-
 
 | Item | Status |
 | :--- | :--- |
-| Solidity | [examples/foundry/src/Guestbook.sol](../../examples/foundry/src/Guestbook.sol) |
+| Solidity | [examples/foundry](../../examples/foundry/src/Guestbook.sol) · [examples/hardhat](../../examples/hardhat/contracts/Guestbook.sol) |
 | SPA | [examples/guestbook-web](../../examples/guestbook-web/) |
 | Live URL (path B) | `https://guestbook-dew.fadosoft.com` |
 | Canonical contract (path B) | `0x83bB4E539BE46503481E66094b01b854990BF84a` |

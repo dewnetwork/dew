@@ -1,0 +1,22 @@
+{
+  "name": "dew-hardhat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hardhat samples for Dew local devnet and public-testnet-v1 (chain 2205)",
+  "license": "Apache-2.0",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:token": "hardhat run scripts/deploy-token.js",
+    "deploy:guestbook": "hardhat run scripts/deploy-guestbook.js",
+    "sign:guestbook": "hardhat run scripts/sign-guestbook.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.7",
+    "hardhat": "^2.22.18"
+  }
+}
