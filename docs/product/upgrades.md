@@ -74,7 +74,7 @@ Design bar remains in [Block explorer](./block-explorer.md).
 | **P2a — Success actions** | Copy tx hash; explorer deep-link; address deep-link when explorer URL set | **Shipped** (product-v1) |
 | **P2b — Rate-limit copy** | Friendlier errors for per-address / per-IP windows from API text | **Shipped** (product-v1) |
 | **P2c — Wallet paste** | “Use connected wallet” via injected provider (`eth_requestAccounts`) | **Shipped** (product-v1.1) |
-| **P2d — Balance preview** | Read faucet funding balance via public RPC (no keys) | Planned |
+| **P2d — Balance preview** | `GET /info` includes `balanceWei`; UI chip + low-balance warn; refresh after drip | **Shipped** (product-v1.2) |
 
 Backend (`faucet/` + `dewfaucet`) stays policy source of truth — see [Faucet](./faucet.md).
 
@@ -96,8 +96,8 @@ See [Guestbook](./guestbook.md).
 - [x] Guestbook P3a  
 - [x] App docs + product pages note product-v1 slices  
 - [x] product-v1.1: P1d known-token balances · P2c wallet paste · P3b `?author=` share  
-- [ ] Deploy rebuild of live path B surfaces (operator)  
-- [ ] P2d faucet funder balance preview (optional)
+- [x] product-v1.2: P2d funder `balanceWei` on `/info` + UI  
+- [ ] Deploy rebuild of live path B surfaces (operator)
 
 ---
 

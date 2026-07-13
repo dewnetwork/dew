@@ -5,6 +5,8 @@ interface FaucetInfo {
   mode: "allowlist" | "captcha" | "dev";
   amountWei: string;
   from: string;
+  /** Funder balance in wei when RPC is reachable (P2d). */
+  balanceWei?: string;
   perAddress: number;
   perAddressWindowSec: number;
   perIP: number;
@@ -69,6 +71,9 @@ export default function App() {
     if (m.includes("captcha") || m.includes("turnstile") || m.includes("hcaptcha")) {
       return "Captcha verification failed. Refresh the challenge and try again.";
     }
+    if (m.includes("underfund") || m.includes("insufficient")) {
+      return "Faucet is underfunded. An operator needs to top up the funder address.";
+    }
     return raw;
   };
 
@@ -97,22 +102,29 @@ export default function App() {
     return `${sec} seconds`;
   };
 
-  useEffect(() => {
-    fetch(getApiUrl("info"))
+  const loadInfo = React.useCallback(() => {
+    return fetch(getApiUrl("info"))
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
+        return res.json() as Promise<FaucetInfo>;
       })
       .then((data) => {
         setInfo(data);
+        setInfoError(null);
         setInfoLoading(false);
+        return data;
       })
       .catch((err) => {
         console.error("Failed to load faucet info:", err);
         setInfoError("Could not connect to the faucet server. Make sure the backend is running.");
         setInfoLoading(false);
+        return null;
       });
   }, []);
+
+  useEffect(() => {
+    void loadInfo();
+  }, [loadInfo]);
 
   useEffect(() => {
     if (!info || info.mode !== "captcha") return;
@@ -295,6 +307,7 @@ export default function App() {
 
       setSuccess(data);
       setAddress("");
+      void loadInfo(); // refresh funder balance after drip
 
       if (info?.mode === "captcha") {
         const provider = import.meta.env.PUBLIC_CAPTCHA_PROVIDER || "turnstile";
@@ -321,6 +334,22 @@ export default function App() {
 
   const year = new Date().getFullYear();
   const freezeLabel = infoLoading ? "Connecting…" : info?.freezeTag || "public-testnet-v1";
+
+  let estimatedDrips: number | null = null;
+  let lowBalance = false;
+  if (info?.balanceWei && info.amountWei) {
+    try {
+      const bal = BigInt(info.balanceWei);
+      const amt = BigInt(info.amountWei);
+      if (amt > 0n) {
+        estimatedDrips = Number(bal / amt);
+        // Warn when fewer than ~10 drips remain (gas ignored for UI estimate).
+        lowBalance = estimatedDrips < 10;
+      }
+    } catch {
+      estimatedDrips = null;
+    }
+  }
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-hidden">
@@ -608,12 +637,34 @@ export default function App() {
             </form>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="stat-chip">
               <p className="font-mono text-[10px] tracking-wider text-muted uppercase">Drip amount</p>
               <p className="mt-1.5 font-display text-lg font-bold tracking-tight text-frost">
                 {infoLoading ? "…" : formatDewAmount(info?.amountWei || "1000000000000000000")}
               </p>
+            </div>
+            <div className="stat-chip">
+              <p className="font-mono text-[10px] tracking-wider text-muted uppercase">
+                Faucet balance
+              </p>
+              <p
+                className={`mt-1.5 font-display text-lg font-bold tracking-tight ${
+                  lowBalance ? "text-gold" : "text-frost"
+                }`}
+              >
+                {infoLoading
+                  ? "…"
+                  : info?.balanceWei != null
+                    ? formatDewAmount(info.balanceWei)
+                    : "—"}
+              </p>
+              {estimatedDrips != null ? (
+                <p className="mt-0.5 text-[10px] text-muted">
+                  ~{estimatedDrips.toLocaleString()} drips left
+                  {lowBalance ? " · low" : ""}
+                </p>
+              ) : null}
             </div>
             <div className="stat-chip">
               <p className="font-mono text-[10px] tracking-wider text-muted uppercase">
@@ -633,6 +684,12 @@ export default function App() {
             </div>
           </div>
 
+          {lowBalance && (
+            <div className="alert alert-info mt-4 text-center text-xs" role="status">
+              Faucet balance is low — operators may need to top up the funder address.
+            </div>
+          )}
+
           {!infoLoading && info?.from && (
             <div className="mt-6 flex flex-col items-center font-mono text-xs text-muted">
               <span className="mb-1.5 tracking-wide uppercase text-[10px]">Faucet address</span>
@@ -646,6 +703,16 @@ export default function App() {
                 >
                   {copied && copiedField === "from" ? "Copied" : "Copy"}
                 </button>
+                {getExplorerAddressLink(info.from) ? (
+                  <a
+                    href={getExplorerAddressLink(info.from)!}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-ghost !px-2 !py-1 text-cyan"
+                  >
+                    Explorer
+                  </a>
+                ) : null}
               </div>
             </div>
           )}

@@ -103,17 +103,24 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleInfo(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"chainId":            s.cfg.ChainID,
-		"mode":               string(s.cfg.Mode),
-		"amountWei":          s.cfg.AmountWei.String(),
-		"from":               s.sender.From().Hex(),
-		"perAddress":         s.cfg.PerAddress,
+	out := map[string]interface{}{
+		"chainId":             s.cfg.ChainID,
+		"mode":                string(s.cfg.Mode),
+		"amountWei":           s.cfg.AmountWei.String(),
+		"from":                s.sender.From().Hex(),
+		"perAddress":          s.cfg.PerAddress,
 		"perAddressWindowSec": int(s.cfg.PerAddressWindow.Seconds()),
-		"perIP":              s.cfg.PerIP,
-		"perIPWindowSec":     int(s.cfg.PerIPWindow.Seconds()),
-		"freezeTag":          "public-testnet-v1",
-	})
+		"perIP":               s.cfg.PerIP,
+		"perIPWindowSec":      int(s.cfg.PerIPWindow.Seconds()),
+		"freezeTag":           "public-testnet-v1",
+	}
+	// Best-effort funder balance for UI preview (no secrets). Soft-omit on RPC error.
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	if bal, err := s.sender.BalanceWei(ctx); err == nil && bal != nil {
+		out["balanceWei"] = bal.String()
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 type dripRequest struct {

@@ -68,7 +68,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] Faucet P2a success actions · P2b rate-limit copy
 - [x] Guestbook P3a author / mine filter
 - [x] P1d known-token balances · P2c wallet paste · P3b share `?author=` (product-v1.1)
-- [ ] P2d faucet funder balance preview (optional)
+- [x] P2d faucet funder `balanceWei` on `/info` + UI (product-v1.2)
 - [ ] P1e indexer history · P1f verified source · P3c reactions (deferred)
 
 ## Docs

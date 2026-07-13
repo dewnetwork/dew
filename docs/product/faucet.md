@@ -19,7 +19,7 @@ The **faucet** is an ops HTTP service that drips a **small fixed amount** of tes
 
 Policy baseline: [Public testnet freeze](../ops/public-testnet.md) · Launch: [Launch checklist](../ops/launch-checklist.md).
 
-**Product-v1 UI** (`faucet-web/`): copy tx hash on success; explorer deep-links for tx + recipient when `PUBLIC_EXPLORER_URL` is set; friendlier rate-limit / allowlist / captcha error copy; **Use connected wallet** (`eth_requestAccounts`) when MetaMask (or another injected provider) is present. Backlog: [upgrades.md](./upgrades.md).
+**Product-v1 UI** (`faucet-web/`): copy tx hash on success; explorer deep-links for tx + recipient when `PUBLIC_EXPLORER_URL` is set; friendlier rate-limit / allowlist / captcha error copy; **Use connected wallet** (`eth_requestAccounts`) when MetaMask (or another injected provider) is present; **funder balance** from `GET /info` `balanceWei` (refreshed after drip). Backlog: [upgrades.md](./upgrades.md).
 
 ## Design
 
@@ -79,6 +79,7 @@ Public metadata (no secrets):
   "mode": "allowlist",
   "amountWei": "1000000000000000000",
   "from": "0x…",
+  "balanceWei": "5000000000000000000000",
   "perAddress": 1,
   "perAddressWindowSec": 86400,
   "perIP": 10,
@@ -86,6 +87,8 @@ Public metadata (no secrets):
   "freezeTag": "public-testnet-v1"
 }
 ```
+
+`balanceWei` is **best-effort** (omitted if the faucet cannot reach RPC). Decimal string of the funder EOA native balance — no private keys. UI uses it for a funder balance chip + low-balance hint (product-v1.2 / P2d).
 
 ### `POST /drip`
 

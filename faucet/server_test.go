@@ -189,6 +189,14 @@ func TestInfoAndHealth(t *testing.T) {
 	if info["chainId"].(float64) != 2205 {
 		t.Fatalf("chainId=%v", info["chainId"])
 	}
+	// mockChain funds 1000 DEW — balanceWei should surface for product-v1.2 P2d.
+	bw, ok := info["balanceWei"].(string)
+	if !ok || bw == "" {
+		t.Fatalf("balanceWei missing: %v", info["balanceWei"])
+	}
+	if bw == "0" {
+		t.Fatalf("expected non-zero balanceWei, got %q", bw)
+	}
 }
 
 func TestInvalidAddress(t *testing.T) {

@@ -56,6 +56,11 @@ func (s *Sender) From() common.Address { return s.from }
 // Amount returns the drip size.
 func (s *Sender) Amount() *big.Int { return new(big.Int).Set(s.amount) }
 
+// BalanceWei returns the funder EOA balance (latest) for public /info (P2d).
+func (s *Sender) BalanceWei(ctx context.Context) (*big.Int, error) {
+	return s.chain.BalanceWei(ctx, s.from.Hex())
+}
+
 // DripResult is a successful transfer.
 type DripResult struct {
 	TxHash string
