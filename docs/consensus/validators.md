@@ -69,7 +69,7 @@ Exact algorithm should be one pure function in `consensus/` with unit tests for 
 | :--- | :--- | :--- |
 | Unbonding period (param) | **604,800** | **seconds** (7 days) |
 
-Documented as seconds in genesis (`unbondingPeriodSeconds`). **Enforcement before withdraw is not complete** (immediate return residual — D3c). Do not treat “604,800 blocks” as the unit unless code stores a height delta explicitly.
+Documented as seconds in genesis (`unbondingPeriodSeconds`). **Enforced (D3c):** `unbond` queues stake at unlock = `block.timestamp + period`; `withdraw` (`0x08`) pays only when `now ≥ unlockAt`. Single pending queue per address (stacked amounts use later unlock). Do not treat “604,800 blocks” as the unit.
 
 ## Genesis validators
 

@@ -263,7 +263,7 @@ Only required when operators enable `--staking` on a network. Public-testnet-v1 
 
 | Item | Spec | Packages |
 | :--- | :--- | :--- |
-| **Unbonding period** | `unbondSeconds` from genesis / `params`; funds locked until `now ≥ unbondStart + period` (prefer block timestamp at withdraw) | `core/native/staking.go`, `params/staking.go` |
+| **Unbonding period** | `unbondSeconds` from genesis / `params`; funds locked until `now ≥ unbondStart + period` (prefer block timestamp at withdraw) — **done** (unbond queue + `0x08` withdraw) | `core/native/staking.go`, `core/vm/precompiles.go` |
 | **Double-sign evidence** | Verify duplicate precommit at same `(height, round)` with distinct block hash; jail + slash per [Slashing](../consensus/slashing.md) | `consensus/`, `core/native` |
 | **ActiveSet → BFT** | At epoch boundary (`epochLength` blocks), `StakingModule.ActiveSet()` rebuilds `consensus.ValidatorSet` voting power | `consensus/`, `core/native`, `node/` |
 | **Nested CALL bond** | `msg.sender` for bond = EVM caller, not only top-level tx sender | `core/vm/precompiles.go` |

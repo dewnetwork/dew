@@ -19,17 +19,21 @@ var StakingModuleAddr = crypto.MustHexToAddress("0x00000000000000000000000000000
 
 // Storage slot layout (under StakingModuleAddr):
 //
-//	keccak256("dew/stake/v1/self" || addr)     → self-stake amount (32-byte big-endian)
-//	keccak256("dew/stake/v1/jailed" || addr)   → 1 if jailed
-//	keccak256("dew/stake/v1/cand" || addr)     → 1 if candidate registered
-//	keccak256("dew/stake/v1/candlen")          → candidate count
-//	keccak256("dew/stake/v1/candi" || uint64)  → candidate address at index
+//	keccak256("dew/stake/v1/self" || addr)       → self-stake amount (32-byte big-endian)
+//	keccak256("dew/stake/v1/jailed" || addr)     → 1 if jailed
+//	keccak256("dew/stake/v1/cand" || addr)       → 1 if candidate registered
+//	keccak256("dew/stake/v1/candlen")            → candidate count
+//	keccak256("dew/stake/v1/candi" || uint64)    → candidate address at index
+//	keccak256("dew/stake/v1/unbondAmt" || addr)  → pending unbond amount (escrowed)
+//	keccak256("dew/stake/v1/unbondAt" || addr)   → unlock unix timestamp (seconds)
 const (
-	stakeDomainSelf   = "dew/stake/v1/self"
-	stakeDomainJailed = "dew/stake/v1/jailed"
-	stakeDomainCand   = "dew/stake/v1/cand"
-	stakeDomainLen    = "dew/stake/v1/candlen"
-	stakeDomainIdx    = "dew/stake/v1/candi"
+	stakeDomainSelf      = "dew/stake/v1/self"
+	stakeDomainJailed    = "dew/stake/v1/jailed"
+	stakeDomainCand      = "dew/stake/v1/cand"
+	stakeDomainLen       = "dew/stake/v1/candlen"
+	stakeDomainIdx       = "dew/stake/v1/candi"
+	stakeDomainUnbondAmt = "dew/stake/v1/unbondAmt"
+	stakeDomainUnbondAt  = "dew/stake/v1/unbondAt"
 )
 
 // StakingConfig is runtime staking parameters.
@@ -89,6 +93,12 @@ func (m *StakingModule) idxSlot(i uint64) types.Hash {
 		be[7-b] = byte(i >> (8 * b))
 	}
 	return slotHash([]byte(stakeDomainIdx), be[:])
+}
+func (m *StakingModule) unbondAmtSlot(addr crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainUnbondAmt), addr.Bytes())
+}
+func (m *StakingModule) unbondAtSlot(addr crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainUnbondAt), addr.Bytes())
 }
 
 func hashToU256(h types.Hash) *uint256.Int {
@@ -156,18 +166,26 @@ func (m *StakingModule) registerCandidate(addr crypto.Address) {
 	m.db.SetState(StakingModuleAddr, m.lenSlot(), u256ToHash(uint256.NewInt(n+1)))
 }
 
-// Unbond reduces self-stake and returns amount to credit back to addr.
-// C4: funds return immediately; unbonding period enforcement is residual debt.
-func (m *StakingModule) Unbond(addr crypto.Address, amount *uint256.Int) (*uint256.Int, error) {
+// PendingUnbond returns queued unbond amount and unlock unix timestamp (0 if none).
+func (m *StakingModule) PendingUnbond(addr crypto.Address) (amount *uint256.Int, unlockAt uint64) {
+	amount = hashToU256(m.db.GetState(StakingModuleAddr, m.unbondAmtSlot(addr)))
+	unlockAt = hashToU256(m.db.GetState(StakingModuleAddr, m.unbondAtSlot(addr))).Uint64()
+	return amount, unlockAt
+}
+
+// Unbond reduces self-stake and queues amount in the unbonding escrow until
+// blockTime + UnbondSeconds (D3c). Funds stay at module address; call Withdraw after unlock.
+// now is the current block timestamp (unix seconds).
+func (m *StakingModule) Unbond(addr crypto.Address, amount *uint256.Int, now uint64) error {
 	if amount == nil || amount.IsZero() {
-		return nil, fmt.Errorf("staking: zero unbond")
+		return fmt.Errorf("staking: zero unbond")
 	}
 	if m.IsJailed(addr) {
-		return nil, fmt.Errorf("staking: jailed")
+		return fmt.Errorf("staking: jailed")
 	}
 	cur := m.SelfStake(addr)
 	if cur.Cmp(amount) < 0 {
-		return nil, fmt.Errorf("staking: insufficient stake")
+		return fmt.Errorf("staking: insufficient stake")
 	}
 	next := new(uint256.Int).Sub(cur, amount)
 	m.db.SetState(StakingModuleAddr, m.selfSlot(addr), u256ToHash(next))
@@ -176,7 +194,33 @@ func (m *StakingModule) Unbond(addr crypto.Address, amount *uint256.Int) (*uint2
 		// drop candidate flag (keep list entry; ActiveSet filters by stake+flag)
 		m.db.SetState(StakingModuleAddr, m.candSlot(addr), types.Hash{})
 	}
-	return amount, nil
+
+	// Queue escrow: add to any existing pending; unlock = max(old, now+period).
+	period := m.cfg.UnbondSeconds
+	unlock := now + period
+	pending, oldUnlock := m.PendingUnbond(addr)
+	pending = new(uint256.Int).Add(pending, amount)
+	if oldUnlock > unlock {
+		unlock = oldUnlock
+	}
+	m.db.SetState(StakingModuleAddr, m.unbondAmtSlot(addr), u256ToHash(pending))
+	m.db.SetState(StakingModuleAddr, m.unbondAtSlot(addr), u256ToHash(uint256.NewInt(unlock)))
+	return nil
+}
+
+// Withdraw releases matured pending unbond to the caller credit amount.
+// Returns the amount to transfer from module escrow; 0 error if not ready.
+func (m *StakingModule) Withdraw(addr crypto.Address, now uint64) (*uint256.Int, error) {
+	pending, unlockAt := m.PendingUnbond(addr)
+	if pending == nil || pending.IsZero() {
+		return nil, fmt.Errorf("staking: no pending unbond")
+	}
+	if now < unlockAt {
+		return nil, fmt.Errorf("staking: unbonding period not elapsed (unlockAt=%d now=%d)", unlockAt, now)
+	}
+	m.db.SetState(StakingModuleAddr, m.unbondAmtSlot(addr), types.Hash{})
+	m.db.SetState(StakingModuleAddr, m.unbondAtSlot(addr), types.Hash{})
+	return pending, nil
 }
 
 // Jail marks a validator jailed (double-sign / evidence path). Voting power becomes 0.

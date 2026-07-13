@@ -107,7 +107,7 @@ Only when `--staking` is intentionally enabled. Public-testnet-v1 keeps staking 
 
 | Item | Packages |
 | :--- | :--- |
-| Unbonding period before withdraw | `core/native`, `params` |
+| Unbonding period before withdraw | **Done** — queue + `0x08` withdraw (`core/native`, `core/vm`) |
 | Double-sign evidence verification | `consensus/`, `core/native` |
 | ActiveSet → BFT epoch rotation | `consensus/`, `node/` |
 | Nested CALL bond (`msg.sender`) | `core/vm` |

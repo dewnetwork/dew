@@ -43,6 +43,10 @@ const (
 	StakeMethodJail byte = 0x06
 	// StakeMethodIsJailed — input = [0x07 || address 20]. returns 0/1 uint256
 	StakeMethodIsJailed byte = 0x07
+	// StakeMethodWithdraw — input = [0x08]. claim matured unbond (D3c).
+	StakeMethodWithdraw byte = 0x08
+	// StakeMethodPendingUnbond — input = [0x09 || address 20]. returns amount||unlockAt (64 bytes).
+	StakeMethodPendingUnbond byte = 0x09
 )
 
 // nativeTransferPrecompile forwards the precompile's received CALLVALUE to a recipient.
@@ -89,6 +93,8 @@ type stakingPrecompile struct {
 	self      crypto.Address
 	caller    crypto.Address
 	callValue *uint256.Int
+	// blockTime is unix seconds from the current block header (for unbonding).
+	blockTime uint64
 	enabled   bool
 	cfg       native.StakingConfig
 }
@@ -101,6 +107,8 @@ func (p *stakingPrecompile) RequiredGas(input []byte) uint64 {
 	case StakeMethodBond:
 		return params.StakingPrecompileGasBond
 	case StakeMethodUnbond:
+		return params.StakingPrecompileGasUnbond
+	case StakeMethodWithdraw:
 		return params.StakingPrecompileGasUnbond
 	case StakeMethodJail:
 		return params.StakingPrecompileGasJail
@@ -140,11 +148,20 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 			return nil, fmt.Errorf("staking: unbond needs method + uint256 amount")
 		}
 		amount := new(uint256.Int).SetBytes(input[1:33])
-		out, err := mod.Unbond(p.caller, amount)
+		// Queue unbonding; funds stay at module until Withdraw after period (D3c).
+		if err := mod.Unbond(p.caller, amount, p.blockTime); err != nil {
+			return nil, err
+		}
+		return ethcommon.LeftPadBytes(amount.ToBig().Bytes(), 32), nil
+
+	case StakeMethodWithdraw:
+		if len(input) != 1 {
+			return nil, fmt.Errorf("staking: withdraw takes no args")
+		}
+		out, err := mod.Withdraw(p.caller, p.blockTime)
 		if err != nil {
 			return nil, err
 		}
-		// Return funds from module escrow to caller.
 		modBal := p.statedb.GetBalance(p.self)
 		if modBal.Cmp(out) < 0 {
 			return nil, fmt.Errorf("staking: module escrow insolvent")
@@ -152,6 +169,17 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 		p.statedb.SubBalance(p.self, out)
 		p.statedb.AddBalancePrev(p.caller, out)
 		return ethcommon.LeftPadBytes(out.ToBig().Bytes(), 32), nil
+
+	case StakeMethodPendingUnbond:
+		addr, err := readAddr(input)
+		if err != nil {
+			return nil, err
+		}
+		amt, unlock := mod.PendingUnbond(addr)
+		out := make([]byte, 64)
+		copy(out[0:32], ethcommon.LeftPadBytes(amt.ToBig().Bytes(), 32))
+		copy(out[32:64], ethcommon.LeftPadBytes(new(big.Int).SetUint64(unlock).Bytes(), 32))
+		return out, nil
 
 	case StakeMethodGetSelfStake:
 		addr, err := readAddr(input)
@@ -251,7 +279,15 @@ func DewPrecompileAddresses() []ethcommon.Address {
 }
 
 // installDewPrecompiles copies the active fork precompiles and adds Dew system contracts.
-func installDewPrecompiles(evm *ethvm.EVM, statedb *state.StateDB, enabled bool, caller crypto.Address, callValue *uint256.Int, stakingEnabled bool) {
+func installDewPrecompiles(
+	evm *ethvm.EVM,
+	statedb *state.StateDB,
+	enabled bool,
+	caller crypto.Address,
+	callValue *uint256.Int,
+	stakingEnabled bool,
+	stakingCfg native.StakingConfig,
+) {
 	if !enabled {
 		return
 	}
@@ -278,8 +314,9 @@ func installDewPrecompiles(evm *ethvm.EVM, statedb *state.StateDB, enabled bool,
 		self:      selfStake,
 		caller:    caller,
 		callValue: cv,
+		blockTime: evm.Context.Time,
 		enabled:   stakingEnabled,
-		cfg:       native.DefaultStakingConfig(),
+		cfg:       stakingCfg,
 	}
 	evm.SetPrecompiles(merged)
 }
@@ -297,4 +334,14 @@ func (e *Executor) EnableStaking(v bool) {
 // StakingEnabled reports whether 0x102 active methods are live.
 func (e *Executor) StakingEnabled() bool {
 	return e.stakingEnabled
+}
+
+// SetStakingConfig sets min stake / epoch / unbonding parameters used by 0x102.
+func (e *Executor) SetStakingConfig(cfg native.StakingConfig) {
+	e.stakingCfg = cfg
+}
+
+// StakingConfig returns the active staking module config.
+func (e *Executor) StakingConfig() native.StakingConfig {
+	return e.stakingCfg
 }

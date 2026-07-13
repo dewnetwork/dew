@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 
+	"github.com/dewnetwork/dew/core/native"
 	"github.com/dewnetwork/dew/core/state"
 	"github.com/dewnetwork/dew/core/types"
 	"github.com/dewnetwork/dew/crypto"
@@ -87,6 +88,7 @@ type Executor struct {
 	block           BlockContext
 	dewPrecompiles  bool // Phase B feature flag for 0x100+ system precompiles
 	stakingEnabled  bool // Phase C4: live 0x102 methods (default off)
+	stakingCfg      native.StakingConfig
 }
 
 // NewExecutor builds an executor for the given block context.
@@ -111,6 +113,7 @@ func NewExecutor(statedb *state.StateDB, block BlockContext) *Executor {
 		block:          block,
 		dewPrecompiles: true, // matches params.DefaultEnableDewPrecompiles
 		stakingEnabled: false, // matches params.DefaultEnableStaking
+		stakingCfg:     native.DefaultStakingConfig(),
 	}
 }
 
@@ -167,7 +170,7 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 		Origin:   toEthAddr(msg.From),
 		GasPrice: gp,
 	})
-	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles, msg.From, msg.Value, e.stakingEnabled)
+	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles, msg.From, msg.Value, e.stakingEnabled, e.stakingCfg)
 
 	// Prepare access lists (Berlin+)
 	rules := e.config.Rules(blockCtx.BlockNumber, true, blockCtx.Time)

@@ -32,7 +32,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 Owned by D3c — see [d3-scale.md](../docs/scale/d3-scale.md#d3c--staking-residuals-c4).
 
-- [ ] Enforce unbonding period (time/height) before stake withdrawal
+- [x] Enforce unbonding period (block timestamp) before stake withdrawal — unbond queue + `0x08` withdraw + `0x09` pending (July 2026)
 - [ ] Full double-sign evidence verification (not only non-zero hash placeholder)
 - [ ] Nested CALL caller for bond (currently top-level tx sender)
 - [ ] Wire ActiveSet into live Dew-BFT set rotation each epoch

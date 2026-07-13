@@ -54,24 +54,86 @@ func TestStakingModule_JailDropsPower(t *testing.T) {
 	}
 }
 
-func TestStakingModule_Unbond(t *testing.T) {
+func TestStakingModule_UnbondQueuesAndWithdraw(t *testing.T) {
 	s := state.New(db.OpenTest(t))
 	cfg := DefaultStakingConfig()
 	cfg.MinSelfStake = big.NewInt(50)
+	cfg.UnbondSeconds = 100
 	m := NewStakingModule(s, cfg)
 	a := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
 	_ = m.Bond(a, uint256.NewInt(100))
-	out, err := m.Unbond(a, uint256.NewInt(60))
+
+	const now uint64 = 1_000
+	if err := m.Unbond(a, uint256.NewInt(60), now); err != nil {
+		t.Fatal(err)
+	}
+	if m.SelfStake(a).Uint64() != 40 {
+		t.Fatalf("stake after unbond: %s", m.SelfStake(a))
+	}
+	if m.IsCandidate(a) {
+		t.Fatal("should drop candidate")
+	}
+	amt, unlock := m.PendingUnbond(a)
+	if amt.Uint64() != 60 || unlock != now+100 {
+		t.Fatalf("pending amt=%s unlock=%d", amt, unlock)
+	}
+
+	// Too early
+	if _, err := m.Withdraw(a, now+50); err == nil {
+		t.Fatal("expected early withdraw to fail")
+	}
+	// Mature
+	out, err := m.Withdraw(a, now+100)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if out.Uint64() != 60 {
+		t.Fatalf("withdraw %s", out)
+	}
+	amt, unlock = m.PendingUnbond(a)
+	if !amt.IsZero() || unlock != 0 {
+		t.Fatalf("pending should clear: amt=%s unlock=%d", amt, unlock)
+	}
+	if _, err := m.Withdraw(a, now+200); err == nil {
+		t.Fatal("second withdraw should fail")
+	}
+}
+
+func TestStakingModule_UnbondZeroPeriodImmediate(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	cfg := DefaultStakingConfig()
+	cfg.MinSelfStake = big.NewInt(1)
+	cfg.UnbondSeconds = 0
+	m := NewStakingModule(s, cfg)
+	a := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	_ = m.Bond(a, uint256.NewInt(10))
+	if err := m.Unbond(a, uint256.NewInt(10), 50); err != nil {
+		t.Fatal(err)
+	}
+	out, err := m.Withdraw(a, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Uint64() != 10 {
 		t.Fatal(out)
 	}
-	if m.SelfStake(a).Uint64() != 40 {
-		t.Fatal(m.SelfStake(a))
+}
+
+func TestStakingModule_UnbondStacksPending(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	cfg := DefaultStakingConfig()
+	cfg.MinSelfStake = big.NewInt(1)
+	cfg.UnbondSeconds = 10
+	m := NewStakingModule(s, cfg)
+	a := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	_ = m.Bond(a, uint256.NewInt(100))
+	_ = m.Unbond(a, uint256.NewInt(30), 100) // unlock 110
+	_ = m.Unbond(a, uint256.NewInt(20), 105) // unlock max(110, 115)=115
+	amt, unlock := m.PendingUnbond(a)
+	if amt.Uint64() != 50 {
+		t.Fatalf("amt=%s", amt)
 	}
-	if m.IsCandidate(a) {
-		t.Fatal("should drop candidate")
+	if unlock != 115 {
+		t.Fatalf("unlock=%d want 115", unlock)
 	}
 }

@@ -267,7 +267,7 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Packages:** `core/native/staking.go`, `core/vm/precompiles.go`, `params/staking.go`, `node` flag
 
-**Notes:** Self-stake only (no liquid staking). `ActiveSet()` ranks candidates for BFT selection. Jail requires non-zero evidence hash (placeholder until full double-sign verify). Unbonding period not fully enforced — residual. Default `EnableStaking=false`.
+**Notes:** Self-stake only (no liquid staking). `ActiveSet()` ranks candidates for BFT selection. Jail requires non-zero evidence hash (placeholder until full double-sign verify). **Unbonding period enforced** (queue + `withdraw` / `0x08`). Default `EnableStaking=false`.
 
 ---
 

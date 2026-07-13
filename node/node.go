@@ -13,6 +13,7 @@ import (
 	"github.com/holiman/uint256"
 
 	"github.com/dewnetwork/dew/config"
+	"github.com/dewnetwork/dew/core/native"
 	"github.com/dewnetwork/dew/core/state"
 	dewtypes "github.com/dewnetwork/dew/core/types"
 	"github.com/dewnetwork/dew/core/vm"
@@ -139,6 +140,37 @@ func (n *Node) StakingEnabled() bool {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.enableStaking
+}
+
+// stakingConfigFromGenesis maps genesis consensus fields onto the native module config.
+func (n *Node) stakingConfigFromGenesis() native.StakingConfig {
+	cfg := native.DefaultStakingConfig()
+	if n.genesis == nil || n.genesis.Config == nil || n.genesis.Config.Consensus == nil {
+		return cfg
+	}
+	c := n.genesis.Config.Consensus
+	if c.EpochLength > 0 {
+		cfg.EpochLength = c.EpochLength
+	}
+	if c.UnbondingPeriodSeconds > 0 {
+		cfg.UnbondSeconds = c.UnbondingPeriodSeconds
+	}
+	if c.ActiveValidatorCap > 0 {
+		cfg.ActiveCap = c.ActiveValidatorCap
+	}
+	if c.MinValidatorStake != "" {
+		if v, ok := new(big.Int).SetString(c.MinValidatorStake, 0); ok && v.Sign() > 0 {
+			cfg.MinSelfStake = v
+		}
+	}
+	return cfg
+}
+
+// configureExecutor applies node feature flags and genesis staking params to a new VM executor.
+func (n *Node) configureExecutor(exec *vm.Executor) {
+	exec.EnableDewPrecompiles(n.enablePrecompiles)
+	exec.EnableStaking(n.enableStaking)
+	exec.SetStakingConfig(n.stakingConfigFromGenesis())
 }
 
 // SetAutoMine toggles dev per-tx sealing (default true in NewFromGenesis).
@@ -501,6 +533,7 @@ func (n *Node) Call(msg vm.Message) ([]byte, error) {
 		Coinbase: n.header.Proposer,
 		ChainID:  n.chainID,
 	})
+	n.configureExecutor(exec)
 	res, err := exec.ApplyMessage(msg)
 	if err != nil {
 		return nil, err
@@ -541,6 +574,7 @@ func (n *Node) EstimateGas(msg vm.Message) (uint64, error) {
 			Coinbase: n.header.Proposer,
 			ChainID:  n.chainID,
 		})
+		n.configureExecutor(exec)
 		res, err := exec.ApplyMessage(try)
 		n.statedb.RevertToSnapshot(snap)
 		if err != nil || (res != nil && res.Failed) {
@@ -571,6 +605,7 @@ func (n *Node) EstimateGas(msg vm.Message) (uint64, error) {
 		Coinbase: n.header.Proposer,
 		ChainID:  n.chainID,
 	})
+	n.configureExecutor(exec)
 	res, err := exec.ApplyMessage(try)
 	n.statedb.RevertToSnapshot(snap)
 	if err != nil || res.Failed {

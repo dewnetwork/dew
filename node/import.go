@@ -141,8 +141,7 @@ func (n *Node) executeEVMTxLocked(hdr *dewtypes.Header, dewTx *dewtypes.Transact
 		Coinbase: hdr.Proposer,
 		ChainID:  n.chainID,
 	})
-	exec.EnableDewPrecompiles(n.enablePrecompiles)
-	exec.EnableStaking(n.enableStaking)
+	n.configureExecutor(exec)
 
 	result, err := exec.ApplyMessage(msg)
 	if err != nil {
