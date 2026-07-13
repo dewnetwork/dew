@@ -1,6 +1,6 @@
 ---
 title: Implementation Phases
-description: Acceptance criteria for Phases A–D (compat, native/PE, testnet, product surface).
+description: Acceptance criteria for Phases A–D and open tracks (research, product, protocol, ops, core, mainnet).
 category: build
 order: 30
 status: stable
@@ -10,17 +10,36 @@ status: stable
 
 Each phase should leave the **monorepo buildable and testable** (Go packages and any Node scripts that phase introduces). Prefer small PRs per phase.
 
+### Phases A–D (foundation)
+
 | Band | Status | Theme |
 | :--- | :----- | :---- |
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
 | **C1–C6** | **Done** (C6 = public-testnet-v1 freeze) | Mempool, encrypted P2P, SMT, staking, private → public freeze |
-| **D1–D3** | **D1–D2 done** · D3a/D3b + durable chaindata done · D3c–D3e pending | Product surface + optional ops scale after public-testnet-v1 |
-| **Product-v1** | **P1a–d / P2a–d / P3a–b shipped** · live path B rebuild verified 2026-07-13 | Post-MVP explorer/faucet/Guestbook — [upgrades](../product/upgrades.md) |
+| **D1–D2** | **Done** | Product surface — explorer + faucet |
+| **D3a / D3b / chaindata** | **Done** | Multiproc BFT, peer redial, Pebble durable tip |
+| **Product-v1** | **Done** (P1a–d / P2a–d / P3a–b · live path B 2026-07-13) | Post-MVP explorer/faucet/Guestbook — [upgrades](../product/upgrades.md) |
 
-High-level order: [Roadmap](./roadmap.md).
+### Tracks (open work — one row each)
 
-**Ops note:** **public-testnet-v1 is live** on path B (July 2026) — see [Public testnet freeze](../ops/public-testnet.md#live-network-path-b). Private soak and launch checklist A–B remain the operator runbook for new hosts. Phase D assumes a live or local RPC (`chainId` **2205`) and does **not** re-open the C6 wire freeze.
+Not a Phase E. Pick **one track row** (or the ordered plan). Same freeze (`public-testnet-v1` / chain **2205**) unless a hardfork is documented.
+
+| Track | Status | Theme | Detail |
+| :--- | :----- | :---- | :--- |
+| **R — Research lab** | Open | Hypotheses, PE/BFT/state measurements | [Track R](#track-r--research-lab) |
+| **1 — Product** | Partial | v1–v1.2 done; P1e–f / P3c deferred | [Track 1](#track-1--product-surface) |
+| **2 — Protocol (D3c)** | Partial | Staking MVP done; slash % / delegation open | [Track 2](#track-2--protocol--d3c-staking) |
+| **3 — Ops (D3d)** | Optional | Path A multi-host public | [Track 3](#track-3--ops--d3d-path-a) |
+| **4 — Core node** | Open | Telemetry, PE upgrade, chaindata hydrate | [Track 4](#track-4--core-node) |
+| **5 — Mainnet (D3e)** | Optional | Audit pack only before production claims | [Track 5](#track-5--mainnet-gate-d3e) |
+| **Plan S0–S6** | **Active** | Ordered path research → **Precompile slots** | [Recommended sequence](#recommended-sequence--research-lab--precompile-slots) |
+
+High-level order: [Roadmap](./roadmap.md) · track map: [upgrades](../product/upgrades.md).
+
+**Ops note:** **public-testnet-v1 is live** on path B (July 2026) — see [Public testnet freeze](../ops/public-testnet.md#live-network-path-b). Path B is an optional public lab surface; private soak and launch checklist A–B remain the runbook for new hosts. Phases and tracks assume a live or local RPC (`chainId` **2205`) and do **not** re-open the C6 wire freeze.
+
+**Default for research (no real mainnet users):** Track **R** + Track **4** (and Track **2** for staking lab). Defer Track **3** and Track **5**.
 
 ---
 
@@ -307,15 +326,17 @@ High-level order: [Roadmap](./roadmap.md).
 
 ---
 
-## Phase D — After public-testnet-v1
+## Phase D — product & scale foundation (post freeze)
 
-Post-freeze work is **product / ops / scale**, not a new consensus wire format. Order:
+Post-freeze work is **product / ops / scale foundation**, not a new consensus wire format. **Shipped order** (complete):
 
 ```text
-D1 Block explorer MVP  →  D2 optional faucet  →  D3 Path A / C4 residuals / audit when scaling
+D1 Block explorer MVP  →  D2 production faucet  →  D3a multiproc BFT  →  D3b peers  →  durable chaindata  →  product-v1
 ```
 
-Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remain in [agents/debt.md](../../agents/debt.md) until a D-step owns them.
+**Remaining D3 workstreams** (D3c staking edges, D3d Path A, D3e audit) are **optional** — not a linear “finish D then mainnet” requirement. Open residuals (PE upgrade, delegation, indexer, etc.) live in [agents/debt.md](../../agents/debt.md) and [upgrades](../product/upgrades.md) until a track owns them.
+
+Open work is listed as **tracks** (one row each) — [Tracks](#tracks-open-work--one-row-each).
 
 ---
 
@@ -361,20 +382,333 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 
 ## D3 — Scale when needed (Path A / C4 / audit)
 
-**Goals:** Grow beyond single-host controlled RPC and self-stake stubs only when product demand requires it. Not a single PR; pick workstreams explicitly.
+**Goals:** Grow multiproc/private ops foundation first; public multi-host, staking productization, and audit **only when intentionally chosen**. Not a single PR; pick workstreams explicitly. Research or core-feature work may proceed **without** D3d/D3e.
 
 **Design spec (implement from this):** [D3 scale](../scale/d3-scale.md) — multi-process BFT (D3a), peer store (D3b), staking residuals (D3c), Path A (D3d), audit prep (D3e).
 
 **Acceptance (per workstream — do not require all at once):**
 
-| Workstream | Done when |
-| :--- | :--- |
-| **D3a — C5 multi-process BFT** | ≥3 `dew run --validator` processes share one canonical chain; optional full RPC syncs commits; compose `multi` + ERC-20 smoke ([d3-scale](../scale/d3-scale.md#d3a--multi-process-dew-bft)) |
-| **D3b — peer store / redial** | Restart recovery without manual redial; documented data dir ([d3-scale](../scale/d3-scale.md#d3b--peer-store-and-auto-redial)) — **done** July 2026 (`peers.json`, Host redial loop, `--datadir`) |
-| **D3c — C4 staking residuals** | Unbonding, dual-vote jail, nested bond, ActiveSet→BFT epoch — **MVP done**; delegation deferred ([d3-scale](../scale/d3-scale.md#d3c--staking-residuals-c4)) |
-| **D3d — Path A multi-host public** | ≥3 validators + optional RPC; new keys; bootnodes published ([launch-checklist](../ops/launch-checklist.md) path A, [d3-scale](../scale/d3-scale.md#d3d--path-a-multi-host-public)) |
-| **D3e — external audit** | Scoped audit pack before mainnet ([phase-b-audit](../security/phase-b-audit.md), [d3-scale](../scale/d3-scale.md#d3e--external-audit-prep)) |
+### D3a — Multi-process Dew-BFT
+
+- [x] ≥3 `dew run --validator` processes share one canonical chain
+- [x] Optional full RPC node syncs commits (no local seal)
+- [x] Compose `multi` + ERC-20 smoke path documented
+- [x] Encrypted P2P remains default for multiproc
+- [x] Min block interval + bulk outbound drop under queue pressure (D3a residual)
+
+### D3b — Peer store / auto-redial
+
+- [x] Durable `<datadir>/peers.json`
+- [x] Host auto-redial with backoff after restart
+- [x] Documented `--datadir` / compose volumes
+
+### Durable chaindata
+
+- [x] Pebble `<datadir>/chaindata` for headers/bodies/state tip
+- [x] Atomic seal + `ImportCommittedBlock` batch with flat state
+- [x] `node.Open` restart recovery; genesis mismatch refuses start
+- [x] Peers stay in `peers.json` (not merged into chaindata)
+
+### D3c — Staking residuals (C4)
+
+- [x] Unbonding period before withdraw (queue + `0x08` / `0x09`)
+- [x] Dual-vote double-sign verify + jail
+- [x] Nested CALL bond credits value payer
+- [x] ActiveSet → BFT epoch rotation when staking on
+- [ ] On-chain slash burn percentages (economics still tentative)
+- [ ] Zero-value nested unbond/withdraw call-stack edge (EVM precompile)
+- [ ] Delegation / commission (deferred unless scoped)
+
+### D3d — Path A multi-host public (optional ops)
+
+- [ ] ≥3 validators on separate hosts with new keys
+- [ ] Published public bootnode multiaddrs
+- [ ] Full-node public RPC + faucet/explorer pointed at it
+- [ ] Launch checklist Path A runbook complete
+
+### D3e — External audit prep (mainnet claims only)
+
+- [ ] Scoped audit pack (consensus + VM bridge + crypto)
+- [ ] Threat model + Phase B findings attached
+- [ ] Path A or multiproc soak evidence retained
+- [ ] Explicit decision recorded before any mainnet claim
 
 **Packages:** `consensus/`, `p2p/`, `node/`, `core/native`, `cmd/dew`, `deploy/`, `devnet/`, operator docs
 
-**Notes:** **D3a done** (July 2026) — `node.Stack`, `--validator` / `--no-auto-mine`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`. ERC-20 compose smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548`. **D3a residual closed** (July 2026) — default `MinBlockInterval` 1s, `--bft.min-block-interval`, bulk P2P drop under queue pressure; heavy soak `DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -run MultiProcessBFT_LongEmpty`. **D3b done** (July 2026) — durable `peers.json`, auto-redial with backoff, `--datadir`; tests `./p2p/ -run AutoRedial`. **Durable chaindata done** (July 2026) — Pebble `<datadir>/chaindata`, `node.Open`, restart recovery; [durable-chaindata.md](../ops/durable-chaindata.md); `go test ./node/ -run RestartRecoversTip`. Next: [D3d Path A](../scale/d3-scale.md#d3d--path-a-multi-host-public) or D3c when needed. Prefer config/genesis changes over wire churn under `public-testnet-v1`. Path B auto-mine deployment stays valid until operators migrate. Tokenomics issuance numbers may stay draft until mainnet.
+**Notes:** **D3a done** (July 2026) — `node.Stack`, `--validator` / `--no-auto-mine`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`. ERC-20 compose smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548`. **D3a residual closed** (July 2026) — default `MinBlockInterval` 1s, `--bft.min-block-interval`, bulk P2P drop under queue pressure; heavy soak `DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -run MultiProcessBFT_LongEmpty`. **D3b done** (July 2026) — durable `peers.json`, auto-redial with backoff, `--datadir`; tests `./p2p/ -run AutoRedial`. **Durable chaindata done** (July 2026) — Pebble `<datadir>/chaindata`, `node.Open`, restart recovery; [durable-chaindata.md](../ops/durable-chaindata.md); `go test ./node/ -run RestartRecoversTip`. Spec detail: [D3 scale](../scale/d3-scale.md).
+
+**What is next is a choice, not a default:** pick a **track row** — research (R), core PE (4), staking lab (2), product polish (1), or Path A (3). See [Tracks](#tracks-open-work--one-row-each). Prefer config/genesis changes over wire churn under `public-testnet-v1`. Path B auto-mine stays valid as a lab/demo surface. Tokenomics issuance numbers may stay **draft** indefinitely until a mainnet economics freeze is deliberate.
+
+---
+
+## Tracks
+
+Open work after the Phase D foundation. **One track per row** in the [summary table](#tracks-open-work--one-row-each). Ship **one track (or one slice) at a time**. Narrative + status: [Roadmap — Tracks](./roadmap.md#tracks) · full product map: [upgrades](../product/upgrades.md) · residuals: [agents/debt.md](../../agents/debt.md).
+
+**Wire rule (unchanged):** do not change DewTx type, fee floors, precompile addresses, or SMT meaning under `public-testnet-v1` without a documented hardfork.
+
+### Track R — Research lab
+
+| | |
+| :--- | :--- |
+| **Status** | Open |
+| **Goals** | Measure and explain PE, BFT, state, or staking economics without real mainnet users |
+| **Packages** | `tests/load/`, `tests/security/`, `core/vm/`, `devnet/`, `docs/` |
+
+**Acceptance (pick a focus; not all required):**
+
+- [ ] At least one written hypothesis (throughput, finality, storage, or staking)
+- [ ] Reproducible harness (load / multiproc / soak command documented)
+- [ ] PE: sequential vs parallel matrix (conflict rate, workers, rollback metrics)
+- [ ] BFT: multiproc soak or chaos (commit latency / recovery notes)
+- [ ] State: SMT commit or tip-growth measurement vs flat hot path
+- [ ] Staking lab (optional): private net with `--staking` scenario notes
+- [ ] Results recorded under docs or lab notes; code changes keep serial-equivalent tests green
+
+### Track 1 — Product surface
+
+| | |
+| :--- | :--- |
+| **Status** | Partial — product-v1…v1.2 **done**; deferred polish open |
+| **Goals** | Explorer / faucet / Guestbook DX (RPC/UI only) |
+| **Packages** | `explorer/`, `faucet-web/`, `examples/guestbook-web/` |
+
+**Acceptance:**
+
+- [x] Product-v1 through v1.2 (explorer P1a–d, faucet P2a–d, Guestbook P3a–b)
+- [ ] P1e — indexer / full history / internal txs
+- [ ] P1f — verified source / ABI
+- [ ] P3c — Guestbook reactions / replies
+
+Detail: [upgrades Track 1](../product/upgrades.md#track-1--product-surface).
+
+### Track 2 — Protocol / D3c staking
+
+| | |
+| :--- | :--- |
+| **Status** | Partial — MVP **done**; extras open |
+| **Goals** | Staking residuals on `0x102` (lab or intentional ops) |
+| **Packages** | `core/native/`, `core/vm/precompiles.go`, `params/staking.go` |
+
+**Acceptance:**
+
+- [x] D3c MVP (unbond, double-sign, ActiveSet rotation, nested bond) — see [D3c](#d3c--staking-residuals-c4)
+- [ ] Slash burn percentages on-chain
+- [ ] Delegation / commission
+- [ ] Nested unbond/withdraw call-stack edge
+
+### Track 3 — Ops / D3d Path A
+
+| | |
+| :--- | :--- |
+| **Status** | Optional — open |
+| **Goals** | Multi-host **public** BFT when leaving single-host Path B |
+| **Packages** | `deploy/`, `cmd/dew`, operator docs |
+
+**Acceptance:**
+
+- [ ] Same open boxes as [D3d](#d3d--path-a-multi-host-public-optional-ops)
+
+### Track 4 — Core node
+
+| | |
+| :--- | :--- |
+| **Status** | Open — research-friendly default for features |
+| **Goals** | PE, chaindata, mempool/fee telemetry |
+| **Packages** | `core/vm/`, `mempool/`, `rpc/`, `node/`, `db/` |
+
+**Acceptance:**
+
+- [ ] Mempool / fee telemetry RPC (optional DX)
+- [ ] Lazy hydrate / log index at large tip
+- [ ] PE upgrade toward full Block-STM / lower conflict cost (serial-equivalent)
+- [ ] Other core ergonomics only with docs + tests
+
+### Track 5 — Mainnet gate (D3e)
+
+| | |
+| :--- | :--- |
+| **Status** | Optional — only before production claims |
+| **Goals** | External audit pack + explicit mainnet readiness |
+| **Packages** | docs under `security/`, soak evidence, ops logs |
+
+**Acceptance:**
+
+- [ ] Same open boxes as [D3e](#d3e--external-audit-prep-mainnet-claims-only)
+- [ ] Explicit mainnet readiness decision recorded
+- [ ] Tokenomics issuance numbers frozen if economic claims are made
+- [ ] Path A public multi-host if decentralization claims require it (else document Path B limits)
+- [ ] No wire-format surprises relative to freeze / hardfork docs
+
+---
+
+## Recommended sequence — research lab → Precompile slots
+
+**Active ordered plan** (crosses Track R + Track 4 + Track 2, ends at Precompile slots). Work **top to bottom**; do not start a later step until the previous checkpoint is green. Track 3 (Path A), Track 5 (audit), and Track 1 indexer (P1e) are **out of scope** for this sequence.
+
+**End state:** Dew has a documented, test-backed **Precompile slots** registry (`0x01–0x0a` ETH + `0x100+` Dew), active `0x100` / `0x102` correct under lab staking, reserved `0x101` fail-closed, and research notes for PE/BFT/state — still under freeze `public-testnet-v1` (no new live precompile address without hardfork doc).
+
+```mermaid
+flowchart LR
+  S0[S0 Lab baseline] --> S1[S1 Research harness]
+  S1 --> S2[S2 PE matrix]
+  S2 --> S3[S3 Telemetry RPC]
+  S3 --> S4[S4 0x102 edges]
+  S4 --> S5[S5 Staking lab]
+  S5 --> S6[S6 Precompile slots]
+```
+
+### S0 — Lab baseline
+
+**Goals:** Prove local multiproc + unit surface still green before experiments.
+
+**Acceptance:**
+
+- [ ] `go test ./...` green on a clean tree
+- [ ] `go test ./devnet/ -count=1` green (BFT + ERC-20 path)
+- [ ] Optional: `dew devnet` + `node scripts/smoke-rpc.mjs` chainId **2205**
+- [ ] Note Path B is optional; do not block on public HTTPS
+
+**Packages:** whole monorepo · **Verify:** commands above · **Scope:** S
+
+### S1 — Research harness + hypothesis
+
+**Goals:** Track R foundation — one written question and a runnable measurement path.
+
+**Acceptance:**
+
+- [ ] Hypothesis written (e.g. PE speedup vs conflict rate; or multiproc commit latency)
+- [ ] Document harness commands under `docs/` (ops recipe or short lab note linked from [Track R](#track-r--research-lab))
+- [ ] Baseline run recorded once (numbers or log path); no code required if existing tests suffice
+- [ ] Track R “hypothesis” + “reproducible harness” boxes ticked when done
+
+**Packages:** `docs/`, `tests/load/`, `devnet/` · **Verify:** follow the documented commands · **Scope:** S–M  
+**Depends on:** S0
+
+### S2 — PE measurement matrix (Track R · Track 4 prep)
+
+**Goals:** Quantify Dew-PE vs sequential; keep serial-equivalent invariant.
+
+**Acceptance:**
+
+- [ ] Matrix: sequential vs PE across conflict rates and/or worker counts
+- [ ] Capture rollback / re-exec metrics (`dew_getExecutionStats` or test harness output)
+- [ ] Confirm PE roots/receipts match sequential on fixtures (`go test` PE paths green)
+- [ ] Short results note in docs (table or bullets) — not marketing claims
+- [ ] Optional follow-up filed only if Block-STM is justified by numbers (do **not** implement full Block-STM in this sequence unless S2 proves need)
+
+**Packages:** `core/vm/`, `tests/load/`, `docs/execution/parallel-execution.md` · **Verify:** load/PE tests + note · **Scope:** M  
+**Depends on:** S1
+
+### Checkpoint A — after S0–S2
+
+- [ ] All S0–S2 acceptance boxes checked
+- [ ] No freeze wire changes
+- [ ] Human review of hypothesis + PE numbers before core feature coding
+
+### S3 — Mempool / fee telemetry RPC (Track 4, small)
+
+**Goals:** Observability for lab load without product UI.
+
+**Acceptance:**
+
+- [ ] Spec methods under `dew_*` (names, fields, rate/abuse limits aligned with C6)
+- [ ] Implement read-only telemetry (pool size, per-sender, fee floors, drop/evict counters as available)
+- [ ] Unit tests + docs in [JSON-RPC](../api/json-rpc.md) / [dew-extensions](../api/dew-extensions.md)
+- [ ] Does not change admission policy or fee floors
+
+**Packages:** `mempool/`, `rpc/`, `node/`, `docs/api/` · **Verify:** `go test ./rpc/ ./mempool/` · **Scope:** M  
+**Depends on:** Checkpoint A
+
+### S4 — Staking precompile edges (`0x102`) (Track 2 / D3c open)
+
+**Goals:** Correctness on live staking methods **in lab only** (`--staking`); no public Path B staking enablement required.
+
+**Acceptance:**
+
+- [ ] Nested / zero-value unbond-withdraw actor semantics fixed **or** explicitly documented fail-closed limitation with test coverage of current behavior
+- [ ] Tests for bond / unbond / withdraw / jail paths still pass with staking on
+- [ ] Slash burn **percentages** either: (a) deferred with economics note, or (b) implemented only after numbers approved in docs — **do not invent mainnet tokenomics**
+- [ ] Delegation / commission **out of scope** for this sequence (leave D3c box open)
+
+**Packages:** `core/vm/precompiles.go`, `core/native/staking.go`, `params/staking.go`, `docs/execution/precompiles.md` · **Verify:** `go test ./core/vm/ ./core/native/ ./consensus/` · **Scope:** M  
+**Depends on:** S3 (or S2 if telemetry skipped by choice — prefer S3 first for load lab)
+
+### S5 — Staking lab scenarios (Track R optional hard)
+
+**Goals:** Private-net exercise of ActiveSet + unbond timing + jail, with notes.
+
+**Acceptance:**
+
+- [ ] Private / multiproc or in-process path with `SetStakingEnabled(true)` documented
+- [ ] Scenario notes: bond → active set rank → unbond wait → withdraw; optional double-sign jail
+- [ ] Epoch rotation observed or tested when staking on
+- [ ] Public-testnet default remains staking **off** (freeze / launch checklist unchanged)
+
+**Packages:** `devnet/`, `docs/ops/private-testnet.md`, `docs/consensus/` · **Verify:** documented commands + tests · **Scope:** M  
+**Depends on:** S4
+
+### Checkpoint B — after S3–S5
+
+- [ ] Telemetry usable under load (if S3 done)
+- [ ] `0x102` lab behavior documented and tested
+- [ ] No accidental enable of staking on public Path B
+- [ ] Human OK to proceed to Precompile slots formalization
+
+### S6 — Precompile slots (milestone)
+
+**Goals:** Make [Precompile slots](../protocol/addresses.md#precompile-slots-evm-space) a **first-class registry**: addresses, status, gas, flags, fail-closed reserved slots — code + docs + tests aligned. **Does not** ship a live `0x101` orderbook unless separately approved (default: remain reserved).
+
+**Acceptance:**
+
+#### S6a — Spec / docs
+
+- [ ] Expand precompile slot table in [addresses.md](../protocol/addresses.md) (ETH `0x01–0x0a` + Dew range policy)
+- [ ] Align [precompiles.md](../execution/precompiles.md) status table (`0x100` active, `0x101` reserved, `0x102` flagged)
+- [ ] Document **allocation rules**: next free slot, no reuse of retired slots, hardfork required to activate a reserved address
+- [ ] Cross-link freeze table in [public-testnet.md](../ops/public-testnet.md) (addresses frozen; new live module = hardfork)
+- [ ] Note Dew-native space `0xe0…` vs EVM precompile slots (when to use which)
+
+#### S6b — Code registry
+
+- [ ] Named constants for all Dew slots in use/reserved (`0x100`, `0x101`, `0x102`) in `core/vm` and/or `params`
+- [ ] `0x101` **not** registered in the live precompile map (empty account / fail-closed)
+- [ ] Optional: single `DewPrecompileSlots` registry helper used by executor enablement
+- [ ] Gas constants only for **active** methods; reserved slots have no live gas schedule (or documented TBD only in docs)
+
+#### S6c — Tests + DX
+
+- [ ] Tests: with Dew precompiles on, `0x100` forwards; `0x101` does not implement swap; `0x102` reverts or no-ops methods when staking off
+- [ ] Tests: with Dew precompiles off, `0x100+` behave as empty accounts (value not forwarded)
+- [ ] Optional lab: explorer or docs list “system contracts” addresses (RPC-only badge OK; no indexer required)
+- [ ] `agents/debt.md` updated if residuals remain (e.g. implement `0x101` later)
+
+**Packages:** `core/vm/precompiles.go`, `params/`, `docs/protocol/addresses.md`, `docs/execution/precompiles.md`, `docs/ops/public-testnet.md`, tests under `core/vm/`, `tests/security/` · **Verify:** `go test ./core/vm/ ./params/ ./tests/security/` + docs review · **Scope:** M  
+**Depends on:** Checkpoint B
+
+### Checkpoint C — Precompile slots done
+
+- [ ] All S6a–S6c boxes checked
+- [ ] Freeze still holds: no new **active** precompile address on public-testnet-v1 without hardfork doc
+- [ ] Track R + Track 4 telemetry + `0x102` edges + Precompile slots registry complete for this sequence
+- [ ] Next work (optional, **new** plan): full Block-STM, delegation, `0x101` orderbook design, or Path A — each needs its own approval
+
+### Out of scope (this sequence)
+
+| Item | Why deferred |
+| :--- | :--- |
+| D3d Path A public multi-host | Ops/public users; not research path |
+| D3e external audit | Mainnet claims only |
+| P1e indexer / P1f verified source | Product polish |
+| Live `0x101` swap/orderbook | Needs separate design + hardfork or lab-only flag approval |
+| Delegation / commission | Large staking product; after Precompile slots |
+| Tokenomics issuance freeze | Mainnet economics |
+
+### Risks
+
+| Risk | Mitigation |
+| :--- | :--- |
+| Scope creep into Block-STM during S2 | Measure first; implement only if numbers demand |
+| Inventing slash % / fees | Keep draft; require doc approval before code |
+| Enabling staking on Path B by accident | Default off; checklist + tests |
+| Activating `0x101` “while we’re here” | S6 explicitly reserved-only unless new plan |

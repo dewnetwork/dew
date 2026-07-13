@@ -8,10 +8,10 @@ status: stable
 
 # D3 scale (design spec)
 
-**Status:** D3a + D3b + D3a residual (pace + bulk backpressure) implemented (July 2026); **durable chaindata** implemented (July 2026); D3c–D3e pending.  
+**Status:** D3a + D3b + D3a residual (pace + bulk backpressure) implemented (July 2026); **durable chaindata** implemented (July 2026); D3c MVP residuals largely done — D3d/D3e and remaining staking productization are **optional on demand**.  
 **Freeze:** `public-testnet-v1` wire formats stay frozen — D3 changes **packaging, ops, and consensus wiring**, not DewTx / fee floors / precompile addresses. See [Public testnet freeze](../ops/public-testnet.md).
 
-**Context:** Path B is live (single-host controlled RPC). Bands A–C and D1–D2 are done. This document is the **implementation spec** for Phase D3. Acceptance summaries remain in [Phases](../build/phases.md#d3--scale-when-needed-path-a--c4--audit); residuals are tracked in [agents/debt.md](../../agents/debt.md).
+**Context:** Path B is an optional public lab (single-host controlled RPC). Bands A–C, D1–D2, D3a/b, chaindata, and product-v1 are done. This document is the **implementation spec** for Phase D3 workstreams. Open work is **tracks** (R / 1–5): [roadmap — Tracks](../build/roadmap.md#tracks). Acceptance summaries remain in [Phases](../build/phases.md#d3--scale-when-needed-path-a--c4--audit); residuals are tracked in [agents/debt.md](../../agents/debt.md).
 
 **Product surface upgrades** (explorer / faucet / Guestbook, independent of D3c–e) live in [Product & scale upgrades](../product/upgrades.md) Track 1.
 
@@ -48,7 +48,7 @@ flowchart LR
 | **D3d** | Path A multi-host public | ≥3 validators, bootnodes, publish template | Decentralized public net |
 | **D3e** | External audit prep | Scope pack for consensus + VM + crypto | Mainnet claims |
 
-**Recommended order:** D3a → D3b (done) → **durable chaindata** → D3d when ops ready → D3c when staking is intentionally enabled → D3e before mainnet.
+**Recommended order:** D3a → D3b (done) → **durable chaindata** (done) → then pick a **track row**: Track **R**/ **4** for research/core ([roadmap — Tracks](../build/roadmap.md#tracks)), Track **2** / D3c when staking is intentionally enabled, Track **3** / D3d only when multi-host *public* ops are required, Track **5** / D3e only before mainnet claims. D3d/D3e are **not** the default next step for a research-only project.
 
 ---
 
@@ -63,7 +63,7 @@ flowchart LR
 | Chain + state | Pebble `<datadir>/chaindata` (default `/var/lib/dew`) | **Durable chaindata done** |
 | Compose `multi` | ≥3 validators + optional RPC | Single chain; see [private testnet](../ops/private-testnet.md) |
 | Path B | Single-host auto-mine + public RPC | Still valid until operators migrate to Path A |
-| D3c–D3e | Staking residuals / Path A public / audit prep | **Pending** — sections below |
+| D3c–D3e | Staking MVP mostly done; Path A public / audit / remaining staking productization | **Optional on demand** — not auto-next for research |
 
 Path B (`deploy/node/docker-compose.yml`) keeps **auto-mine** on one host unless operators opt into validator mode.
 

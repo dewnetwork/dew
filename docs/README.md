@@ -29,14 +29,18 @@ Markdown under `docs/` is the source of truth. **Node builds the web docs with V
 ## Product status
 
 ```
-A — Ethereum parity          done
-B — Dew-PE / DewTx / native  done
-C — Testnet readiness        done (public-testnet-v1 freeze)
-D — Product surface + scale  D1–D2 + D3a/D3b + durable chaindata done;
-                             D3c–D3e on demand
+A–C   foundation              done (public-testnet-v1 freeze)
+D     product + scale foundation  done (D1–D2, D3a/b, chaindata, product-v1)
+
+Tracks (open — one row each):
+  R Research   ·  1 Product (partial)  ·  2 Protocol/D3c (partial)
+  3 Ops/D3d    ·  4 Core               ·  5 Mainnet/D3e (optional)
+  Plan S0–S6   active → Precompile slots
 ```
 
-**public-testnet-v1 is live** on path B (July 2026):
+Narrative: [Roadmap — Tracks](./build/roadmap.md#tracks) · [Phases — Tracks](./build/phases.md#tracks).
+
+**public-testnet-v1** Path B (optional public lab, July 2026):
 
 | Surface | URL |
 | :--- | :--- |

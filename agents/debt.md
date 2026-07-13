@@ -6,9 +6,11 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Phase C (C1–C6) complete** — freeze tag `public-testnet-v1`. See [public-testnet.md](../docs/ops/public-testnet.md).
 
-**Phase D** — D1 explorer + D2 faucet done; D3a + D3b + D3a residual done; **durable chaindata done** → D3d Path A / D3c / D3e when needed. Design: [durable-chaindata.md](../docs/ops/durable-chaindata.md). D3 scale: [d3-scale.md](../docs/scale/d3-scale.md). Acceptance in [phases.md](../docs/build/phases.md).
+**Phase D foundation complete** — D1 explorer + D2 faucet; D3a + D3b + D3a residual; **durable chaindata**; product-v1. Open work is **tracks** (one row each): R research, 1 product, 2 protocol, 3 ops, 4 core, 5 mainnet — not forced mainnet. [roadmap — Tracks](../docs/build/roadmap.md#tracks) · [phases — Tracks](../docs/build/phases.md#tracks). Optional scale: D3c / D3d / D3e on demand — [d3-scale.md](../docs/scale/d3-scale.md), [durable-chaindata.md](../docs/ops/durable-chaindata.md).
 
-**Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); deferred: P1e–f / P3c.
+**Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); deferred: P1e–f / P3c. Research-friendly default rows: Track **R** + Track **4**; Track **5** only before mainnet claims.
+
+**Active ordered plan (S0–S6 → Precompile slots):** [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots) — end milestone formalizes [Precompile slots](../docs/protocol/addresses.md#precompile-slots-evm-space) registry (`0x100`/`0x101` reserved/`0x102`), not Path A/mainnet.
 
 ## Durable chaindata
 

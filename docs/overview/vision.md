@@ -28,7 +28,7 @@ L2s help scale execution, but they introduce bridges, different security assumpt
 3. **Performance-oriented storage** — flat key-value state for execution; Sparse Merkle Tree for `StateRoot`, not for every opcode.
 4. **Phased sophistication** — Ethereum parity first; native path, parallel execution, and public-testnet freeze next; product surface and scale on demand.
 
-**Today (public-testnet-v1):** chain ID **2205**, live Path B RPC / explorer / faucet. See [Try public](../ops/try-public.md).
+**Today (public-testnet-v1):** chain ID **2205**, Path B RPC / explorer / faucet as an optional public lab. Phase D foundation is shipped; open work is **tracks** (research, product, protocol, ops, core, mainnet) — not an automatic mainnet. See [Try public](../ops/try-public.md) and [Roadmap — Tracks](../build/roadmap.md#tracks).
 
 ## Success criteria
 
@@ -50,9 +50,12 @@ L2s help scale execution, but they introduce bridges, different security assumpt
 
 ```mermaid
 flowchart LR
-  A[A–C shipped<br/>public-testnet-v1] --> D[Phase D<br/>Product & scale]
-  D --> M[Mainnet gate<br/>audit + Path A]
+  A[A–C shipped<br/>public-testnet-v1] --> D[Phase D foundation<br/>product + multiproc + chaindata]
+  D --> T[Tracks<br/>R · 1 · 2 · 3 · 4 · 5]
+  T --> M[Track 5 mainnet<br/>only if claimed]
 ```
+
+Phase bands A–D build a working L1 and lab surface. Open work is **track rows** (default: research + core features) — not automatic mainnet or real-user growth. See [Roadmap — Tracks](../build/roadmap.md#tracks).
 
 Every design choice should answer: _Does this make Dew faster, safer, or cheaper without breaking the Ethereum developer path?_
 

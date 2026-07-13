@@ -41,14 +41,16 @@ Dew reserves ranges so dual execution can grow without colliding with user contr
 
 ### Precompile slots (EVM space)
 
-| Range | Purpose |
-| :--- | :--- |
-| `0x01` – `0x0a` | Standard Ethereum precompiles (Cancun set) |
-| `0x100` | Dew native transfer precompile |
-| `0x101` | Reserved (swap / book) |
-| `0x102` | Staking entrypoint (feature-flagged; default off) |
+| Range | Purpose | Status (public-testnet-v1) |
+| :--- | :--- | :--- |
+| `0x01` – `0x0a` | Standard Ethereum precompiles (Cancun set) | Active (geth Cancun set) |
+| `0x100` | Dew native transfer precompile | Active when Dew precompiles on |
+| `0x101` | Reserved (swap / orderbook) | **Reserved** — not in live map |
+| `0x102` | Staking entrypoint | Active methods only if staking flag on (default **off**) |
 
 Custom Dew precompiles must not be required for basic ERC-20 deploy/transfer. Layout and gas: [Precompiles](../execution/precompiles.md).
+
+**Registry formalization (plan S6):** expand this table + code constants + fail-closed tests for reserved slots — [Recommended sequence → S6](../build/phases.md#s6--precompile-slots-milestone). Activating a new live address under freeze requires a hardfork doc.
 
 ## Rules
 
