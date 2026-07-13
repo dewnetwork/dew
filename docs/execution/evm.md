@@ -3,41 +3,42 @@ title: EVM Integration
 description: Embedding the Ethereum Virtual Machine in the Dew node.
 category: execution
 order: 20
-status: draft
+status: stable
 ---
 
 # EVM Integration
 
 ## Approach
 
-Dew embeds a standard EVM interpreter (typically via `go-ethereum` `core/vm`) behind a thin adapter. Opcode semantics follow the **Cancun-era** rules enabled from genesis (see [Genesis](../economics/genesis.md)).
+Dew embeds a standard EVM interpreter via `go-ethereum` `core/vm` behind a thin adapter. Opcode semantics follow **Cancun-era** rules enabled from genesis (see [Genesis](../economics/genesis.md)).
 
 ```mermaid
 flowchart TD
-    Executor["Dew Executor"] --> Bridge["StateDB bridge (interface)<br>Flat DB + journal + gas metering"]
+    Executor["Dew Executor"] --> Bridge["StateDB bridge<br>Flat DB + journal + gas metering"]
     Bridge --> Opcodes["EVM opcodes"]
     Bridge --> Precompiles["Precompiles"]
 ```
 
+Package: `core/vm` (executor, precompiles, parallel path) + `core/state` (StateDB bridge).
 
 ## StateDB bridge
 
 Implement go-ethereum’s `vm.StateDB` (or equivalent) mapping:
 
-| Method                                     | Backend               |
-| :----------------------------------------- | :-------------------- |
+| Method | Backend |
+| :--- | :--- |
 | `GetBalance` / `AddBalance` / `SubBalance` | Account in flat state |
-| `GetNonce` / `SetNonce`                    | Account nonce         |
-| `GetCode` / `SetCode`                      | Code store            |
-| `GetState` / `SetState`                    | Storage DB            |
-| `Snapshot` / `RevertToSnapshot`            | Journal               |
-| `AddLog`                                   | Receipt logs          |
-| `Exist` / `Empty` / `CreateAccount`        | Account lifecycle     |
-| `Selfdestruct` / `HasSelfdestructed`       | Per Cancun rules      |
+| `GetNonce` / `SetNonce` | Account nonce |
+| `GetCode` / `SetCode` | Code store |
+| `GetState` / `SetState` | Storage DB |
+| `Snapshot` / `RevertToSnapshot` | Journal |
+| `AddLog` | Receipt logs |
+| `Exist` / `Empty` / `CreateAccount` | Account lifecycle |
+| `Selfdestruct` / `HasSelfdestructed` | Per Cancun / EIP-6780 rules |
 
 ## Block context
 
-Provide block number, timestamp, coinbase/proposer, gas limit, base fee, randomness if required by the fork rules.
+Provide block number, timestamp, coinbase/proposer, gas limit, base fee, and any fork-required fields. Coinbase receives priority tips under the active fee path.
 
 ## Contract deployment
 
@@ -49,10 +50,10 @@ Provide block number, timestamp, coinbase/proposer, gas limit, base fee, randomn
 
 ## Testing strategy
 
-- Unit: individual opcodes via state tests if imported
-- Integration: deploy ERC-20, transfer, approve, emit events
-- Compare receipts and storage against a reference geth node on the same genesis **where opcodes overlap**
+- Integration: deploy ERC-20, transfer, approve, emit events (`core/vm`, `devnet/`, examples)
+- Toolchain: Foundry / Hardhat against local `dew devnet` or public RPC
+- Parallel path must match sequential roots/receipts on fixtures
 
 ## What we do not fork early
 
-Avoid custom opcodes in Phase A. Performance comes from storage layout, block time, gas schedule, and later parallel scheduling — not a divergent VM dialect.
+Avoid custom opcodes. Performance comes from storage layout, block pace, gas schedule, and parallel scheduling — not a divergent VM dialect. External audit of the VM bridge remains a mainnet gate ([Phase B audit](../security/phase-b-audit.md)).

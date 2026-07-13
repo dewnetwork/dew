@@ -3,7 +3,7 @@ title: Addresses
 description: Account address derivation and reserved namespaces.
 category: protocol
 order: 20
-status: draft
+status: stable
 ---
 
 # Addresses
@@ -28,28 +28,30 @@ $$
 \text{ContractAddress} = \text{Keccak-256}(\text{RLP}([\text{sender}, \text{nonce}]))[12:32]
 $$
 
-`CREATE2` follows the Ethereum formula when the EVM hardfork config enables it (Phase A enables Cancun-era rules from genesis).
+`CREATE2` follows the Ethereum formula under Cancun-era rules enabled from genesis.
 
 ## Address namespaces
 
 Dew reserves ranges so dual execution can grow without colliding with user contracts.
 
-| Namespace            | Range                 | Phase | VM / engine                                  |
-| :------------------- | :-------------------- | :---- | :------------------------------------------- |
-| **EVM space**        | `0x00…00` – `0xdf…ff` | A     | EVM accounts, contracts, precompiles         |
-| **Dew-native space** | `0xe0…00` – `0xff…ff` | B     | Native Go modules (optional system programs) |
+| Namespace | Range | Use |
+| :--- | :--- | :--- |
+| **EVM space** | `0x00…00` – `0xdf…ff` | EVM accounts, contracts, precompiles |
+| **Dew-native space** | `0xe0…00` – `0xff…ff` | Reserved for future native modules |
 
 ### Precompile slots (EVM space)
 
-| Range           | Purpose                                       |
-| :-------------- | :-------------------------------------------- |
-| `0x01` – `0x0a` | Standard Ethereum precompiles                 |
-| `0x100`+        | Reserved for Dew system precompiles (Phase B) |
+| Range | Purpose |
+| :--- | :--- |
+| `0x01` – `0x0a` | Standard Ethereum precompiles (Cancun set) |
+| `0x100` | Dew native transfer precompile |
+| `0x101` | Reserved (swap / book) |
+| `0x102` | Staking entrypoint (feature-flagged; default off) |
 
-Phase A only requires standard precompiles. Custom Dew precompiles must not be required for basic ERC-20 deploy/transfer.
+Custom Dew precompiles must not be required for basic ERC-20 deploy/transfer. Layout and gas: [Precompiles](../execution/precompiles.md).
 
 ## Rules
 
 - User EOAs and normal contracts live in EVM space.
-- Phase B native modules should use Dew-native space **or** fixed precompile addresses — pick one scheme per module and document it in [Precompiles](../execution/precompiles.md).
+- System modules use fixed precompile addresses **or** documented native-space rules — pick one scheme per module.
 - Do not place user-deployable contracts in Dew-native space via normal CREATE without an explicit protocol rule.

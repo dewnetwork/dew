@@ -1,76 +1,92 @@
 ---
 title: Blocks
-description: Block header and body structure for Dew.
+description: Block header and body structure for Dew (public-testnet-v1).
 category: protocol
 order: 40
-status: draft
+status: stable
 ---
 
 # Blocks
 
+Header RLP field order and hash are consensus-critical under **`public-testnet-v1`**.
+
 ## Header
 
+Go type: `core/types.Header`.
+
 ```go
-type BlockHeader struct {
-    ParentHash   [32]byte
-    StateRoot    [32]byte
-    TxRoot       [32]byte
-    ReceiptRoot  [32]byte
-    BlockNumber  uint64
-    Timestamp    uint64      // unix seconds
-    GasLimit     uint64
-    GasUsed      uint64
-    BaseFee      *big.Int    // EIP-1559; required in Phase A
-    ExtraData    []byte      // max 32 bytes (*tentative*)
-    Proposer     [20]byte
-    // Consensus commit metadata may be stored alongside the block
-    // (quorum certificate) rather than inside ExtraData long-term.
+type Header struct {
+    ParentHash  [32]byte
+    StateRoot   [32]byte
+    TxRoot      [32]byte
+    ReceiptRoot [32]byte
+    Number      uint64
+    Timestamp   uint64      // unix seconds
+    GasLimit    uint64
+    GasUsed     uint64
+    BaseFee     *big.Int    // EIP-1559
+    ExtraData   []byte      // max 32 bytes (enforced in validation paths)
+    Proposer    [20]byte
 }
 ```
 
+Canonical RLP list order (do not reorder):
+
+```text
+[ParentHash, StateRoot, TxRoot, ReceiptRoot, Number, Timestamp,
+ GasLimit, GasUsed, BaseFee, ExtraData, Proposer]
+```
+
+Consensus commit metadata (quorum certificates) may live **alongside** the block rather than inside `ExtraData`.
+
 ### Field rules
 
-| Field         | Rule                                                                              |
-| :------------ | :-------------------------------------------------------------------------------- |
-| `ParentHash`  | Hash of previous header; genesis uses zero hash                                   |
-| `BlockNumber` | Parent + 1                                                                        |
-| `Timestamp`   | Strictly greater than parent; within +5s of local clock for prevote (_tentative_) |
-| `GasUsed`     | ≤ `GasLimit`                                                                      |
-| `BaseFee`     | Updated each block per EIP-1559 elasticity rules                                  |
-| `StateRoot`   | Root after executing all txs in this block                                        |
-| `TxRoot`      | Root of transaction list                                                          |
-| `ReceiptRoot` | Root of receipt list                                                              |
+| Field | Rule |
+| :--- | :--- |
+| `ParentHash` | Hash of previous header; genesis uses zero hash |
+| `Number` | Parent + 1 |
+| `Timestamp` | Strictly greater than parent (nodes may advance by 1s if wall clock stalls) |
+| `GasUsed` | ≤ `GasLimit` |
+| `BaseFee` | Present; genesis base fee **1 gwei** on public-testnet-v1 |
+| `StateRoot` | SMT root after executing included work (see [State](./state.md)) |
+| `TxRoot` | Commitment over the EVM body list (see below) |
+| `ReceiptRoot` | Commitment over receipts (may be empty-root when unused) |
+| `Proposer` | Block proposer / fee sink address |
 
 ### Header hash
 
-`blockHash = Keccak-256(canonical_header_encoding)`. Encoding must be fixed (RLP recommended for ETH familiarity) before testnet freeze.
+`blockHash = Keccak-256(RLP(header fields in canonical order))`.
 
 ## Body
 
 ```go
 type Block struct {
-    Header       *BlockHeader
-    Transactions []Transaction // Phase A: EVM txs only
+    Header       *Header
+    Transactions []*Transaction // EVM txs only under public-testnet-v1
 }
 ```
 
-Phase B may allow mixed EVM + `DewTx` lists with a tagged union encoding.
+- Phase A/C freeze: body is **EVM transactions only**
+- `DewTx` inclusion is **receipt / tx-index backed**; pure-native auto-mine seals may have an empty body (see [Transactions](./transactions.md))
+- A future tagged-union body (mixed EVM + DewTx) would be a deliberate hardfork, not a silent change
 
-## Merkle / tree commitments
+## Tree commitments
 
-| Root          | Recommended construction (Phase A)                                                                          |
-| :------------ | :---------------------------------------------------------------------------------------------------------- |
-| `TxRoot`      | Merkle root over canonical tx encodings (Ethereum-style tx trie or binary merkle — **pick one and freeze**) |
-| `ReceiptRoot` | Same scheme over receipts                                                                                   |
-| `StateRoot`   | Sparse Merkle Tree over account (and storage) commitments                                                   |
+| Root | Construction (current) |
+| :--- | :--- |
+| `TxRoot` | `Keccak-256(RLP([txHash0, txHash1, …]))` over EVM body hashes; empty body → `EmptyTxRoot` |
+| `ReceiptRoot` | Same family as empty list root when not fully trie-populated |
+| `StateRoot` | Sparse Merkle Tree over account/storage/code leaves ([State](./state.md)) |
 
-Until freeze, implementers should isolate hashing behind an interface so the tree type can be swapped without rewriting execution.
+DewTx multi-pack seals that leave the body empty still set `TxRoot` to a hash-list commitment over included native hashes so the header is not all-zero.
 
-## Block time target
+## Block time
 
-- **Target**: 1 second (_tentative_)
-- Empty blocks: allowed if required by consensus timeouts to advance height
-- Proposer builds from mempool under `GasLimit`
+| Item | public-testnet-v1 practice |
+| :--- | :--- |
+| BFT multi-process pace | Default **1s** min interval between rounds (`MinBlockInterval`) |
+| Path B auto-mine | Seals when ready pending exists (no fixed wall clock) |
+| Empty blocks | Allowed so consensus can advance height |
 
 ## Genesis
 

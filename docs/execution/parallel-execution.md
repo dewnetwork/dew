@@ -1,33 +1,32 @@
 ---
 title: Parallel Execution (Dew-PE)
-description: Phase B optimistic parallel execution based on Block-STM ideas.
+description: Optimistic parallel execution with serial-equivalent final state.
 category: execution
 order: 50
-status: draft
+status: stable
 ---
 
 # Parallel Execution (Dew-PE)
 
-> **Phase B.** Implement only after sequential EVM + multi-validator devnet are correct.  
 > Normative semantics: **equivalent to sequential execution in transaction index order.**
 
 ## Motivation
 
-Sequential EVM leaves CPU cores idle. Dew-PE runs non-conflicting transactions concurrently using Go goroutines, then validates consistency.
+Sequential EVM leaves CPU cores idle. Dew-PE runs non-conflicting transactions concurrently, then validates consistency.
 
-## Model: optimistic Block-STM style
+## Model: optimistic concurrency
 
 Dew does **not** require users to declare access lists for normal EVM txs (lists are often wrong for dynamic contracts). Instead:
 
-1. Execute optimistically in parallel
-2. Record read/write sets in an MVCC cache
+1. Execute optimistically (workers / forks)
+2. Record read/write sets
 3. Validate; re-execute on conflict
 4. Commit a final state identical to serial order \(T_0, T_1, \ldots\)
 
 ```mermaid
 flowchart TD
-  T[Block txs T0..Tn] --> W[Worker pool goroutines]
-  W --> MVCC[MVCC read/write sets]
+  T[Block txs T0..Tn] --> W[Worker pool]
+  W --> MVCC[Access track / overlay]
   MVCC --> V[Validate by increasing index]
   V -->|conflict| A[Abort write set]
   A --> R[Re-execute Ti + dependents]
@@ -35,21 +34,25 @@ flowchart TD
   V -->|ok| M[Merge → StateRoot]
 ```
 
-## MVCC cache
+### Implementation note (public-testnet-v1)
+
+The current Go path (`core/vm/parallel.go`) uses **fork + overlay** copies rather than a full multi-version Block-STM store. Higher memory and re-exec cost under heavy conflicts are known residuals (`agents/debt.md`). Semantics still require serial equivalence; upgrading the scheduler is post-testnet optimization, not a wire freeze item.
+
+## Access tracking
 
 For each tx index \(i\):
 
-- **Read set**: keys + version (which earlier tx index produced the value)
+- **Read set**: keys observed during speculative execution
 - **Write set**: pending account/storage updates
 
-Read rule: value from the highest \(j < i\) that wrote the key, else committed parent state.
+Read rule: value from the highest \(j < i\) that wrote the key, else committed parent state (via overlay).
 
 ## Validation
 
 For each \(T_i\) in order:
 
-- If any key in the read set was written by a later-than-observed version from some \(T_j\) with \(j < i\) after \(T_i\)’s read → **invalid**
-- On invalid: drop \(T_i\) writes; mark dependent txs invalid; re-run
+- If any key in the read set was written by a later-than-observed version from some \(T_j\) with \(j < i\) → **invalid**
+- On invalid: drop \(T_i\) writes; re-run dependents as needed
 
 ## Determinism
 
@@ -57,12 +60,12 @@ Given the same parent state and the same ordered tx list, Dew-PE MUST produce th
 
 ## Relationship to access lists
 
-| Tx kind         | Scheduling                                                                               |
-| :-------------- | :--------------------------------------------------------------------------------------- |
-| EVM tx          | Optimistic STM (access list optional hint only)                                          |
-| DewTx (Phase B) | **Static** partition by declared `AccessList` — can skip abort path when lists are exact |
+| Tx kind | Scheduling |
+| :--- | :--- |
+| EVM tx | Optimistic (access list optional hint only) |
+| DewTx | **Static** partition by declared `AccessList` — can skip abort path when lists are exact |
 
-This resolves the old doc conflict: **spec-level primary model for EVM = optimistic**; **DewTx = declared dependencies**.
+**Spec-level primary model for EVM = optimistic**; **DewTx = declared dependencies**.
 
 ## Complexity controls
 
@@ -70,8 +73,9 @@ This resolves the old doc conflict: **spec-level primary model for EVM = optimis
 - Bound re-execution attempts; fall back to sequential for pathological blocks
 - Metrics: rollback rate, worker utilization (`dew_getExecutionStats`)
 
-## Non-goals for first Dew-PE
+## Non-goals (current)
 
 - Cross-block speculative execution
 - GPU interpreters
 - Breaking receipt order vs tx index
+- Shipping full Block-STM as a freeze requirement

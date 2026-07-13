@@ -1,20 +1,20 @@
 ---
 title: Transactions
-description: EVM transaction formats (Phase A) and Dew-native transactions (Phase B).
+description: EVM transaction formats and Dew-native transactions (public-testnet-v1).
 category: protocol
 order: 30
-status: draft
+status: stable
 ---
 
 # Transactions
 
-## Phase A: EVM transactions (required)
+Wire surfaces below match freeze tag **`public-testnet-v1`** (`params/freeze.go`). Prefer config changes over wire churn.
 
-Phase A supports Ethereum-compatible transactions so existing wallets work.
+## EVM transactions
+
+Ethereum-compatible transactions so existing wallets and toolchains work (MetaMask, Foundry, Hardhat).
 
 ### EIP-1559 (type `0x02`) — primary
-
-Canonical form:
 
 ```
 0x02 || RLP([
@@ -31,65 +31,81 @@ Canonical form:
 ])
 ```
 
-### Legacy (type legacy / optional)
+### Legacy (type 0)
 
-Support for type-0 legacy txs is **recommended** for older tooling. If implemented, enforce EIP-155 chain ID in the signature.
+Type-0 legacy txs are supported for older tooling. EIP-155 chain ID is enforced in the signature path.
 
 ### Validation checklist
 
 1. RLP decodes successfully
 2. Signature recovers to a valid address
-3. `chainId` matches network
-4. Nonce matches sender account (or is next pending in mempool)
-5. `maxFeePerGas >= baseFee` (when base fee is active)
-6. Sender balance covers `value + gasLimit * maxFeePerGas` (conservative check)
-7. Intrinsic gas ≤ `gasLimit`
+3. `chainId` matches network (**2205** on public-testnet-v1)
+4. Nonce: reject only if `<` account nonce; higher nonces may stay pending (gap queue)
+5. Fee floors: mempool min gas price / tip (see [Gas and fees](../execution/gas-and-fees.md))
+6. Intrinsic gas ≤ `gasLimit` at execution
+7. Balance covers gas + value at execution (hard fail if not)
 
 ### Transaction hash
 
 `txHash = Keccak-256(signed_tx_bytes)` per Ethereum rules for the type.
 
-## Phase B: Dew-native transactions (`DewTx`)
+### Multi-tx packing (C1)
 
-**Not required for first devnet.** Introduced after EVM path is stable.
+Under auto-mine / proposal selection, continuous per-sender nonce chains pack into one block (up to **64** txs) with a fee auction across ready senders. See [Phases — C1](../build/phases.md#c1--mempool-admission--fee-policy).
 
-Design goals: smaller payload, explicit access lists for lock-free scheduling, fixed micro-fee path.
+## Dew-native transactions (`DewTx`)
+
+Optional high-performance path alongside EVM. Domain-separated wire; not an Ethereum typed-tx byte.
 
 ```go
 type DewTx struct {
     Version    uint32
+    ChainID    *big.Int
     Nonce      uint64
     Sender     [20]byte
     Receiver   [20]byte
     Amount     *uint256.Int // DEW in wei
-    Fee        uint64       // flat fee in wei (normative for Phase B)
-    Payload    []byte       // native call data
-    AccessList [][20]byte   // declared read/write accounts
-    Signature  []byte       // 65-byte compact ECDSA
+    Fee        uint64       // flat fee in wei
+    Payload    []byte       // native module data
+    AccessList [][20]byte   // declared accounts (fail-closed)
+    V, R, S    *big.Int     // ECDSA recovery (yParity, r, s)
 }
 ```
 
-### Encoding (frozen Phase B)
+### Encoding (frozen)
 
-- Versioned binary: `0xdf || RLP([version, chainId, nonce, sender, receiver, amount, fee, payload, accessList, yParity, r, s])`.
-- RPC submit via `dew_sendRawTransaction` (hex of signed bytes).
-- Signing hash = `Keccak-256(Keccak-256("DewTx:v1") || RLP(unsigned fields))` — domain ≠ EVM tx hash.
+- Wire: `0xdf || RLP([version, chainId, nonce, sender, receiver, amount, fee, payload, accessList, yParity, r, s])`
+- Prefix `0xdf` is outside Ethereum typed-tx range so accidental `eth_sendRawTransaction` fails closed
+- RPC: `dew_sendRawTransaction` (hex of signed bytes)
+- Signing hash: `Keccak-256(Keccak-256("DewTx:v1") || RLP(unsigned fields))` — ≠ EVM tx hash
 
-### Fee rule (frozen Phase B)
+### Fee rule (frozen)
 
-Flat fee in wei: `params.DefaultDewTxFeeWei = 2_100_000_000_000` (~10% of 21_000 gas × 1 gwei). Paid to block proposer. Not EVM gas.
+| Parameter | Value |
+| :--- | :--- |
+| `DefaultDewTxFeeWei` / `MinDewTxFeeWei` | `2_100_000_000_000` (~10% of 21_000 gas × 1 gwei) |
+
+Paid to the block proposer (fee sink). Not EVM gas. See [Gas and fees](../execution/gas-and-fees.md).
+
+### Inclusion model (public-testnet-v1)
+
+- Unified mempool with EVM (`mempool.Pool`); same gap-queue / multi-tx auto-mine packing rules
+- **Block body** still carries EVM `Transaction` list only — no tagged-union body under this freeze
+- Included DewTxs are applied by the native executor and indexed via **receipts / tx lookup** (body may be empty for pure-native seals)
+- Full mixed body encoding remains a post-freeze / hardfork design item
 
 ## Receipts
 
-Every included transaction produces a receipt (EVM path):
+Every included transaction produces a receipt:
 
-| Field               | Notes                     |
-| :------------------ | :------------------------ |
-| `status`            | `1` success / `0` failure |
-| `gasUsed`           | Actual gas consumed       |
-| `logs`              | EVM logs                  |
-| `cumulativeGasUsed` | Within block              |
-| `effectiveGasPrice` | Per EIP-1559 rules        |
-| `contractAddress`   | Set on create             |
+| Field | EVM | DewTx |
+| :--- | :--- | :--- |
+| `status` | `1` / `0` | success path is `1` (fail-closed incomplete access list is not included) |
+| `gasUsed` | actual EVM gas | `0` (flat fee path) |
+| `logs` | EVM logs | none |
+| `cumulativeGasUsed` | within block | `0` for native-only |
+| `effectiveGasPrice` | EIP-1559 effective | `0` |
+| `contractAddress` | set on create | n/a |
+| `type` | EVM type | `0xdf` (`types.DewTxType`) |
 
-Receipt root is committed in the block header. Exact trie encoding: see [Blocks](./blocks.md).
+Header `ReceiptRoot` commitment scheme: see [Blocks](./blocks.md).

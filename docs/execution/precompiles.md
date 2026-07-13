@@ -1,41 +1,41 @@
 ---
 title: Precompiles
-description: Standard Ethereum precompiles and future Dew system contracts.
+description: Standard Ethereum precompiles and Dew system contracts.
 category: execution
 order: 40
-status: draft
+status: stable
 ---
 
 # Precompiles
 
 Precompiles are native implementations exposed at fixed addresses, callable like contracts but executed in Go.
 
-## Phase A — standard Ethereum set
+## Standard Ethereum set (Cancun)
 
-| Address | Name                                      |
-| :------ | :---------------------------------------- |
-| `0x01`  | ecrecover                                 |
-| `0x02`  | SHA2-256                                  |
-| `0x03`  | RIPEMD-160                                |
-| `0x04`  | identity                                  |
-| `0x05`  | modexp                                    |
-| `0x06`  | ecAdd (alt_bn128)                         |
-| `0x07`  | ecMul                                     |
-| `0x08`  | ecPairing                                 |
-| `0x09`  | blake2f                                   |
-| `0x0a`  | point evaluation (KZG / EIP-4844 related) |
+| Address | Name |
+| :--- | :--- |
+| `0x01` | ecrecover |
+| `0x02` | SHA2-256 |
+| `0x03` | RIPEMD-160 |
+| `0x04` | identity |
+| `0x05` | modexp |
+| `0x06` | ecAdd (alt_bn128) |
+| `0x07` | ecMul |
+| `0x08` | ecPairing |
+| `0x09` | blake2f |
+| `0x0a` | point evaluation (KZG / EIP-4844 related) |
 
 Gas costs: match Cancun unless a documented exception exists.
 
-## Phase B — Dew system precompiles
+## Dew system precompiles
 
 Reserved starting at `0x100`. Enabled when the executor feature flag is on
 (`Executor.EnableDewPrecompiles(true)`, default on; matches `params.DefaultEnableDewPrecompiles`).
 
-| Address | Name               | Gas (fixed) | Status                                      |
-| :------ | :----------------- | ----------: | :------------------------------------------ |
-| `0x100` | Native transfer    |       3_000 | **Active** — forward CALLVALUE to recipient |
-| `0x101` | Native swap / book |         TBD | Reserved                                    |
+| Address | Name | Gas (fixed) | Status |
+| :--- | :--- | ---: | :--- |
+| `0x100` | Native transfer | 3_000 | **Active** — forward CALLVALUE to recipient |
+| `0x101` | Native swap / book | TBD | Reserved |
 | `0x102` | Staking entrypoint | method-based | **C4** — bond/unbond/queries/jail; feature-flagged |
 
 ### `0x100` — Native transfer
@@ -58,12 +58,12 @@ Useful bridge from Solidity into native DEW movement without an ERC-20 hop.
 
 ### `0x102` — Staking entrypoint (Phase C4)
 
-Enabled when Dew precompiles are on **and** `Executor.EnableStaking(true)` / `Node.SetStakingEnabled(true)`. Default **off** until private testnet operators opt in (`params.DefaultEnableStaking = false`).
+Enabled when Dew precompiles are on **and** `Executor.EnableStaking(true)` / `Node.SetStakingEnabled(true)`. Default **off** until operators opt in (`params.DefaultEnableStaking = false`).
 
 **Byte layout** (fail-closed; not full Solidity ABI):
 
 | Method | Input | Value | Gas | Effect |
-| :----- | :---- | :---- | --: | :----- |
+| :--- | :--- | :--- | --: | :--- |
 | `0x00` bond | `[0x00]` | self-stake amount | 50_000 | Escrow CALLVALUE on `0x102`; credit tx sender |
 | `0x01` unbond | `[0x01 \|\| amount uint256]` | 0 | 40_000 | Reduce stake; return funds to sender |
 | `0x02` getSelfStake | `[0x02 \|\| addr20]` | 0 | 2_000 | Return stake uint256 |
@@ -73,7 +73,7 @@ Enabled when Dew precompiles are on **and** `Executor.EnableStaking(true)` / `No
 | `0x06` jail | `[0x06 \|\| addr20 \|\| evidenceHash32]` | 0 | 30_000 | Jail (non-zero evidence required) |
 | `0x07` isJailed | `[0x07 \|\| addr20]` | 0 | 2_000 | 0/1 |
 
-**Rules:** min self-stake `100_000 * 10^18` wei (**public-testnet-v1**); active set = top `K` (default 100) by voting power among candidates ≥ min and not jailed. Unbonding period is **not** fully enforced yet (immediate return — residual). Bond credits **tx sender** (EOA path); nested contract staking deferred. See [Public testnet freeze](../ops/public-testnet.md).
+**Rules:** min self-stake `100_000 * 10^18` wei (**public-testnet-v1**); active set = top `K` (default 100) by voting power among candidates ≥ min and not jailed. Unbonding period is **not** fully enforced yet (immediate return — D3c residual). Bond credits **tx sender** (EOA path); nested contract staking deferred. See [Public testnet freeze](../ops/public-testnet.md) and [D3 scale — D3c](../scale/d3-scale.md).
 
 Module state: `core/native/staking.go` storage under address `0x102`.
 
