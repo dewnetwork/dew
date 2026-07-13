@@ -131,6 +131,74 @@ func TestLoad_Parallel_MixedConflicts_Equivalence(t *testing.T) {
 	t.Logf("mixed n=%d rollbacks=%d conflict_rate=%.3f", n, st.Rollbacks, st.ConflictRate)
 }
 
+// TestLoad_PE_Matrix_ConflictAndWorkers is the S2 PE measurement matrix:
+// sequential vs PE across conflict structures and worker counts.
+// Hard gates: serial-equivalent roots. Wall-clock is logged, not required to speedup.
+func TestLoad_PE_Matrix_ConflictAndWorkers(t *testing.T) {
+	const n = 64
+	workersList := []int{1, 2, 4, runtime.GOMAXPROCS(0)}
+	// conflictEvery: 0 = all disjoint; k = every k-th tx debits a shared hub.
+	scenarios := []struct {
+		name          string
+		conflictEvery int
+	}{
+		{name: "disjoint", conflictEvery: 0},
+		{name: "mixed_1in4", conflictEvery: 4},
+		{name: "hub_all", conflictEvery: 1},
+	}
+
+	t.Logf("matrix n=%d gomaxprocs=%d columns=scenario,workers,seq_ms,par_ms,speedup,rollbacks,conflict_rate,spec_ok,root_ok",
+		n, runtime.GOMAXPROCS(0))
+
+	for _, sc := range scenarios {
+		sc := sc
+		msgs, base := makeConflictWorkload(t, n, sc.conflictEvery)
+
+		// Sequential baseline once per scenario (shared reference root).
+		seqState := base.Copy()
+		t0 := time.Now()
+		if _, err := vm.NewParallelExecutor(seqState, loadBlock(), 1).ApplySequential(msgs); err != nil {
+			t.Fatalf("%s sequential: %v", sc.name, err)
+		}
+		seqDur := time.Since(t0)
+		seqRoot, err := seqState.IntermediateRoot()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, w := range workersList {
+			w := w
+			parState := base.Copy()
+			pe := vm.NewParallelExecutor(parState, loadBlock(), w)
+			t1 := time.Now()
+			if _, err := pe.ApplyParallel(msgs); err != nil {
+				t.Fatalf("%s workers=%d parallel: %v", sc.name, w, err)
+			}
+			parDur := time.Since(t1)
+			parRoot, err := parState.IntermediateRoot()
+			if err != nil {
+				t.Fatal(err)
+			}
+			rootOK := seqRoot == parRoot
+			if !rootOK {
+				t.Fatalf("%s workers=%d roots diverged\nseq=%x\npar=%x", sc.name, w, seqRoot, parRoot)
+			}
+			st := pe.Stats()
+			speedup := float64(seqDur) / float64(parDur)
+			t.Logf("ROW scenario=%s workers=%d seq_ms=%.3f par_ms=%.3f speedup=%.2f rollbacks=%d conflict_rate=%.3f spec_ok=%d root_ok=%v",
+				sc.name, st.Workers,
+				float64(seqDur.Microseconds())/1000.0,
+				float64(parDur.Microseconds())/1000.0,
+				speedup, st.Rollbacks, st.ConflictRate, st.SpeculativeOK, rootOK)
+
+			// Pathological slow PE only (allow large slack for fork+overlay on tiny transfers).
+			if parDur > seqDur*20 {
+				t.Fatalf("%s workers=%d pathologically slow: par=%v seq=%v", sc.name, w, parDur, seqDur)
+			}
+		}
+	}
+}
+
 func TestLoad_NativeDewTx_Throughput(t *testing.T) {
 	const n = 200
 	mdb := db.OpenTest(t)
@@ -189,15 +257,52 @@ func TestLoad_ReportFeeComparison(t *testing.T) {
 
 func makeDisjointTransfers(t *testing.T, n int) ([]vm.Message, *state.StateDB) {
 	t.Helper()
+	return makeConflictWorkload(t, n, 0)
+}
+
+// makeConflictWorkload builds n simple value-transfer messages.
+// conflictEvery == 0: all pairs are disjoint (no shared accounts).
+// conflictEvery == k (k > 0): every k-th tx debits a shared hub (and leaves are funded).
+func makeConflictWorkload(t *testing.T, n, conflictEvery int) ([]vm.Message, *state.StateDB) {
+	t.Helper()
 	mdb := db.OpenTest(t)
 	base := state.New(mdb)
+
+	var hub crypto.Address
+	if conflictEvery > 0 {
+		hubKey, err := crypto.GenerateKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+		hub = crypto.PubkeyToAddress(&hubKey.PublicKey)
+		// Enough balance for all hub debits (worst case every tx).
+		base.SetBalance(hub, uint256.NewInt(uint64(n)+1_000_000))
+	}
+
 	msgs := make([]vm.Message, n)
 	for i := 0; i < n; i++ {
-		k1, _ := crypto.GenerateKey()
-		k2, _ := crypto.GenerateKey()
-		a := crypto.PubkeyToAddress(&k1.PublicKey)
-		b := crypto.PubkeyToAddress(&k2.PublicKey)
+		k, err := crypto.GenerateKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+		a := crypto.PubkeyToAddress(&k.PublicKey)
 		base.SetBalance(a, uint256.NewInt(1_000_000))
+
+		useHub := conflictEvery > 0 && i%conflictEvery == 0
+		if useHub {
+			to := a
+			msgs[i] = vm.Message{
+				From: hub, To: &to, Value: uint256.NewInt(1),
+				GasLimit: 100_000, GasPrice: big.NewInt(0),
+			}
+			continue
+		}
+		k2, err := crypto.GenerateKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+		b := crypto.PubkeyToAddress(&k2.PublicKey)
+		base.SetBalance(b, uint256.NewInt(0))
 		to := b
 		msgs[i] = vm.Message{
 			From: a, To: &to, Value: uint256.NewInt(1),

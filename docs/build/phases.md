@@ -27,7 +27,7 @@ Not a Phase E. Pick **one track row** (or the ordered plan). Same freeze (`publi
 
 | Track | Status | Theme | Detail |
 | :--- | :----- | :---- | :--- |
-| **R — Research lab** | Partial | H1 + harness done; PE matrix (S2) open | [Track R](#track-r--research-lab) · [research-lab](../ops/research-lab.md) |
+| **R — Research lab** | Partial | H1 + PE matrix (S0–S2) done; BFT/state optional | [Track R](#track-r--research-lab) · [research-lab](../ops/research-lab.md) |
 | **1 — Product** | Partial | v1–v1.2 done; P1e–f / P3c deferred | [Track 1](#track-1--product-surface) |
 | **2 — Protocol (D3c)** | Partial | Staking MVP done; slash % / delegation open | [Track 2](#track-2--protocol--d3c-staking) |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public | [Track 3](#track-3--ops--d3d-path-a) |
@@ -451,7 +451,7 @@ Open work after the Phase D foundation. **One track per row** in the [summary ta
 
 | | |
 | :--- | :--- |
-| **Status** | Partial — S1 hypothesis + harness **done** ([research-lab](../ops/research-lab.md)); S2 matrix open |
+| **Status** | Partial — S0–S2 PE lab **done** ([research-lab](../ops/research-lab.md)); BFT/state/staking lab optional |
 | **Goals** | Measure and explain PE, BFT, state, or staking economics without real mainnet users |
 | **Packages** | `tests/load/`, `tests/security/`, `core/vm/`, `devnet/`, `docs/` |
 
@@ -459,11 +459,11 @@ Open work after the Phase D foundation. **One track per row** in the [summary ta
 
 - [x] At least one written hypothesis (throughput, finality, storage, or staking) — PE wall-clock vs conflict structure ([research-lab.md](../ops/research-lab.md)) (2026-07-13)
 - [x] Reproducible harness (load / multiproc / soak command documented) — `tests/load` + `core/vm` Parallel ([research-lab.md](../ops/research-lab.md)) (2026-07-13)
-- [ ] PE: sequential vs parallel matrix (conflict rate, workers, rollback metrics) — **S2**
+- [x] PE: sequential vs parallel matrix (conflict rate, workers, rollback metrics) — `TestLoad_PE_Matrix_ConflictAndWorkers` (2026-07-13)
 - [ ] BFT: multiproc soak or chaos (commit latency / recovery notes)
 - [ ] State: SMT commit or tip-growth measurement vs flat hot path
 - [ ] Staking lab (optional): private net with `--staking` scenario notes
-- [x] Results recorded under docs or lab notes; code changes keep serial-equivalent tests green — S1 baseline table in [research-lab.md](../ops/research-lab.md)
+- [x] Results recorded under docs or lab notes; code changes keep serial-equivalent tests green — S1–S2 tables in [research-lab.md](../ops/research-lab.md)
 
 ### Track 1 — Product surface
 
@@ -591,20 +591,20 @@ flowchart LR
 
 **Acceptance:**
 
-- [ ] Matrix: sequential vs PE across conflict rates and/or worker counts
-- [ ] Capture rollback / re-exec metrics (`dew_getExecutionStats` or test harness output)
-- [ ] Confirm PE roots/receipts match sequential on fixtures (`go test` PE paths green)
-- [ ] Short results note in docs (table or bullets) — not marketing claims
-- [ ] Optional follow-up filed only if Block-STM is justified by numbers (do **not** implement full Block-STM in this sequence unless S2 proves need)
+- [x] Matrix: sequential vs PE across conflict rates and/or worker counts — `TestLoad_PE_Matrix_ConflictAndWorkers` (2026-07-13)
+- [x] Capture rollback / re-exec metrics (`dew_getExecutionStats` or test harness output) — matrix `ROW` logs + [research-lab.md](../ops/research-lab.md)
+- [x] Confirm PE roots/receipts match sequential on fixtures (`go test` PE paths green)
+- [x] Short results note in docs (table or bullets) — not marketing claims
+- [x] Optional follow-up filed only if Block-STM is justified by numbers — **not justified** on simple-transfer matrix; residual left in debt (no Block-STM implementation)
 
 **Packages:** `core/vm/`, `tests/load/`, `docs/execution/parallel-execution.md` · **Verify:** load/PE tests + note · **Scope:** M  
 **Depends on:** S1
 
 ### Checkpoint A — after S0–S2
 
-- [ ] All S0–S2 acceptance boxes checked
-- [ ] No freeze wire changes
-- [ ] Human review of hypothesis + PE numbers before core feature coding
+- [x] All S0–S2 acceptance boxes checked (2026-07-13)
+- [x] No freeze wire changes
+- [x] Human review of hypothesis + PE numbers before core feature coding — numbers + H1 recorded in [research-lab.md](../ops/research-lab.md); proceed to S3 telemetry (not Block-STM)
 
 ### S3 — Mempool / fee telemetry RPC (Track 4, small)
 

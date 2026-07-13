@@ -73,7 +73,7 @@ Given the same parent state and the same ordered tx list, Dew-PE MUST produce th
 - Bound re-execution attempts; fall back to sequential for pathological blocks
 - Metrics: rollback rate, worker utilization (`dew_getExecutionStats`)
 
-**Lab harness (Track R / S1):** reproducible PE load commands, hypothesis, and baseline numbers — [Research lab harness](../ops/research-lab.md).
+**Lab harness (Track R / S1–S2):** hypothesis H1, load matrix (conflict × workers), baselines — [Research lab harness](../ops/research-lab.md). Simple-transfer matrix does **not** justify full Block-STM; PE remains serial-equivalent fork+overlay.
 
 ## Non-goals (current)
 

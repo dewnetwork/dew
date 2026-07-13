@@ -26,7 +26,7 @@ All phases land in the **same monorepo** (Go core + Node for **web docs**, explo
 
 | Track | Status | Theme |
 | :--- | :--- | :--- |
-| **R — Research lab** | Partial | H1 + harness done ([research-lab](../ops/research-lab.md)); S2 matrix open |
+| **R — Research lab** | Partial | S0–S2 PE lab done ([research-lab](../ops/research-lab.md)); BFT/state optional |
 | **1 — Product** | Partial | v1 done; P1e–f / P3c deferred |
 | **2 — Protocol (D3c)** | Partial | Staking MVP done; slash % / delegation open |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public |
@@ -101,7 +101,7 @@ Phase D foundation is done. Remaining work is **tracks** under freeze `public-te
 | :--- | :--- | :--- |
 | S0 | Lab baseline (`go test`, devnet) — **done** 2026-07-13 | — |
 | S1 | Hypothesis + harness — **done** 2026-07-13 ([research-lab](../ops/research-lab.md)) | R |
-| S2 | PE measurement matrix | R · 4 |
+| S2 | PE measurement matrix — **done** 2026-07-13 (Checkpoint A) | R · 4 |
 | S3 | Mempool / fee telemetry RPC | 4 |
 | S4 | `0x102` staking edges | 2 |
 | S5 | Staking lab scenarios | R · 2 |
