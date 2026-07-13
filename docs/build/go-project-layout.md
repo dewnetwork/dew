@@ -75,7 +75,7 @@ Optional later (not present today): `packages/sdk`, `packages/localnet`.
 | Codecs versioned | Avoid silent fork of encodings |
 | Disk via Pebble | Single `db.PebbleDB` backend; tests use `db.OpenTest` |
 
-- Go **1.22+** (developed on 1.23)
+- Go **1.25+** (see root `go.mod`)
 - Unit tests next to packages; multi-node / soak under `devnet/` and `tests/`
 
 ## Node packages

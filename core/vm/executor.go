@@ -160,12 +160,11 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 		BlobBaseFee: big.NewInt(0),
 		Random:      &random,
 	}
-	txCtx := ethvm.TxContext{
+	evm := ethvm.NewEVM(blockCtx, e.bridge, e.config, ethvm.Config{})
+	evm.SetTxContext(ethvm.TxContext{
 		Origin:   toEthAddr(msg.From),
 		GasPrice: msg.GasPrice,
-	}
-
-	evm := ethvm.NewEVM(blockCtx, txCtx, e.bridge, e.config, ethvm.Config{})
+	})
 	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles, msg.From, msg.Value, e.stakingEnabled)
 
 	// Prepare access lists (Berlin+)
@@ -184,7 +183,6 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 		precompiles = append(precompiles, DewPrecompileAddresses()...)
 	}
 	e.bridge.Prepare(rules, toEthAddr(msg.From), toEthAddr(e.block.Coinbase), dest, precompiles, nil)
-	_ = evm // used below
 
 	gasLeft := msg.GasLimit
 	var (
@@ -193,7 +191,7 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 		createdAddr *crypto.Address
 	)
 
-	caller := ethvm.AccountRef(toEthAddr(msg.From))
+	caller := toEthAddr(msg.From)
 	if msg.To == nil {
 		// CREATE increments nonce inside the EVM.
 		var ethAddr ethcommon.Address

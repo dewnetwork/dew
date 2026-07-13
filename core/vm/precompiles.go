@@ -62,6 +62,8 @@ func (p *nativeTransferPrecompile) RequiredGas(input []byte) uint64 {
 	return NativeTransferGas
 }
 
+func (p *nativeTransferPrecompile) Name() string { return "DEW_NATIVE_TRANSFER" }
+
 func (p *nativeTransferPrecompile) Run(input []byte) ([]byte, error) {
 	if len(input) != 20 {
 		return nil, fmt.Errorf("nativeTransfer: input must be exactly 20-byte recipient")
@@ -106,6 +108,8 @@ func (p *stakingPrecompile) RequiredGas(input []byte) uint64 {
 		return params.StakingPrecompileGasQuery
 	}
 }
+
+func (p *stakingPrecompile) Name() string { return "DEW_STAKING" }
 
 func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 	if !p.enabled {

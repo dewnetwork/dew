@@ -89,7 +89,7 @@ Config files:
 
 ## 2. Binary + systemd (no Docker)
 
-On a build machine or the host (needs Go 1.23+):
+On a build machine or the host (needs Go 1.25+; see root `go.mod`):
 
 ```bash
 git clone <your-fork-or-repo> dewchain && cd dewchain

@@ -51,7 +51,7 @@ func NewServer(cfg Config, sender *Sender, captcha CaptchaVerifier, allowlist ma
 	mux.HandleFunc("GET /info", s.handleInfo)
 	mux.HandleFunc("POST /drip", s.handleDrip)
 	// Go 1.21 fallback patterns without method (for older tooling): also register bare paths
-	// Method-specific patterns require Go 1.22+; module is 1.23 so OK.
+	// Method-specific patterns require Go 1.22+; module is 1.25+ so OK.
 	s.httpSrv = &http.Server{
 		Addr:              cfg.ListenAddr,
 		Handler:           s.withLimits(mux),

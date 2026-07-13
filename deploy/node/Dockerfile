@@ -2,7 +2,7 @@
 # Build from repo root:
 #   docker build -f deploy/node/Dockerfile -t dew:local .
 
-FROM golang:1.23-bookworm AS build
+FROM golang:1.25-bookworm AS build
 WORKDIR /src
 
 COPY go.mod go.sum ./

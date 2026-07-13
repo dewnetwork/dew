@@ -2,6 +2,7 @@ package vm
 
 import (
 	ethcommon "github.com/ethereum/go-ethereum/common"
+	ethstate "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -58,7 +59,7 @@ func (b *Bridge) GetNonce(addr ethcommon.Address) uint64 {
 	return b.state.GetNonce(fromEthAddr(addr))
 }
 
-func (b *Bridge) SetNonce(addr ethcommon.Address, nonce uint64) {
+func (b *Bridge) SetNonce(addr ethcommon.Address, nonce uint64, _ tracing.NonceChangeReason) {
 	b.state.SetNonceJournaled(fromEthAddr(addr), nonce)
 }
 
@@ -70,20 +71,25 @@ func (b *Bridge) GetCode(addr ethcommon.Address) []byte {
 	return b.state.GetCode(fromEthAddr(addr))
 }
 
-func (b *Bridge) SetCode(addr ethcommon.Address, code []byte) {
-	b.state.SetCodeJournaled(fromEthAddr(addr), code)
+func (b *Bridge) SetCode(addr ethcommon.Address, code []byte, _ tracing.CodeChangeReason) []byte {
+	a := fromEthAddr(addr)
+	prev := b.state.GetCode(a)
+	b.state.SetCodeJournaled(a, code)
+	return prev
 }
 
 func (b *Bridge) GetCodeSize(addr ethcommon.Address) int {
 	return b.state.GetCodeSize(fromEthAddr(addr))
 }
 
-func (b *Bridge) AddRefund(gas uint64)  { b.state.AddRefund(gas) }
-func (b *Bridge) SubRefund(gas uint64)  { b.state.SubRefund(gas) }
-func (b *Bridge) GetRefund() uint64     { return b.state.GetRefund() }
+func (b *Bridge) AddRefund(gas uint64) { b.state.AddRefund(gas) }
+func (b *Bridge) SubRefund(gas uint64) { b.state.SubRefund(gas) }
+func (b *Bridge) GetRefund() uint64    { return b.state.GetRefund() }
 
-func (b *Bridge) GetCommittedState(addr ethcommon.Address, hash ethcommon.Hash) ethcommon.Hash {
-	return toEthHash(b.state.GetCommittedState(fromEthAddr(addr), fromEthHash(hash)))
+func (b *Bridge) GetStateAndCommittedState(addr ethcommon.Address, hash ethcommon.Hash) (ethcommon.Hash, ethcommon.Hash) {
+	a := fromEthAddr(addr)
+	k := fromEthHash(hash)
+	return toEthHash(b.state.GetState(a, k)), toEthHash(b.state.GetCommittedState(a, k))
 }
 
 func (b *Bridge) GetState(addr ethcommon.Address, hash ethcommon.Hash) ethcommon.Hash {
@@ -186,6 +192,10 @@ func (b *Bridge) AddPreimage(_ ethcommon.Hash, _ []byte) {
 }
 
 func (b *Bridge) Witness() *stateless.Witness { return nil }
+
+// AccessEvents is required by geth ≥1.15 for Verkle/EIP-4762. Dew runs Cancun-era
+// rules without Verkle, so there is no access-events witness to expose.
+func (b *Bridge) AccessEvents() *ethstate.AccessEvents { return nil }
 
 func (b *Bridge) Finalise(deleteEmptyObjects bool) {
 	b.state.Finalise(deleteEmptyObjects)

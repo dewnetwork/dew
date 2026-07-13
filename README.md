@@ -24,7 +24,7 @@ Layout details: [docs/build/go-project-layout.md](./docs/build/go-project-layout
 
 ## Go (L1 core)
 
-Requires **Go 1.22+** (developed on 1.23).
+Requires **Go 1.25+** (see `go.mod`).
 
 ```bash
 go test ./...

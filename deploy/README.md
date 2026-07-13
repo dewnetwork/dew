@@ -39,7 +39,7 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 ## Prerequisites
 
 - Docker Engine + Compose v2 (for containers)
-- Or Go 1.23+ for host binary builds
+- Or Go 1.25+ for host binary builds (see root `go.mod`)
 - Node only for smoke scripts (`scripts/smoke-rpc.mjs`)
 
 ## Quick private soak
