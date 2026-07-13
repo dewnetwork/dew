@@ -10,6 +10,8 @@ status: stable
 
 Ship a Solidity ERC-20 against **Dew** — local first, then optional public testnet. Chain ID is always **`2205`**.
 
+**Only need to touch the live chain in a browser?** Use [Try public testnet](./try-public.md) (faucet → MetaMask → Guestbook → explorer) — no `dew` binary or Foundry required.
+
 | Step | Local | Public (optional) |
 | :--- | :--- | :--- |
 | 1. Node | `dew devnet` | already live |
@@ -152,6 +154,10 @@ Path B is live (single-host controlled RPC). Same chain ID and Foundry project.
 | JSON-RPC | `https://rpc-dew.fadosoft.com` |
 | Explorer | `https://explorer-dew.fadosoft.com` |
 | Faucet | `https://faucet-dew.fadosoft.com` |
+| Guestbook SPA | `https://guestbook-dew.fadosoft.com` |
+| Guestbook contract | `0x83bB4E539BE46503481E66094b01b854990BF84a` |
+
+Browser-only path (no Foundry): [Try public testnet](./try-public.md).
 
 ```bash
 node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com
@@ -172,9 +178,10 @@ forge script script/Deploy.s.sol:Deploy \
   -vvv
 ```
 
-5. Open the tx or contract address on the explorer.
+5. Open the tx or contract address on the explorer (`/tx/<hash>`, `/address/<addr>`).
+6. Optional: sign the public Guestbook via SPA or [Recipe 2](./recipes.md#recipe-2--on-chain-guestbook-flagship-demo).
 
-Publish template and ops: [Launch checklist](./launch-checklist.md) · [Public testnet freeze](./public-testnet.md).
+Publish template and ops: [Launch checklist](./launch-checklist.md) · [Public testnet freeze](./public-testnet.md) · [Guestbook product](../product/guestbook.md).
 
 ---
 
@@ -192,7 +199,9 @@ Publish template and ops: [Launch checklist](./launch-checklist.md) · [Public t
 
 ## Related
 
+- [Try public testnet](./try-public.md) — browser-only faucet → Guestbook → explorer
 - [Builder recipes](./recipes.md) — Token, **Guestbook** demo, multi-tx batch
+- [Guestbook product](../product/guestbook.md)
 - [examples/foundry](../../examples/foundry/) — contracts + forge scripts
 - [Local devnet](./devnet.md) — faucet keys, topology, ERC-20 smoke
 - [Ethereum compatibility](../overview/ethereum-compatibility.md)

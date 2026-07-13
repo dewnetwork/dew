@@ -21,7 +21,7 @@ export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f
 ```
 
 Public: set `DEW_RPC_URL=https://rpc-dew.fadosoft.com` and a **faucet-funded** key (never Anvil #0).  
-Full onboarding: [Quick start](./quickstart.md).
+Browser-only demo: [Try public testnet](./try-public.md). Full tool path: [Quick start](./quickstart.md).
 
 ---
 
@@ -73,35 +73,53 @@ cast call $GUESTBOOK "totalEntries()(uint256)" --rpc-url $DEW_RPC_URL
 cast call $GUESTBOOK "getEntry(uint256)(address,uint64,string)" 0 --rpc-url $DEW_RPC_URL
 ```
 
-Public explorer: `https://explorer-dew.fadosoft.com/address/<GUESTBOOK>` (or tx hash from broadcast).
+Public explorer: `https://explorer-dew.fadosoft.com/address/<GUESTBOOK>` or `/tx/<hash>` from broadcast.
 
 | Contract | `src/Guestbook.sol` |
 | Scripts | `DeployGuestbook.s.sol`, `SignGuestbook.s.sol` |
 
 **Why this demo:** one contract, faucet DEW, MetaMask-friendly, visible on explorer — good “I used Dew” story without bridges or staking.
 
-### Web UI (read + MetaMask sign)
+### Public path B defaults
 
-Public Guestbook (example deploy): `0x83bB4E539BE46503481E66094b01b854990BF84a`
+| Item | Value |
+| :--- | :--- |
+| SPA | `https://guestbook-dew.fadosoft.com` |
+| Contract | `0x83bB4E539BE46503481E66094b01b854990BF84a` |
+
+```bash
+# Use the live contract without redeploying
+export GUESTBOOK=0x83bB4E539BE46503481E66094b01b854990BF84a
+export MESSAGE="hello from recipes"
+forge script script/SignGuestbook.s.sol:SignGuestbook \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+```
+
+Product page: [Guestbook demo](../product/guestbook.md).
+
+### Web UI (read + MetaMask sign)
 
 ```bash
 pnpm guestbook:dev
 # http://localhost:4323 — Connect wallet → Sign · or read-only Refresh
+# After sign: SPA links to explorer /tx/{hash} and /address/{addr}
 ```
 
-Public host (after ops DNS + compose): `https://guestbook-dew.fadosoft.com`  
-Packaging: [deploy/guestbook](../../deploy/guestbook/) · full stack edge in [deploy/docker-compose.yml](../../deploy/docker-compose.yml).
-
+Public host: `https://guestbook-dew.fadosoft.com`  
+Packaging: [deploy/guestbook](../../deploy/guestbook/) · full stack edge in [deploy/docker-compose.yml](../../deploy/docker-compose.yml).  
 SPA: [examples/guestbook-web](../../examples/guestbook-web/).
 
 ---
 
 ## Recipe 3 — Multi-tx batch (C1 pack)
 
-Post **two** guestbook messages in one forge script (two nonces). With Dew **auto-mine**, ready nonces are packed into a block (up to 64 txs).
+Showcase **C1**: continuous nonces from one sender are packed into a single block (up to **`node.DefaultMaxTxsPerBlock = 64`**). Future nonces with a gap stay pending until the gap fills.
+
+Post **two** guestbook messages in one forge script (two nonces). With Dew **auto-mine**, ready nonces pack together.
 
 ```bash
-# GUESTBOOK must already be deployed (Recipe 2)
+# Local: deploy first (Recipe 2). Public: may use live GUESTBOOK below.
+export GUESTBOOK=${GUESTBOOK:-0x83bB4E539BE46503481E66094b01b854990BF84a}
 export MESSAGE_A="batch line A"
 export MESSAGE_B="batch line B"
 forge script script/BatchSignGuestbook.s.sol:BatchSignGuestbook \
@@ -114,8 +132,12 @@ Check that both entries exist:
 cast call $GUESTBOOK "totalEntries()(uint256)" --rpc-url $DEW_RPC_URL
 ```
 
+On the explorer, open each tx hash; under auto-mine they often share the same block number when nonces were contiguous.
+
 | Script | `script/BatchSignGuestbook.s.sol` |
 | Protocol | [C1 multi-tx](../build/phases.md#c1--mempool-admission--fee-policy) · `node.DefaultMaxTxsPerBlock` |
+
+**Expect:** continuous nonces → multi-tx block; nonce gap → later txs wait in mempool (not dropped solely for being “future”). DewTx auto-mine multi-pack is still optional residual ([agents/debt.md](../../agents/debt.md)).
 
 ---
 
@@ -134,7 +156,9 @@ Import Anvil #0 **only** on local nets. Public: new wallet + [faucet](https://fa
 
 ## Related
 
+- [Try public testnet](./try-public.md)
 - [Quick start (5 minutes)](./quickstart.md)
+- [Guestbook product](../product/guestbook.md)
 - [examples/foundry](../../examples/foundry/)
 - [Local devnet](./devnet.md)
 - [Public testnet](./public-testnet.md)

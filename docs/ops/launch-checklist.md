@@ -100,10 +100,14 @@ RPC:         https://rpc-dew.fadosoft.com
 Symbol:      DEW
 Explorer:    https://explorer-dew.fadosoft.com
 Faucet:      https://faucet-dew.fadosoft.com     # captcha · 1 DEW/address/24h · 10/IP/hour
+Guestbook:   https://guestbook-dew.fadosoft.com
+Guestbook:   0x83bB4E539BE46503481E66094b01b854990BF84a   # contract; SPA PUBLIC_GUESTBOOK
 Bootnodes:   n/a (single-host controlled RPC)
 ```
 
+Browser-only check: [Try public testnet](./try-public.md) (faucet → MetaMask → Guestbook → explorer).  
 Block explorer URL conventions and MetaMask base URL: [Block explorer (web)](../product/block-explorer.md).  
+Guestbook SPA + packaging: [Guestbook demo](../product/guestbook.md) · [`deploy/guestbook/`](../../deploy/guestbook/).  
 Docker packaging: [`deploy/explorer/`](../../deploy/explorer/) (standalone) or combined [`deploy/docker-compose.yml`](../../deploy/docker-compose.yml).  
 Production faucet service: [Production faucet](../product/faucet.md) (`go build -o bin/dewfaucet ./cmd/dewfaucet`).
 
@@ -116,6 +120,8 @@ Production faucet service: [Production faucet](../product/faucet.md) (`go build 
 ## Related
 
 - [Public testnet freeze](./public-testnet.md)  
+- [Try public testnet](./try-public.md)  
 - [Block explorer (web)](../product/block-explorer.md)  
+- [Guestbook demo](../product/guestbook.md)  
 - [Private multi-host](./private-testnet.md)  
 - [deploy/README](../../deploy/README.md)  

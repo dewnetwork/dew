@@ -16,10 +16,11 @@ All phases land in the **same monorepo** (Go core + Node for **web docs**, explo
 | :--- | :--- |
 | **A–C** | Done — ETH parity, Dew-PE / DewTx, testnet readiness, **`public-testnet-v1` freeze** |
 | **D1–D2** | Done — [explorer](../product/block-explorer.md), [faucet](../product/faucet.md) |
+| **DX demos** | Done — Foundry recipes, [Guestbook SPA](../product/guestbook.md), C1 multi-tx pack · [Try public](../ops/try-public.md) |
 | **D3a / D3b / durable chaindata** | Done — multiproc BFT, peers.json redial, Pebble `chaindata/` |
 | **D3c–D3e** | Pending on demand — staking residuals, Path A multi-host, external audit |
 
-**Live path B:** [Public testnet freeze](../ops/public-testnet.md#live-network-path-b) · RPC `https://rpc-dew.fadosoft.com`.
+**Live path B:** [Public testnet freeze](../ops/public-testnet.md#live-network-path-b) · RPC · explorer · faucet · Guestbook.
 
 Acceptance criteria live in [Phases](./phases.md). Scale workstreams: [D3 scale](../scale/d3-scale.md). Residuals: [agents/debt.md](../../agents/debt.md).
 
@@ -72,7 +73,7 @@ flowchart TB
 | C3 | [State](../protocol/state.md) |
 | C4 | [Validators](../consensus/validators.md), [Precompiles](../execution/precompiles.md) |
 | C5–C6 | [Private testnet](../ops/private-testnet.md), [Public testnet freeze](../ops/public-testnet.md) |
-| D1–D2 | [Block explorer](../product/block-explorer.md), [Faucet](../product/faucet.md), [Launch checklist](../ops/launch-checklist.md) |
+| D1–D2 + DX demos | [Block explorer](../product/block-explorer.md), [Faucet](../product/faucet.md), [Guestbook](../product/guestbook.md), [Try public](../ops/try-public.md), [Launch checklist](../ops/launch-checklist.md) |
 | D3 | [D3 scale](../scale/d3-scale.md), [Durable chaindata](../ops/durable-chaindata.md) |
 
 ## Definition of done

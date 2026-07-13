@@ -36,7 +36,16 @@ D — Product surface + scale  D1–D2 + D3a/D3b + durable chaindata done;
                              D3c–D3e on demand
 ```
 
-**public-testnet-v1 is live** on path B (July 2026): RPC `https://rpc-dew.fadosoft.com`, explorer `https://explorer-dew.fadosoft.com`, faucet `https://faucet-dew.fadosoft.com`. Details: [Public testnet freeze](./ops/public-testnet.md).
+**public-testnet-v1 is live** on path B (July 2026):
+
+| Surface | URL |
+| :--- | :--- |
+| RPC | `https://rpc-dew.fadosoft.com` |
+| Explorer | `https://explorer-dew.fadosoft.com` |
+| Faucet | `https://faucet-dew.fadosoft.com` |
+| Guestbook | `https://guestbook-dew.fadosoft.com` |
+
+Details: [Public testnet freeze](./ops/public-testnet.md) · browser demo: [Try public testnet](./ops/try-public.md).
 
 ## Categories
 
@@ -52,16 +61,17 @@ D — Product surface + scale  D1–D2 + D3a/D3b + durable chaindata done;
 | [Economics](./economics/) | `docs/economics/` | Tokenomics, genesis |
 | [Build](./build/) | `docs/build/` | Monorepo layout, roadmap, phases |
 | [Networks & ops](./ops/) | `docs/ops/` | Devnet, private/public testnet, launch, chaindata |
-| [Product surface](./product/) | `docs/product/` | Explorer, faucet |
+| [Product surface](./product/) | `docs/product/` | Explorer, faucet, Guestbook demo |
 | [Scale](./scale/) | `docs/scale/` | D3 workstreams (done vs pending) |
 | [Security](./security/) | `docs/security/` | Threat model, principles, Phase B audit |
 
 ## Builder quick start
 
-1. [Quick start (5 minutes)](./ops/quickstart.md) — `dew devnet` + MetaMask + Foundry  
-2. [Builder recipes](./ops/recipes.md) — Token, **Guestbook** demo, multi-tx batch  
-3. Sample project: [examples/foundry](../examples/foundry/)  
-4. Live public RPC: [Public testnet freeze](./ops/public-testnet.md)
+1. [Try public testnet (5 minutes)](./ops/try-public.md) — faucet → MetaMask → Guestbook → explorer (no local node)  
+2. [Quick start (5 minutes)](./ops/quickstart.md) — `dew devnet` + MetaMask + Foundry  
+3. [Builder recipes](./ops/recipes.md) — Token, **Guestbook** demo, multi-tx batch  
+4. Sample project: [examples/foundry](../examples/foundry/) · SPA: [examples/guestbook-web](../examples/guestbook-web/)  
+5. Live public surface: [Public testnet freeze](./ops/public-testnet.md) · [Guestbook product](./product/guestbook.md)
 
 ## Suggested reading order
 

@@ -62,5 +62,8 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 ## Docs
 
 - [x] Reorg `docs/development/` → `build/` · `ops/` · `product/` · `scale/` (July 2026)
+- [x] Public DX surface docs — try-public, Guestbook product, freeze/publish template, recipes C1 (July 2026)
+- [ ] Hardhat example parity with Foundry (`examples/hardhat/` + quickstart section)
+- [ ] Optional multi-tx burst UI demo (recipes already cover forge batch)
 - [ ] VitePress is pinned to **2.0.0-alpha.18** (Vite 8) so `pnpm audit --audit-level=high` is clean; mermaid via `vitepress-mermaid-renderer` (no VitePress 1 peer). Revisit when VitePress 2 stable ships — drop alpha pin and re-check mermaid + theme.
 - [ ] Promote remaining protocol/execution pages from `status: draft` to `stable` after prose pass

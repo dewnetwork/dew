@@ -69,6 +69,7 @@
 - category: Networks & ops
   path: ops
   items:
+    - try-public.md
     - quickstart.md
     - recipes.md
     - devnet.md
@@ -82,6 +83,7 @@
   items:
     - block-explorer.md
     - faucet.md
+    - guestbook.md
 
 - category: Scale
   path: scale

@@ -48,8 +48,10 @@ Dew should feel like a **custom EVM chain** to developers: same keys, same contr
 | Symbol | DEW |
 | Block explorer | `https://explorer-dew.fadosoft.com` |
 | Faucet | `https://faucet-dew.fadosoft.com` |
+| Guestbook SPA | `https://guestbook-dew.fadosoft.com` |
+| Guestbook contract | `0x83bB4E539BE46503481E66094b01b854990BF84a` |
 
-MetaMask: add custom network with the RPC URL above; block explorer URL = explorer base only. Full publish template: [Launch checklist](../ops/launch-checklist.md).
+MetaMask: add custom network with the RPC URL above; block explorer URL = explorer base only. Full publish template: [Launch checklist](../ops/launch-checklist.md). Browser-only path: [Try public testnet](../ops/try-public.md).
 
 ## Deferred to Phase B (not required for first devnet)
 
@@ -79,6 +81,10 @@ See [JSON-RPC](../api/json-rpc.md) for the full matrix.
 4. `eth_call` view methods match on-chain state
 5. Replay known RLP fixtures against local node
 
-**Copy-paste path:** [Quick start (5 minutes)](../ops/quickstart.md) and [examples/foundry](../../examples/foundry/) (ERC-20 + `forge script` against local or public RPC).
+**Copy-paste paths:**
+
+- Browser: [Try public testnet](../ops/try-public.md) (faucet → MetaMask → [Guestbook](../product/guestbook.md) → explorer)
+- Local + Foundry: [Quick start (5 minutes)](../ops/quickstart.md) and [examples/foundry](../../examples/foundry/) (ERC-20 + `forge script` against local or public RPC)
+- Recipes (Guestbook, multi-tx C1): [Builder recipes](../ops/recipes.md)
 
 Detailed vectors live under monorepo `tests/` / `devnet/` (Go) and Node scripts (`scripts/smoke-rpc.mjs`, `scripts/devnet-erc20.mjs`).

@@ -174,8 +174,12 @@ RPC:         https://rpc-dew.fadosoft.com
 Symbol:      DEW
 Explorer:    https://explorer-dew.fadosoft.com
 Faucet:      https://faucet-dew.fadosoft.com   # captcha · 1 DEW/address/24h · 10/IP/hour
+Guestbook:   https://guestbook-dew.fadosoft.com
+Guestbook:   0x83bB4E539BE46503481E66094b01b854990BF84a
 Bootnodes:   n/a (path B single-host RPC)
 ```
+
+Full publish blob: [Launch checklist](../ops/launch-checklist.md). Browser drip → sign flow: [Try public testnet](../ops/try-public.md).
 
 ## Packages
 
@@ -195,4 +199,7 @@ Tests: `go test ./faucet/`.
 - [Phases](../build/phases.md) — D2 acceptance  
 - [Public testnet freeze](../ops/public-testnet.md)  
 - [Launch checklist](../ops/launch-checklist.md)  
+- [Try public testnet](../ops/try-public.md)  
 - [Block explorer](./block-explorer.md) — never holds faucet keys  
+- [Guestbook demo](./guestbook.md)  
+ 

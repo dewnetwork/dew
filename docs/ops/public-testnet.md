@@ -23,7 +23,8 @@ Private multi-host ops remain in [Private multi-host testnet](./private-testnet.
 | JSON-RPC | `https://rpc-dew.fadosoft.com` |
 | Block explorer | `https://explorer-dew.fadosoft.com` |
 | Faucet | `https://faucet-dew.fadosoft.com` |
-| Guestbook | `https://guestbook-dew.fadosoft.com` (ops: deploy SPA; contract set via `PUBLIC_GUESTBOOK`) |
+| Guestbook SPA | `https://guestbook-dew.fadosoft.com` |
+| Guestbook contract | `0x83bB4E539BE46503481E66094b01b854990BF84a` (override SPA via `PUBLIC_GUESTBOOK`) |
 | Bootnodes | **n/a** (path B — no public P2P dial list) |
 
 | Item | Value |
@@ -32,8 +33,12 @@ Private multi-host ops remain in [Private multi-host testnet](./private-testnet.
 | Symbol | DEW |
 | Faucet mode | **captcha** — 1 DEW / address / 24h · 10 / IP / hour |
 | Smoke | `node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com` |
+| Browser demo | [Try public testnet (5 minutes)](./try-public.md) |
+| Guestbook product | [Guestbook demo](../product/guestbook.md) |
 
 MetaMask: custom network RPC = JSON-RPC URL above; block explorer URL = explorer base only (no path suffix). Path A (multi-host validators + bootnodes) is [D3](../build/phases.md#d3--scale-when-needed-path-a--c4--audit) — see [D3 scale](../scale/d3-scale.md) — not required for the current deployment.
+
+**Demo apps are ops surface**, not wire-freeze constants: redeploying Guestbook changes only `PUBLIC_GUESTBOOK` + publish text, not chain ID or fee floors.
 
 ## Freeze table
 

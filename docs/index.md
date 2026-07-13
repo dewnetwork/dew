@@ -8,7 +8,10 @@ hero:
   tagline: Faster finality, flatter state, ETH-first DX — documented for builders of the Go + Node monorepo.
   actions:
     - theme: brand
-      text: Quick start (5 min)
+      text: Try public (5 min)
+      link: /ops/try-public
+    - theme: alt
+      text: Quick start (local)
       link: /ops/quickstart
     - theme: alt
       text: Builder recipes
@@ -17,6 +20,9 @@ hero:
       text: Public testnet
       link: /ops/public-testnet
     - theme: alt
+      text: Guestbook demo
+      link: /product/guestbook
+    - theme: alt
       text: Start with vision
       link: /overview/vision
     - theme: alt
@@ -24,7 +30,7 @@ hero:
       link: /architecture/overview
 features:
   - title: public-testnet-v1 live
-    details: Chain ID 2205 — RPC rpc-dew.fadosoft.com · explorer · captcha faucet. Path B single-host; see Public testnet freeze.
+    details: Chain ID 2205 — RPC · explorer · captcha faucet · Guestbook SPA. Path B single-host; try-public or Public testnet freeze.
   - title: Ethereum-compatible first
     details: Solidity, MetaMask, Foundry/Hardhat, and core eth_* JSON-RPC before Dew-native extras.
   - title: Dew-BFT finality

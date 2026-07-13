@@ -1,6 +1,6 @@
 ---
 title: Networks & ops
-description: Devnet, private and public testnets, launch checklist, durable chaindata.
+description: Try public testnet, Foundry quick start, recipes, private/public ops, launch checklist, chaindata.
 category: ops
 order: 10
 status: stable
@@ -8,4 +8,4 @@ status: stable
 
 # Networks & ops
 
-Builder quick start (Foundry + MetaMask), local devnet, private multi-host, public-testnet-v1 freeze, launch checklist, and disk persistence.
+Browser [try public](./try-public.md), builder [quick start](./quickstart.md) (Foundry + MetaMask), [recipes](./recipes.md), local devnet, private multi-host, public-testnet-v1 freeze, launch checklist, and disk persistence.

@@ -25,7 +25,7 @@ Freeze tag and RPC limits: [Public testnet freeze](../ops/public-testnet.md). Op
 | :--- | :--- |
 | Wallet / dApp users | Paste a tx hash or address without CLI |
 | Operators | Canonical link when publishing the network |
-| Tooling | Deep-link from MetaMask, faucet, docs |
+| Tooling | Deep-link from MetaMask, faucet, Guestbook SPA, docs |
 
 The explorer **must not** hold validator keys, faucet keys, or admin signing material.
 
@@ -41,6 +41,18 @@ The explorer **must not** hold validator keys, faucet keys, or admin signing mat
 | `/address/{addr}` | Balance, nonce, code / EOA vs contract |
 
 Search resolves address / tx hash / block number (and block hash when applicable). Failed, pending, and not-found states are distinct.
+
+### Deep-links from demos
+
+Consumers should use the explorer **base URL** only (MetaMask “Block explorer URL” = base, no path). Append routes in apps:
+
+| Kind | Pattern |
+| :--- | :--- |
+| Transaction | `{BASE}/tx/{hash}` |
+| Address | `{BASE}/address/{addr}` |
+| Block | `{BASE}/block/{n\|hash}` |
+
+**Shipped consumer:** [Guestbook SPA](./guestbook.md) (`PUBLIC_EXPLORER_URL`) links after sign and for author/contract addresses. Browser walkthrough: [Try public testnet](../ops/try-public.md).
 
 ### Env (build-time)
 
@@ -110,7 +122,9 @@ docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/
 
 - [Launch checklist](../ops/launch-checklist.md)
 - [Public testnet freeze](../ops/public-testnet.md)
+- [Try public testnet](../ops/try-public.md)
 - [JSON-RPC](../api/json-rpc.md)
 - [Devnet](../ops/devnet.md)
 - [deploy packaging](../../deploy/README.md)
 - [Faucet](./faucet.md)
+- [Guestbook demo](./guestbook.md)

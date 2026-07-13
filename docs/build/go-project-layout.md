@@ -50,7 +50,7 @@ dew/                            # monorepo root
 ├── devnet/                     # Multi-validator + multiproc BFT tests
 ├── tests/                      # load + security suites
 ├── deploy/                     # Docker Compose, systemd, nginx samples
-├── examples/                   # Foundry samples + Guestbook read UI
+├── examples/                   # Foundry samples + Guestbook SPA (read + MetaMask)
 ├── scripts/                    # Node/shell helpers (smoke-rpc, build-site)
 ├── web/                        # Astro marketing landing
 ├── explorer/                   # Block explorer SPA (React/Vite)
@@ -88,7 +88,8 @@ Optional later (not present today): `packages/sdk`, `packages/localnet`.
 | Landing | `web/` Astro site |
 | Explorer / faucet UI | `explorer/`, `faucet-web/` |
 | Scripts | `scripts/smoke-rpc.mjs`, `devnet-erc20.mjs`, `build-site.mjs` |
-| Foundry sample | `examples/foundry/` — [Quick start](../ops/quickstart.md) |
+| Foundry sample | `examples/foundry/` — [Quick start](../ops/quickstart.md) · [Recipes](../ops/recipes.md) |
+| Guestbook SPA | `examples/guestbook-web/` — [Guestbook product](../product/guestbook.md) · [Try public](../ops/try-public.md) |
 
 ### Docs web flow
 
@@ -111,7 +112,7 @@ Root scripts: `docs:dev` · `docs:build` · `docs:preview` · `site:build` (land
 | Overview … Economics | `docs/overview/` … `docs/economics/` | Protocol readers |
 | [Build](./_category.md) | `docs/build/` | Contributors |
 | [Networks & ops](../ops/_category.md) | `docs/ops/` | Operators |
-| [Product surface](../product/_category.md) | `docs/product/` | Explorer / faucet |
+| [Product surface](../product/_category.md) | `docs/product/` | Explorer / faucet / Guestbook demo |
 | [Scale](../scale/_category.md) | `docs/scale/` | D3 workstreams |
 | Security | `docs/security/` | Threat model / audits |
 
