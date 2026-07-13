@@ -58,9 +58,10 @@ D — Product surface + scale  D1–D2 + D3a/D3b + durable chaindata done;
 
 ## Builder quick start
 
-1. [Quick start (5 minutes)](./ops/quickstart.md) — `dew devnet` + MetaMask + Foundry ERC-20  
-2. Sample project: [examples/foundry](../examples/foundry/)  
-3. Live public RPC: [Public testnet freeze](./ops/public-testnet.md)
+1. [Quick start (5 minutes)](./ops/quickstart.md) — `dew devnet` + MetaMask + Foundry  
+2. [Builder recipes](./ops/recipes.md) — Token, **Guestbook** demo, multi-tx batch  
+3. Sample project: [examples/foundry](../examples/foundry/)  
+4. Live public RPC: [Public testnet freeze](./ops/public-testnet.md)
 
 ## Suggested reading order
 

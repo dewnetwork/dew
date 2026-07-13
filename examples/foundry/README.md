@@ -1,8 +1,11 @@
 # Foundry → Dew
 
-Minimal ERC-20 sample for **local `dew devnet`** and **public-testnet-v1** (chain ID **2205**).
+Solidity samples for **local `dew devnet`** and **public-testnet-v1** (chain ID **2205**).
 
-Full walkthrough: [docs/ops/quickstart.md](../../docs/ops/quickstart.md).
+| Doc | Link |
+| :--- | :--- |
+| 5-minute onboarding | [docs/ops/quickstart.md](../../docs/ops/quickstart.md) |
+| Recipes (Token · Guestbook · batch) | [docs/ops/recipes.md](../../docs/ops/recipes.md) |
 
 ## Prerequisites
 
@@ -40,56 +43,55 @@ forge test
 | Address | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` |
 | Private key | `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80` (`forge script` needs `0x`) |
 
-## Deploy (local)
-
 ```bash
 export DEW_RPC_URL=http://127.0.0.1:8545
 export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
 cast chain-id --rpc-url $DEW_RPC_URL   # 2205
-
-forge script script/Deploy.s.sol:Deploy \
-  --rpc-url $DEW_RPC_URL \
-  --broadcast \
-  -vvv
 ```
 
-Optional transfer on deploy:
+## Contracts & scripts
+
+| Recipe | Contract | Script(s) |
+| :--- | :--- | :--- |
+| ERC-20 Token | `src/Token.sol` | `script/Deploy.s.sol` |
+| **Guestbook** (flagship) | `src/Guestbook.sol` | `DeployGuestbook.s.sol`, `SignGuestbook.s.sol` |
+| Multi-tx batch | (uses Guestbook) | `BatchSignGuestbook.s.sol` |
+
+### Guestbook (recommended demo)
 
 ```bash
-export TRANSFER_TO=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
-forge script script/Deploy.s.sol:Deploy \
-  --rpc-url $DEW_RPC_URL \
-  --broadcast \
-  -vvv
+export MESSAGE="Hello Dew"
+forge script script/DeployGuestbook.s.sol:DeployGuestbook \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+export GUESTBOOK=0x…   # from logs
+
+export MESSAGE="second visit"
+forge script script/SignGuestbook.s.sol:SignGuestbook \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
+
+cast call $GUESTBOOK "totalEntries()(uint256)" --rpc-url $DEW_RPC_URL
+cast call $GUESTBOOK "getEntry(uint256)(address,uint64,string)" 0 --rpc-url $DEW_RPC_URL
 ```
 
-## Deploy (public testnet)
-
-1. Import a **new** key into MetaMask (not Anvil #0).
-2. Get DEW from `https://faucet-dew.fadosoft.com` (captcha).
-3. Export the private key only for CLI deploy (or use MetaMask + Remix).
+Two messages / one broadcast (multi-tx pack on Dew auto-mine):
 
 ```bash
-export DEW_RPC_URL=https://rpc-dew.fadosoft.com
-export PRIVATE_KEY=0xYOUR_FUNDED_KEY   # never Anvil on public
-
-forge script script/Deploy.s.sol:Deploy \
-  --rpc-url $DEW_RPC_URL \
-  --broadcast \
-  -vvv
+forge script script/BatchSignGuestbook.s.sol:BatchSignGuestbook \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
 ```
 
-Explorer: `https://explorer-dew.fadosoft.com` (paste tx / address).
-
-## Cast helpers
+### Token
 
 ```bash
-cast balance 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --rpc-url $DEW_RPC_URL
-cast call $TOKEN "balanceOf(address)(uint256)" $ADDR --rpc-url $DEW_RPC_URL
-cast send $TOKEN "transfer(address,uint256)" $TO 1000000000000000000 \
-  --rpc-url $DEW_RPC_URL --private-key $PRIVATE_KEY
+forge script script/Deploy.s.sol:Deploy \
+  --rpc-url $DEW_RPC_URL --broadcast -vvv
 ```
+
+## Public testnet
+
+1. New wallet + [faucet](https://faucet-dew.fadosoft.com) (not Anvil #0).
+2. `export DEW_RPC_URL=https://rpc-dew.fadosoft.com` and your funded `PRIVATE_KEY`.
+3. Deploy Guestbook; open `https://explorer-dew.fadosoft.com` for the address/tx.
 
 ## MetaMask
 
@@ -103,7 +105,7 @@ cast send $TOKEN "transfer(address,uint256)" $TO 1000000000000000000 \
 
 ## Related
 
-- [Quick start (5 minutes)](../../docs/ops/quickstart.md)
+- [Quick start](../../docs/ops/quickstart.md)
+- [Recipes](../../docs/ops/recipes.md)
 - [Local devnet](../../docs/ops/devnet.md)
 - [Public testnet freeze](../../docs/ops/public-testnet.md)
-- Monorepo ERC-20 smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8545`

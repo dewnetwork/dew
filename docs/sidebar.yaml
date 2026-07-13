@@ -70,6 +70,7 @@
   path: ops
   items:
     - quickstart.md
+    - recipes.md
     - devnet.md
     - private-testnet.md
     - public-testnet.md

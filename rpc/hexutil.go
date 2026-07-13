@@ -88,8 +88,29 @@ func DecodeAddress(s string) (crypto.Address, error) {
 }
 
 // DecodeHash parses a 32-byte hash.
+// Short hex (e.g. storage slot "0x0" / "0x1a") is left-padded to 32 bytes so
+// clients like Foundry/geth match Ethereum JSON-RPC quantity-style slots.
 func DecodeHash(s string) (types.Hash, error) {
-	return types.HexToHash(s)
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, "0x")
+	s = strings.TrimPrefix(s, "0X")
+	if s == "" {
+		return types.Hash{}, nil
+	}
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+	if len(s) > 64 {
+		return types.Hash{}, fmt.Errorf("types: hash must be at most 32 bytes (64 hex chars), got len %d", len(s))
+	}
+	if len(s) < 64 {
+		s = strings.Repeat("0", 64-len(s)) + s
+	}
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return types.Hash{}, fmt.Errorf("types: invalid hash hex: %w", err)
+	}
+	return types.BytesToHash(b), nil
 }
 
 // BlockNumberTag is a block height or tag.

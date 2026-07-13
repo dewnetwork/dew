@@ -11,6 +11,9 @@ hero:
       text: Quick start (5 min)
       link: /ops/quickstart
     - theme: alt
+      text: Builder recipes
+      link: /ops/recipes
+    - theme: alt
       text: Public testnet
       link: /ops/public-testnet
     - theme: alt

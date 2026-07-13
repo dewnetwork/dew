@@ -132,6 +132,8 @@ cast call $TOKEN "balanceOf(address)(uint256)" \
 
 Project README: [examples/foundry/README.md](../../examples/foundry/README.md).
 
+**Next recipes** (Guestbook + multi-tx batch): [Builder recipes](./recipes.md).
+
 Without Foundry, the monorepo also has:
 
 ```bash
@@ -190,7 +192,8 @@ Publish template and ops: [Launch checklist](./launch-checklist.md) · [Public t
 
 ## Related
 
-- [examples/foundry](../../examples/foundry/) — Token + Deploy script
+- [Builder recipes](./recipes.md) — Token, **Guestbook** demo, multi-tx batch
+- [examples/foundry](../../examples/foundry/) — contracts + forge scripts
 - [Local devnet](./devnet.md) — faucet keys, topology, ERC-20 smoke
 - [Ethereum compatibility](../overview/ethereum-compatibility.md)
 - [JSON-RPC](../api/json-rpc.md)
