@@ -1,7 +1,7 @@
 ---
 title: Production faucet
 description: Phase D2 ops faucet — rate limits, allowlist/captcha, dewfaucet CLI, publish template.
-category: development
+category: product
 order: 53
 status: stable
 ---
@@ -17,7 +17,7 @@ The **faucet** is an ops HTTP service that drips a **small fixed amount** of tes
 | Wire / genesis impact | **None** — signs normal EVM value transfers via JSON-RPC |
 | Public publish field `Faucet:` | Live URL above, or `none` / `allowlist only` |
 
-Policy baseline: [Public testnet freeze](./public-testnet.md) · Launch: [Launch checklist](./launch-checklist.md).
+Policy baseline: [Public testnet freeze](../ops/public-testnet.md) · Launch: [Launch checklist](../ops/launch-checklist.md).
 
 ## Design
 
@@ -192,7 +192,7 @@ Tests: `go test ./faucet/`.
 
 ## Related
 
-- [Phases](./phases.md) — D2 acceptance  
-- [Public testnet freeze](./public-testnet.md)  
-- [Launch checklist](./launch-checklist.md)  
+- [Phases](../build/phases.md) — D2 acceptance  
+- [Public testnet freeze](../ops/public-testnet.md)  
+- [Launch checklist](../ops/launch-checklist.md)  
 - [Block explorer](./block-explorer.md) — never holds faucet keys  

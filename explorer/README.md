@@ -2,7 +2,7 @@
 
 Read-only block explorer SPA for Dew (`public-testnet-v1`, chain ID **2205**). Consumes JSON-RPC only — no indexer, no keys.
 
-Spec: [`docs/development/block-explorer.md`](../docs/development/block-explorer.md) · Phase **D1**: [`docs/development/phases.md`](../docs/development/phases.md).
+Spec: [`docs/product/block-explorer.md`](../docs/product/block-explorer.md) · Phase **D1**: [`docs/build/phases.md`](../docs/build/phases.md).
 
 ## Stack
 
@@ -78,7 +78,7 @@ docker compose -f deploy/explorer/docker-compose.yml --env-file deploy/explorer/
 ```
 
 Combined local stack (node + faucet + explorer): `docker compose -f deploy/docker-compose.yml up --build -d`.  
-See [deploy/README.md](../deploy/README.md) and [block-explorer.md](../docs/development/block-explorer.md).
+See [deploy/README.md](../deploy/README.md) and [block-explorer.md](../docs/product/block-explorer.md).
 
 ## Security
 

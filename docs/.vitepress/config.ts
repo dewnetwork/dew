@@ -108,7 +108,7 @@ export default withMermaid({
     nav: [
       { text: 'Vision', link: '/overview/vision' },
       { text: 'Architecture', link: '/architecture/overview' },
-      { text: 'Roadmap', link: '/development/roadmap' },
+      { text: 'Roadmap', link: '/build/roadmap' },
       { text: 'JSON-RPC', link: '/api/json-rpc' },
     ],
 

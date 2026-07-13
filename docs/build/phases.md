@@ -1,9 +1,9 @@
 ---
 title: Implementation Phases
 description: Acceptance criteria for Phases A–D (compat, native/PE, testnet, product surface).
-category: development
+category: build
 order: 30
-status: draft
+status: stable
 ---
 
 # Implementation Phases
@@ -15,11 +15,11 @@ Each phase should leave the **monorepo buildable and testable** (Go packages and
 | **A1–A7** | Done | ETH-compatible L1 + local multi-validator devnet |
 | **B1–B4** | Done | Dew-PE, DewTx, precompiles, load/security baselining |
 | **C1–C6** | **Done** (C6 = public-testnet-v1 freeze) | Mempool, encrypted P2P, SMT, staking, private → public freeze |
-| **D1–D3** | **D1–D2 done** · D3 pending | Product surface + optional ops scale after public-testnet-v1 |
+| **D1–D3** | **D1–D2 done** · D3a/D3b + durable chaindata done · D3c–D3e pending | Product surface + optional ops scale after public-testnet-v1 |
 
 High-level order: [Roadmap](./roadmap.md).
 
-**Ops note:** **public-testnet-v1 is live** on path B (July 2026) — see [Public testnet freeze](./public-testnet.md#live-network-path-b). Private soak and launch checklist A–B remain the operator runbook for new hosts. Phase D assumes a live or local RPC (`chainId` **2205`) and does **not** re-open the C6 wire freeze.
+**Ops note:** **public-testnet-v1 is live** on path B (July 2026) — see [Public testnet freeze](../ops/public-testnet.md#live-network-path-b). Private soak and launch checklist A–B remain the operator runbook for new hosts. Phase D assumes a live or local RPC (`chainId` **2205`) and does **not** re-open the C6 wire freeze.
 
 ---
 
@@ -53,7 +53,7 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Packages:** `core/types`, `core/state`, `db`, `config`
 
-**Notes:** Header hash = `Keccak-256(RLP(header fields))`. Flat state root is a provisional sorted-leaf commitment (SMT lands later). Sample `genesis.json` at repo root; load via `config.LoadGenesisFile`.
+**Notes:** Header hash = `Keccak-256(RLP(header fields))`. At A2 the state root was a provisional sorted-leaf commitment; **C3 replaced it with SMT** (`header.StateRoot` = SMT root). Sample `genesis.json` at repo root; load via `config.LoadGenesisFile`.
 
 ---
 
@@ -122,7 +122,7 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Packages:** `p2p/`
 
-**Notes:** TCP framing `uint32be length || uint8 type || payload` with RLP payloads. Signed handshake (chain ID, height, node key). Inventory/GetData gossip for txs and blocks; `GetBlocks` range sync. Consensus channel `0x10–0x12` floods proposals/votes. Cleartext suitable for private devnets; encrypted transport later.
+**Notes:** TCP framing `uint32be length || uint8 type || payload` with RLP payloads. Signed handshake (chain ID, height, node key). Inventory/GetData gossip for txs and blocks; `GetBlocks` range sync. Consensus channel `0x10–0x12` floods proposals/votes. A6 shipped cleartext for private devnets; **C2 default is encrypted** (`Encrypt=true`).
 
 ---
 
@@ -139,7 +139,7 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Packages:** `devnet/`, `cmd/dew` (`init`, `devnet`), `scripts/devnet-erc20.mjs`
 
-**Notes:** `dew init` writes genesis with 3 Anvil-compatible validators + faucet alloc. `dew devnet` starts in-process LocalCluster BFT, loopback P2P mesh, and JSON-RPC (default `:8545`). ERC-20 fixture over RPC covered by `go test ./devnet/`. Operator guide: [Local Devnet](./devnet.md).
+**Notes:** `dew init` writes genesis with 3 Anvil-compatible validators + faucet alloc. `dew devnet` starts in-process LocalCluster BFT, loopback P2P mesh, and JSON-RPC (default `:8545`). ERC-20 fixture over RPC covered by `go test ./devnet/`. Operator guide: [Local Devnet](../ops/devnet.md).
 
 ---
 
@@ -282,7 +282,7 @@ High-level order: [Roadmap](./roadmap.md).
 - [x] Encrypted P2P (C2) used on the private net by default
 - [x] ERC-20 (or equivalent) deploy + transfer over the multi-host RPC still works
 
-**Packages:** `devnet/` (chaos + encrypt default), `docs/development/private-testnet.md`, `cmd/dew`
+**Packages:** `devnet/` (chaos + encrypt default), docs `ops/private-testnet.md`, `cmd/dew`
 
 **Notes:** Aligns with [Security principles](../security/security-principles.md) “Private testnet” bar. Chaos: `go test ./devnet/ -run Chaos`. No public faucet incentives (C6).
 
@@ -294,15 +294,15 @@ High-level order: [Roadmap](./roadmap.md).
 
 **Acceptance:**
 
-- [x] Genesis + chain ID + fee floors + precompile addresses documented as freeze candidates (`params/freeze.go`, [public-testnet](./public-testnet.md))
+- [x] Genesis + chain ID + fee floors + precompile addresses documented as freeze candidates (`params/freeze.go`, [public-testnet](../ops/public-testnet.md))
 - [x] RPC abuse tests: oversized batches/body, invalid hex, underpriced/oversized spam under C1 limits (`tests/security/c6_rpc_abuse_test.go`)
 - [x] Optional fuzz on codec / RPC decode entrypoints (`core/types/dewtx_fuzz_test.go`, `rpc/hexutil_fuzz_test.go`; run with `-fuzz`)
 - [x] Docs: freeze table + runbook; residual mainnet-only debt in `agents/debt.md`
 - [x] Public testnet runbook: faucet policy, bootnodes process, features on/off
 
-**Packages:** `params/`, `rpc/`, `tests/security/`, `docs/development/public-testnet.md`
+**Packages:** `params/`, `rpc/`, `tests/security/`, docs `ops/public-testnet.md`
 
-**Notes:** Freeze tag **`public-testnet-v1`**. C6 is a **release gate**, not a large feature dump. Path B public surface deployed July 2026 ([live endpoints](./public-testnet.md#live-network-path-b)). Mainnet still requires external audit of consensus + VM bridge + crypto (not C6 acceptance). After C6, prefer config/parameter changes over wire-format churn. RPC limits: 1 MiB body, 100 batch items.
+**Notes:** Freeze tag **`public-testnet-v1`**. C6 is a **release gate**, not a large feature dump. Path B public surface deployed July 2026 ([live endpoints](../ops/public-testnet.md#live-network-path-b)). Mainnet still requires external audit of consensus + VM bridge + crypto (not C6 acceptance). After C6, prefer config/parameter changes over wire-format churn. RPC limits: 1 MiB body, 100 batch items.
 
 ---
 
@@ -320,7 +320,7 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 
 ## D1 — Block explorer MVP
 
-**Goals:** Ship a read-only web UI so public publish can replace `Explorer: (none)` with a live base URL. Spec: [Block explorer (web)](./block-explorer.md).
+**Goals:** Ship a read-only web UI so public publish can replace `Explorer: (none)` with a live base URL. Spec: [Block explorer (web)](../product/block-explorer.md).
 
 **Acceptance:**
 
@@ -334,7 +334,7 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 - [x] Root scripts: `pnpm explorer:dev` / `explorer:build` / `explorer:preview`
 - [x] README + local dev against `dew devnet` / public RPC; no secrets in frontend
 
-**Packages:** `explorer/`, root `package.json` scripts; docs only under `docs/development/block-explorer.md`
+**Packages:** `explorer/`, root `package.json` scripts; docs under `docs/product/block-explorer.md`
 
 **Notes:** JSON-RPC only for MVP (no indexer). Do not reimplement state transition in Node. Deploy packaging: `deploy/explorer/` (Dockerfile + compose) and combined `deploy/docker-compose.yml`. Live at `https://explorer-dew.fadosoft.com`. MetaMask base URL and publish template: launch checklist + explorer operator snippet.
 
@@ -352,7 +352,7 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 - [x] Runs **outside** monorepo consensus core (separate service or `scripts`/ops package); disable independently of validators
 - [x] Publish template documents faucet URL or `none` / allowlist-only
 
-**Packages:** `faucet/`, `cmd/dewfaucet`, `deploy/faucet.env.example`, `deploy/systemd/dewfaucet.service`; operator guide [Production faucet](./faucet.md)
+**Packages:** `faucet/`, `cmd/dewfaucet`, `deploy/faucet.env.example`, `deploy/systemd/dewfaucet.service`; operator guide [Production faucet](../product/faucet.md)
 
 **Notes:** Default public mode **allowlist**; **captcha** (Turnstile/hCaptcha) for open mint; **dev** rate-limit-only for private nets. Live deployment uses **captcha** at `https://faucet-dew.fadosoft.com`. Default drip **1 DEW**; per-address **1/24h**, per-IP **10/h**. Anvil #0 key refused unless `-allow-anvil-key`. C6 residual “Production faucet service” closed by this package.
 
@@ -362,18 +362,18 @@ Residuals that stay open across D (staking, multi-process BFT, PE upgrade) remai
 
 **Goals:** Grow beyond single-host controlled RPC and self-stake stubs only when product demand requires it. Not a single PR; pick workstreams explicitly.
 
-**Design spec (implement from this):** [D3 scale](./d3-scale.md) — multi-process BFT (D3a), peer store (D3b), staking residuals (D3c), Path A (D3d), audit prep (D3e).
+**Design spec (implement from this):** [D3 scale](../scale/d3-scale.md) — multi-process BFT (D3a), peer store (D3b), staking residuals (D3c), Path A (D3d), audit prep (D3e).
 
 **Acceptance (per workstream — do not require all at once):**
 
 | Workstream | Done when |
 | :--- | :--- |
-| **D3a — C5 multi-process BFT** | ≥3 `dew run --validator` processes share one canonical chain; optional full RPC syncs commits; compose `multi` + ERC-20 smoke ([d3-scale](./d3-scale.md#d3a--multi-process-dew-bft)) |
-| **D3b — peer store / redial** | Restart recovery without manual redial; documented data dir ([d3-scale](./d3-scale.md#d3b--peer-store-and-auto-redial)) — **done** July 2026 (`peers.json`, Host redial loop, `--datadir`) |
-| **D3c — C4 staking residuals** | Unbonding enforced; double-sign evidence; ActiveSet → BFT epoch rotation ([d3-scale](./d3-scale.md#d3c--staking-residuals-c4), [debt](../../agents/debt.md) C4) |
-| **D3d — Path A multi-host public** | ≥3 validators + optional RPC; new keys; bootnodes published ([launch-checklist](./launch-checklist.md) path A, [d3-scale](./d3-scale.md#d3d--path-a-multi-host-public)) |
-| **D3e — external audit** | Scoped audit pack before mainnet ([phase-b-audit](../security/phase-b-audit.md), [d3-scale](./d3-scale.md#d3e--external-audit-prep)) |
+| **D3a — C5 multi-process BFT** | ≥3 `dew run --validator` processes share one canonical chain; optional full RPC syncs commits; compose `multi` + ERC-20 smoke ([d3-scale](../scale/d3-scale.md#d3a--multi-process-dew-bft)) |
+| **D3b — peer store / redial** | Restart recovery without manual redial; documented data dir ([d3-scale](../scale/d3-scale.md#d3b--peer-store-and-auto-redial)) — **done** July 2026 (`peers.json`, Host redial loop, `--datadir`) |
+| **D3c — C4 staking residuals** | Unbonding enforced; double-sign evidence; ActiveSet → BFT epoch rotation ([d3-scale](../scale/d3-scale.md#d3c--staking-residuals-c4), [debt](../../agents/debt.md) C4) |
+| **D3d — Path A multi-host public** | ≥3 validators + optional RPC; new keys; bootnodes published ([launch-checklist](../ops/launch-checklist.md) path A, [d3-scale](../scale/d3-scale.md#d3d--path-a-multi-host-public)) |
+| **D3e — external audit** | Scoped audit pack before mainnet ([phase-b-audit](../security/phase-b-audit.md), [d3-scale](../scale/d3-scale.md#d3e--external-audit-prep)) |
 
 **Packages:** `consensus/`, `p2p/`, `node/`, `core/native`, `cmd/dew`, `deploy/`, `devnet/`, operator docs
 
-**Notes:** **D3a done** (July 2026) — `node.Stack`, `--validator` / `--no-auto-mine`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`. ERC-20 compose smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548`. **D3a residual closed** (July 2026) — default `MinBlockInterval` 1s, `--bft.min-block-interval`, bulk P2P drop under queue pressure; heavy soak `DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -run MultiProcessBFT_LongEmpty`. **D3b done** (July 2026) — durable `peers.json`, auto-redial with backoff, `--datadir`; tests `./p2p/ -run AutoRedial`. **Durable chaindata done** (July 2026) — Pebble `<datadir>/chaindata`, `node.Open`, restart recovery; [durable-chaindata.md](./durable-chaindata.md); `go test ./node/ -run RestartRecoversTip`. Next: [D3d Path A](./d3-scale.md#d3d--path-a-multi-host-public) or D3c when needed. Prefer config/genesis changes over wire churn under `public-testnet-v1`. Path B auto-mine deployment stays valid until operators migrate. Tokenomics issuance numbers may stay draft until mainnet.
+**Notes:** **D3a done** (July 2026) — `node.Stack`, `--validator` / `--no-auto-mine`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`. ERC-20 compose smoke: `node scripts/devnet-erc20.mjs http://127.0.0.1:8548`. **D3a residual closed** (July 2026) — default `MinBlockInterval` 1s, `--bft.min-block-interval`, bulk P2P drop under queue pressure; heavy soak `DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -run MultiProcessBFT_LongEmpty`. **D3b done** (July 2026) — durable `peers.json`, auto-redial with backoff, `--datadir`; tests `./p2p/ -run AutoRedial`. **Durable chaindata done** (July 2026) — Pebble `<datadir>/chaindata`, `node.Open`, restart recovery; [durable-chaindata.md](../ops/durable-chaindata.md); `go test ./node/ -run RestartRecoversTip`. Next: [D3d Path A](../scale/d3-scale.md#d3d--path-a-multi-host-public) or D3c when needed. Prefer config/genesis changes over wire churn under `public-testnet-v1`. Path B auto-mine deployment stays valid until operators migrate. Tokenomics issuance numbers may stay draft until mainnet.

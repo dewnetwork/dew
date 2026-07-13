@@ -34,7 +34,7 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 | ├── [install-edge-nginx.sh](./scripts/install-edge-nginx.sh) | Host nginx site install |
 | └── [setup-certbot.sh](./scripts/setup-certbot.sh) | Host certbot (no Compose edge) |
 | [docker-compose.yml](./docker-compose.yml) | **Full stack** — node + faucet + explorer + edge + certbot |
-| [Launch checklist](../docs/development/launch-checklist.md) | End-to-end ops checklist |
+| [Launch checklist](../docs/ops/launch-checklist.md) | End-to-end ops checklist |
 
 ## Prerequisites
 
@@ -96,7 +96,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1:8548
 node scripts/devnet-erc20.mjs http://127.0.0.1:8548
 ```
 
-Optional pace: `--bft.min-block-interval 1s` (default when unset). Use in-process soak profile `devnet` for the lightest 24–48h staging path. Spec: [docs/development/d3-scale.md](../docs/development/d3-scale.md).
+Optional pace: `--bft.min-block-interval 1s` (default when unset). Use in-process soak profile `devnet` for the lightest 24–48h staging path. Spec: [docs/scale/d3-scale.md](../docs/scale/d3-scale.md).
 
 Compose uses **Anvil #0–#2** keys for private packaging only. **Never** reuse on a public net.
 
@@ -245,7 +245,7 @@ Frontend runs on `:8081` by default and routes backend requests internally.
 
 ## Explorer Deployment (Dockerized)
 
-Static SPA only — no backend, no keys. Browser calls `PUBLIC_RPC_URL` directly (must be CORS-reachable). Spec: [block-explorer.md](../docs/development/block-explorer.md).
+Static SPA only — no backend, no keys. Browser calls `PUBLIC_RPC_URL` directly (must be CORS-reachable). Spec: [block-explorer.md](../docs/product/block-explorer.md).
 
 ```bash
 cp deploy/explorer/explorer.env.example deploy/explorer/explorer.env
@@ -291,6 +291,6 @@ curl -sk -X POST https://127.0.0.1/ -H 'Host: rpc-dew.fadosoft.com' \
 ## Related residual
 
 - Persistent peer store / auto-redial after restart — `agents/debt.md` (C5)
-- Production faucet — D2: `cmd/dewfaucet`, [docs/development/faucet.md](../docs/development/faucet.md), [faucet.env.example](./faucet/faucet.env.example), [systemd/dewfaucet.service](./faucet/systemd/dewfaucet.service)
-- Block explorer packaging — D1: [explorer/](./explorer/), [block-explorer.md](../docs/development/block-explorer.md)
+- Production faucet — D2: `cmd/dewfaucet`, [docs/product/faucet.md](../docs/product/faucet.md), [faucet.env.example](./faucet/faucet.env.example), [systemd/dewfaucet.service](./faucet/systemd/dewfaucet.service)
+- Block explorer packaging — D1: [explorer/](./explorer/), [block-explorer.md](../docs/product/block-explorer.md)
 - Public bootnode hostnames — C6 ops residual

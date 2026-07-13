@@ -3,19 +3,19 @@ title: JSON-RPC (Ethereum)
 description: eth_*, net_*, and web3_* methods for wallet and tooling compatibility.
 category: api
 order: 10
-status: draft
+status: stable
 ---
 
 # JSON-RPC (Ethereum)
 
 ## Endpoints
 
-| Protocol | Default port |
-| :--- | :--- |
-| HTTP | `8545` |
-| WebSocket | `8546` |
+| Protocol | Default port | Status |
+| :--- | :--- | :--- |
+| HTTP | `8545` | **Implemented** (`rpc` package) |
+| WebSocket | — | **Not implemented** (docs historically mentioned `8546`; do not rely on WS) |
 
-Content-Type: `application/json`. JSON-RPC 2.0.
+Content-Type: `application/json`. JSON-RPC 2.0 over **HTTP only**.
 
 ### Public testnet RPC (live)
 
@@ -25,7 +25,7 @@ Content-Type: `application/json`. JSON-RPC 2.0.
 | Chain ID | `2205` (`eth_chainId` → `0x89d`) |
 | Smoke | `node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com` |
 
-See [Public testnet freeze](../development/public-testnet.md#live-network-path-b) for explorer, faucet, and MetaMask fields.
+See [Public testnet freeze](../ops/public-testnet.md#live-network-path-b) for explorer, faucet, and MetaMask fields.
 
 ### Public testnet resource limits (C6)
 
@@ -34,7 +34,7 @@ See [Public testnet freeze](../development/public-testnet.md#live-network-path-b
 | Max HTTP body | 1 MiB (`rpc.MaxRequestBodyBytes`) |
 | Max batch items | 100 (`rpc.MaxBatchItems`) |
 
-Oversized body/batch → JSON-RPC error `-32600`. Tx admission also enforces mempool fee floors and size caps (C1). See [Public testnet freeze](../development/public-testnet.md).
+Oversized body/batch → JSON-RPC error `-32600`. Tx admission also enforces mempool fee floors and size caps (C1). See [Public testnet freeze](../ops/public-testnet.md).
 
 ## Phase A — required methods
 

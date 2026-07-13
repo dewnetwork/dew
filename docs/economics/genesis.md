@@ -55,7 +55,7 @@ The genesis file bootstraps chain identity, fork flags, pre-funded accounts, and
 - Hardfork blocks at `0` → Cancun-era EVM rules from genesis.
 - `unbondingPeriodSeconds` uses **seconds** (not blocks) in config naming to avoid ambiguity.
 - `gasLimit` `0x7270e00` = 120,000,000.
-- `chainId` **2205** is frozen for **public-testnet-v1** (`params.PublicTestnetChainID`). See [Public testnet freeze](../development/public-testnet.md).
+- `chainId` **2205** is frozen for **public-testnet-v1** (`params.PublicTestnetChainID`). See [Public testnet freeze](../ops/public-testnet.md).
 - Set a real `timestamp` at launch; `0` is a placeholder for local dev.
 - Sample `activeValidatorCap` may be lower than module default \(K=100\) for small local nets.
 

@@ -182,7 +182,7 @@ func cmdRun(args []string) error {
 	if p2pHost != nil {
 		fmt.Printf("  p2p:         listen=%s encrypt=%v peers=%d\n", p2pHost.ListenAddr(), p2pHost.EncryptEnabled(), len(p2pHost.Store().Active()))
 	}
-	fmt.Println("hint: launch checklist — docs/development/launch-checklist.md")
+	fmt.Println("hint: launch checklist — docs/ops/launch-checklist.md")
 	fmt.Println("hint: packaging — deploy/README.md")
 
 	if !*httpEnabled {
@@ -363,7 +363,7 @@ Usage:
           [--p2p.encrypt] [--p2p.allow-cleartext]
   dew version
 
-Launch checklist: docs/development/launch-checklist.md
+Launch checklist: docs/ops/launch-checklist.md
 Packaging:        deploy/README.md
 `)
 }

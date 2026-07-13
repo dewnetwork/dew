@@ -2,11 +2,11 @@
 
 Below is a list of technical debt, refactoring tasks, or optimization items in the project.
 
-Phase mapping: items owned by an active phase live in [docs/development/phases.md](../docs/development/phases.md); this file tracks **residuals** and cross-cutting debt.
+Phase mapping: items owned by an active phase live in [docs/build/phases.md](../docs/build/phases.md); this file tracks **residuals** and cross-cutting debt.
 
-**Phase C (C1–C6) complete** — freeze tag `public-testnet-v1`. See [public-testnet.md](../docs/development/public-testnet.md).
+**Phase C (C1–C6) complete** — freeze tag `public-testnet-v1`. See [public-testnet.md](../docs/ops/public-testnet.md).
 
-**Phase D** — D1 explorer + D2 faucet done; D3a + D3b + D3a residual done; **durable chaindata done** → D3d Path A / D3c / D3e when needed. Design: [durable-chaindata.md](../docs/development/durable-chaindata.md). D3 scale: [d3-scale.md](../docs/development/d3-scale.md). Acceptance in [phases.md](../docs/development/phases.md).
+**Phase D** — D1 explorer + D2 faucet done; D3a + D3b + D3a residual done; **durable chaindata done** → D3d Path A / D3c / D3e when needed. Design: [durable-chaindata.md](../docs/ops/durable-chaindata.md). D3 scale: [d3-scale.md](../docs/scale/d3-scale.md). Acceptance in [phases.md](../docs/build/phases.md).
 
 ## Durable chaindata
 
@@ -26,7 +26,7 @@ Phase mapping: items owned by an active phase live in [docs/development/phases.m
 
 ## C4 residuals
 
-Owned by D3c — see [d3-scale.md](../docs/development/d3-scale.md#d3c--staking-residuals-c4).
+Owned by D3c — see [d3-scale.md](../docs/scale/d3-scale.md#d3c--staking-residuals-c4).
 
 - [ ] Enforce unbonding period (time/height) before stake withdrawal
 - [ ] Full double-sign evidence verification (not only non-zero hash placeholder)
@@ -36,7 +36,7 @@ Owned by D3c — see [d3-scale.md](../docs/development/d3-scale.md#d3c--staking-
 
 ## C5 residuals
 
-Owned by D3 — see [d3-scale.md](../docs/development/d3-scale.md) (D3a / D3b).
+Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 
 - [x] Multi-process binary packaging (systemd/docker compose samples) — `deploy/` (Dockerfile; `docker-compose.soak.yml` devnet/`multi`; `docker-compose.yml` public path B + nginx; systemd units); `dew run --p2p.*` for encrypted mesh packaging
 - [x] **D3a** Multi-process Dew-BFT shared block production (`--validator`, `node.Stack`, compose `multi` + `node-rpc`; `go test ./devnet/ -run MultiProcessBFT_SharedChain`)
@@ -48,7 +48,7 @@ Owned by D3 — see [d3-scale.md](../docs/development/d3-scale.md) (D3a / D3b).
 
 - [x] Path B public surface live (July 2026) — `https://rpc-dew.fadosoft.com`, `https://faucet-dew.fadosoft.com`, `https://explorer-dew.fadosoft.com`; bootnodes n/a for path B
 - [ ] Publish real public bootnode hostnames / multiaddrs when Path A multi-host launches (process documented; values not in-repo)
-- [x] Production faucet service (rate limits, captcha) outside monorepo core — `faucet/` + `cmd/dewfaucet` (D2); see [docs/development/faucet.md](../docs/development/faucet.md)
+- [x] Production faucet service (rate limits, captcha) outside monorepo core — `faucet/` + `cmd/dewfaucet` (D2); see [docs/product/faucet.md](../docs/product/faucet.md)
 - [x] Longer continuous fuzz in CI (`-fuzztime` schedules) — [`.github/workflows/security.yml`](../.github/workflows/security.yml) (PR short; weekly/manual 2m+1m)
 
 ## Deferred / mainnet
@@ -56,3 +56,8 @@ Owned by D3 — see [d3-scale.md](../docs/development/d3-scale.md) (D3a / D3b).
 - [ ] PE uses fork+overlay, not full multi-version Block-STM — higher memory and re-exec cost under heavy conflicts (`core/vm/parallel.go`). Not required for first public testnet.
 - [ ] External security audit of consensus + VM bridge + crypto — required before mainnet (see `docs/security/phase-b-audit.md` and security principles stage table).
 - [ ] Tokenomics issuance / inflation numbers still draft (not part of wire freeze).
+
+## Docs
+
+- [x] Reorg `docs/development/` → `build/` · `ops/` · `product/` · `scale/` (July 2026)
+- [ ] Promote remaining protocol/execution pages from `status: draft` to `stable` after prose pass

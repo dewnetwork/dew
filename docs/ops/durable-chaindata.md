@@ -1,7 +1,7 @@
 ---
 title: Durable chaindata
 description: Disk persistence plan for chain + state under datadir (Pebble); peers stay in peers.json.
-category: development
+category: ops
 order: 36
 status: stable
 ---
@@ -10,10 +10,8 @@ status: stable
 
 **Status:** implemented (July 2026).  
 **Freeze:** does not change `public-testnet-v1` wire formats.  
-**Specs:**
 
-- Design: [superpowers/specs/2026-07-12-durable-chaindata-design.md](../superpowers/specs/2026-07-12-durable-chaindata-design.md)
-- Plan: [superpowers/plans/2026-07-12-durable-chaindata.md](../superpowers/plans/2026-07-12-durable-chaindata.md)
+See also [D3 scale](../scale/d3-scale.md).
 
 ## Why
 
@@ -67,7 +65,7 @@ D3a multiproc BFT (done) + D3b peers.json (done)
     → D3d Path A / meaningful D3c staking on long-lived nets
 ```
 
-See [D3 scale](./d3-scale.md) and [agents/debt.md](../../agents/debt.md).
+See [D3 scale](../scale/d3-scale.md) and [agents/debt.md](../../agents/debt.md).
 
 ## Non-goals
 

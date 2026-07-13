@@ -8,4 +8,4 @@ status: draft
 
 # API
 
-JSON-RPC over HTTP and WebSocket.
+JSON-RPC over HTTP (`eth_*`, `net_*`, `web3_*`, and Dew extensions).

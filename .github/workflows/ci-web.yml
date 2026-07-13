@@ -1,6 +1,6 @@
 # Node monorepo CI: docs site, landing merge build, explorer, faucet-web.
 # Production Pages deploy stays in pages.yml (push main only).
-# See docs/development/go-project-layout.md § CI (monorepo).
+# See docs/build/go-project-layout.md § CI (monorepo).
 
 name: Web CI
 

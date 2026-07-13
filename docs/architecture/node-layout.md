@@ -3,7 +3,7 @@ title: Node Internals
 description: Internal subsystems, interfaces, and lifecycle of a Dew node.
 category: architecture
 order: 20
-status: draft
+status: stable
 ---
 
 # Node Internals
@@ -12,84 +12,68 @@ status: draft
 
 ```mermaid
 flowchart TD
-  A[Load config + genesis] --> B[Open DBs: block, state, peers]
+  A[Load genesis + flags] --> B["Open datadir: chaindata/ + peers.json"]
   B --> C{Empty chain?}
-  C -->|yes| D[Init genesis]
-  C -->|no| E[Start P2P host]
+  C -->|yes| D[Init genesis into Pebble]
+  C -->|no| E[Hydrate tip + state]
   D --> E
-  E --> F[Start consensus: validator or observer]
-  F --> G[Start RPC HTTP 8545 / WS 8546]
-  G --> H[Ready]
-  H --> I[SIGINT / SIGTERM → graceful shutdown]
+  E --> F{Role?}
+  F -->|validator| G[Start Engine + P2P + optional RPC]
+  F -->|full / auto-mine| H[Start P2P optional + RPC]
+  G --> I[Ready]
+  H --> I
+  I --> J[SIGINT / SIGTERM → Close DB + host]
 ```
 
-## Core interfaces (conceptual Go)
+Default `--datadir` is `/var/lib/dew` ([Durable chaindata](../ops/durable-chaindata.md)).
 
-These are design-level interfaces, not frozen APIs:
+## Core surfaces (conceptual)
 
 ```go
-// Executor applies a block's transactions and returns results + new state root.
-type Executor interface {
-    Execute(block *types.Block, state State) (*types.BlockResult, error)
-}
+// ImportCommittedBlock is the single apply path for BFT commits and P2P sync.
+func (n *Node) ImportCommittedBlock(block *types.Block) error
 
-// State is the account/storage view used during execution.
-type State interface {
-    GetAccount(addr common.Address) (*types.Account, error)
-    SetAccount(addr common.Address, acc *types.Account) error
-    GetState(addr common.Address, key common.Hash) common.Hash
-    SetState(addr common.Address, key, val common.Hash)
-    Commit() (root common.Hash, err error)
-    // ...
-}
-
-// ConsensusEngine drives height/round and talks to networking.
-type ConsensusEngine interface {
-    Start(ctx context.Context) error
-    // ...
-}
+// SendRawTransaction admits to mempool; may auto-mine in dev / Path B mode.
+func (n *Node) SendRawTransaction(raw []byte) (common.Hash, error)
 ```
 
-Phase A `Executor` is sequential EVM. Phase B swaps or wraps with Dew-PE while preserving `BlockResult` semantics.
+- Sequential EVM (and optional Dew-PE) live under `core/vm`.
+- Multi-process validator wiring uses `node.Stack` + `consensus.Runner` ([D3 scale](../scale/d3-scale.md)).
 
 ## Mempool
 
-Responsibilities:
+Package `mempool` — unified pool for EVM + DewTx:
 
-- Admit txs with valid signature and chain ID
-- Enforce nonce ordering per sender
-- Reject grossly underpriced txs (base fee rules)
-- Evict on replace (higher tip) or size limits
-- Feed proposer and gossip
+- Admit with signature, chain ID, size, and fee floors
+- Per-sender and global limits; optional replace-by-fee
+- Feed proposer (`MempoolBlockBuilder`) and gossip
+- Pending state is in-memory (lost on restart; acceptable)
 
-Phase A can use a simple in-memory pool. Do not over-design before multi-node testing.
+See [Gas and fees](../execution/gas-and-fees.md) for C1 floors.
 
 ## Databases
 
-| Store      | Keys (illustrative) | Values                 | Status |
-| :--------- | :------------------ | :--------------------- | :----- |
-| Block DB   | hash, height        | header, body, receipts | `<datadir>/chaindata` (Pebble) when `--datadir` set — [Durable chaindata](../development/durable-chaindata.md) |
-| State DB   | address             | account RLP/binary     | Flat keys `a`/`s`/`c` in same Pebble under `chaindata/` |
-| Storage DB | address \|\| slot   | 32-byte value          | Same KV as state |
-| Peer store | node ID             | addresses, last seen   | `<datadir>/peers.json` (not in chaindata) |
-| Consensus  | height/round meta   | votes, valset          | In-process today |
+| Store | Keys (illustrative) | Values | Location |
+| :--- | :--- | :--- | :--- |
+| Block + state | hash, height, `a`/`s`/`c` prefixes | header, body, receipts, accounts, storage | `<datadir>/chaindata` (**Pebble**) |
+| Peer store | node ID | addresses, last seen | `<datadir>/peers.json` |
+| Consensus | height/round meta | votes, valset | In-process today |
+| Tests | temp dir | same schema | `db.OpenTest` / `node.OpenTest` |
 
-Exact codec is implementation-defined but must be versioned. Peer data stays out of the chain DB (different lifecycle).
+There is **no** MemoryDB backend. Peer data stays out of the chain DB (different lifecycle).
 
 ## Configuration surfaces
 
-| Input                 | Examples                                            |
-| :-------------------- | :-------------------------------------------------- |
-| `genesis.json`        | chainId, alloc, initialValidators, consensus params |
-| `config.toml` / flags | listen addrs, RPC, data dir, priv validator key     |
-| Runtime               | log level, max peers                                |
+| Input | Examples |
+| :--- | :--- |
+| `genesis.json` | chainId, alloc, initialValidators, consensus params |
+| CLI flags | `--datadir`, `--http.*`, `--p2p.*`, `--validator`, `--bft.min-block-interval` |
+| Env / compose | volume mount `/var/lib/dew`, feature flags |
 
-See [Genesis](../economics/genesis.md).
+No `config.toml` today — flags and genesis are the operator surface. See [Genesis](../economics/genesis.md).
 
 ## Observability (minimum)
 
 - Structured logs for consensus rounds and RPC errors
 - Counters: txs admitted, blocks committed, peer count
-- Phase B: conflict/rollback rate for Dew-PE
-
-Expose advanced stats later via `dew_getExecutionStats` ([Dew RPC extensions](../api/dew-extensions.md)).
+- PE conflict/rollback via `dew_getExecutionStats` ([Dew RPC extensions](../api/dew-extensions.md))

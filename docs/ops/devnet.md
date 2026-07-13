@@ -1,7 +1,7 @@
 ---
 title: Local Devnet
 description: Run a 3-validator Dew localnet with JSON-RPC, faucet, and ERC-20 demo.
-category: development
+category: ops
 order: 40
 status: draft
 ---
@@ -121,7 +121,7 @@ dew run --genesis genesis.json --http.port 8545   # single RPC node without full
 
 ## Related docs
 
-- [Phases](./phases.md) — acceptance criteria
+- [Phases](../build/phases.md) — acceptance criteria
 - [Dew-BFT](../consensus/dew-bft.md)
 - [P2P](../networking/p2p.md)
 - [JSON-RPC](../api/json-rpc.md)

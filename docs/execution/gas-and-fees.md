@@ -124,7 +124,7 @@ Re-tune only via an explicit hardfork / genesis parameter change — do not drif
 | Max tx bytes | 128 KiB |
 | `0x100` gas | 3_000 |
 
-Canonical table: [Public testnet freeze](../development/public-testnet.md).
+Canonical table: [Public testnet freeze](../ops/public-testnet.md).
 
 ## Header fields
 

@@ -59,20 +59,32 @@
     - tokenomics.md
     - genesis.md
 
-- category: Development
-  path: development
+- category: Build
+  path: build
   items:
-    - go-project-layout.md   # monorepo layout (Go + Node)
+    - go-project-layout.md
     - roadmap.md
     - phases.md
-    - d3-scale.md
-    - durable-chaindata.md
+
+- category: Networks & ops
+  path: ops
+  items:
     - devnet.md
     - private-testnet.md
     - public-testnet.md
+    - launch-checklist.md
+    - durable-chaindata.md
+
+- category: Product surface
+  path: product
+  items:
     - block-explorer.md
     - faucet.md
-    - launch-checklist.md
+
+- category: Scale
+  path: scale
+  items:
+    - d3-scale.md
 
 - category: Security
   path: security

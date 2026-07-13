@@ -1,7 +1,7 @@
 ---
 title: Public testnet freeze
 description: public-testnet-v1 freeze surface, faucet policy, bootnodes, and feature flags.
-category: development
+category: ops
 order: 50
 status: stable
 ---
@@ -32,7 +32,7 @@ Private multi-host ops remain in [Private multi-host testnet](./private-testnet.
 | Faucet mode | **captcha** — 1 DEW / address / 24h · 10 / IP / hour |
 | Smoke | `node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com` |
 
-MetaMask: custom network RPC = JSON-RPC URL above; block explorer URL = explorer base only (no path suffix). Path A (multi-host validators + bootnodes) is [D3](./phases.md#d3--scale-when-needed-path-a--c4--audit) — see [D3 scale](./d3-scale.md) — not required for the current deployment.
+MetaMask: custom network RPC = JSON-RPC URL above; block explorer URL = explorer base only (no path suffix). Path A (multi-host validators + bootnodes) is [D3](../build/phases.md#d3--scale-when-needed-path-a--c4--audit) — see [D3 scale](../scale/d3-scale.md) — not required for the current deployment.
 
 ## Freeze table
 
@@ -86,7 +86,7 @@ Numbers formerly marked `_tentative_` that appear in this table are **frozen for
 
 Faucet is **ops**, not consensus. Disable faucet independently of validators.
 
-**In-repo service (Phase D2):** `cmd/dewfaucet` — see [Production faucet](./faucet.md). Operator defaults: **1 DEW** / drip, **1 / address / 24h**, **10 / IP / hour**; modes `allowlist` (default) · `captcha` · `dev` (private only).
+**In-repo service (Phase D2):** `cmd/dewfaucet` — see [Production faucet](../product/faucet.md). Operator defaults: **1 DEW** / drip, **1 / address / 24h**, **10 / IP / hour**; modes `allowlist` (default) · `captcha` · `dev` (private only).
 
 ## Bootnodes
 
@@ -140,7 +140,7 @@ Full one-page checklist (ports, env, compose, publish template): [Launch checkli
 1. Generate dedicated keys (validators, bootnodes, faucet) — no Anvil reuse  
 2. Distribute frozen genesis (chain ID 2205, alloc, initialValidators)  
 3. Start ≥ 3 validators + optional RPC with encrypted P2P  
-4. Publish RPC URL, chain ID, bootnodes, faucet rules, explorer base or `(none)` ([Block explorer](./block-explorer.md))  
+4. Publish RPC URL, chain ID, bootnodes, faucet rules, explorer base or `(none)` ([Block explorer](../product/block-explorer.md))  
 5. Confirm feature flags match the table above  
 6. Run chaos smoke on private staging first (`go test ./devnet/ -run Chaos`)  
 7. Monitor RPC errors / mempool rejects; be ready to disable native/staking flags  
@@ -154,15 +154,15 @@ Full one-page checklist (ports, env, compose, publish template): [Launch checkli
 
 ## Residual (not C6 blockers)
 
-Tracked in `agents/debt.md`; D3 implementation spec: [D3 scale](./d3-scale.md). Items: fee auction, nonce-gap queue, D3c staking residuals, D3d Path A bootnodes, external mainnet audit. (D3a multiproc long-run residual closed July 2026.)
+Tracked in `agents/debt.md`; D3 implementation spec: [D3 scale](../scale/d3-scale.md). Items: fee auction, nonce-gap queue, D3c staking residuals, D3d Path A bootnodes, external mainnet audit. (D3a multiproc long-run residual closed July 2026.)
 
 ## Related
 
 - [Launch checklist](./launch-checklist.md)  
-- [Block explorer (web)](./block-explorer.md) — public Explorer URL, deep links  
-- [Production faucet](./faucet.md) — D2 `dewfaucet`  
-- [Phases](./phases.md) — C6 acceptance  
-- [D3 scale](./d3-scale.md) — post-freeze technical workstreams
+- [Block explorer (web)](../product/block-explorer.md) — public Explorer URL, deep links  
+- [Production faucet](../product/faucet.md) — D2 `dewfaucet`  
+- [Phases](../build/phases.md) — C6 acceptance  
+- [D3 scale](../scale/d3-scale.md) — post-freeze technical workstreams
 - [Genesis](../economics/genesis.md)  
 - [Gas and fees](../execution/gas-and-fees.md)  
 - [Security principles](../security/security-principles.md) — public testnet bar  

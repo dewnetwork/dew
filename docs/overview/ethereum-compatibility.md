@@ -49,7 +49,7 @@ Dew should feel like a **custom EVM chain** to developers: same keys, same contr
 | Block explorer | `https://explorer-dew.fadosoft.com` |
 | Faucet | `https://faucet-dew.fadosoft.com` |
 
-MetaMask: add custom network with the RPC URL above; block explorer URL = explorer base only. Full publish template: [Launch checklist](../development/launch-checklist.md).
+MetaMask: add custom network with the RPC URL above; block explorer URL = explorer base only. Full publish template: [Launch checklist](../ops/launch-checklist.md).
 
 ## Deferred to Phase B (not required for first devnet)
 

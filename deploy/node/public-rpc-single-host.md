@@ -177,7 +177,7 @@ Bootnodes:   (n/a — single RPC path B)
 ```
 
 MetaMask: Custom network → RPC URL HTTPS, chain ID **2205**, symbol **DEW**.  
-**Explorer:** MetaMask “Block explorer URL” = base only — `https://explorer-dew.fadosoft.com` (see [block-explorer.md](../docs/development/block-explorer.md)).
+**Explorer:** MetaMask “Block explorer URL” = base only — `https://explorer-dew.fadosoft.com` (see [block-explorer.md](../docs/product/block-explorer.md)).
 
 External smoke:
 
@@ -207,8 +207,8 @@ Monitor: 5xx from proxy, container/`journalctl` panics, disk, CPU. Dew already r
 
 ## Related
 
-- [Launch checklist](../../docs/development/launch-checklist.md)  
-- [Public testnet freeze](../../docs/development/public-testnet.md)  
+- [Launch checklist](../../docs/ops/launch-checklist.md)  
+- [Public testnet freeze](../../docs/ops/public-testnet.md)  
 - [deploy/README](../README.md)  
 - [docker-compose.yml](./docker-compose.yml)  
 - [systemd/dew-rpc-public.service](./systemd/dew-rpc-public.service)  

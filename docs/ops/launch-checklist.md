@@ -1,7 +1,7 @@
 ---
 title: Launch checklist
 description: One-page private soak and public-testnet-v1 operator checklist.
-category: development
+category: ops
 order: 55
 status: stable
 ---
@@ -13,7 +13,7 @@ Packaging: [deploy/](../../deploy/) · freeze table: [Public testnet](./public-t
 
 ## Live deployment
 
-Path B (**single-host controlled RPC**) is **live** (July 2026). Use the [publish template](#public-publish-template-path-b) for MetaMask, faucet pages, and builder docs. Path A (multi-host validators + bootnodes) is [D3](./phases.md#d3--scale-when-needed-path-a--c4--audit) — design spec: [D3 scale](./d3-scale.md#d3d--path-a-multi-host-public).
+Path B (**single-host controlled RPC**) is **live** (July 2026). Use the [publish template](#public-publish-template-path-b) for MetaMask, faucet pages, and builder docs. Path A (multi-host validators + bootnodes) is [D3](../build/phases.md#d3--scale-when-needed-path-a--c4--audit) — design spec: [D3 scale](../scale/d3-scale.md#d3d--path-a-multi-host-public).
 
 ```bash
 node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com
@@ -55,7 +55,7 @@ docker compose -f deploy/docker-compose.soak.yml --profile multi up --build
 
 ### Path B — controlled RPC on **one host** (fastest)
 
-Full copy-paste runbook: [deploy/public-rpc-single-host.md](../../deploy/public-rpc-single-host.md).
+Full copy-paste runbook: [deploy/node/public-rpc-single-host.md](../../deploy/node/public-rpc-single-host.md).
 
 **Compose (recommended packaging):**
 
@@ -79,7 +79,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 
 ### Path A — multi-host public (later)
 
-**Prerequisite:** [D3a multi-process BFT](./d3-scale.md#d3a--multi-process-dew-bft) implemented. Full operator spec: [D3d Path A](./d3-scale.md#d3d--path-a-multi-host-public).
+**Prerequisite:** [D3a multi-process BFT](../scale/d3-scale.md#d3a--multi-process-dew-bft) implemented. Full operator spec: [D3d Path A](../scale/d3-scale.md#d3d--path-a-multi-host-public).
 
 | # | Step | Notes |
 | -: | :--- | :---- |
@@ -88,7 +88,7 @@ node scripts/smoke-rpc.mjs http://127.0.0.1
 | 3 | Topology | ≥ 3 validators + optional non-validator RPC |
 | 4 | Feature flags | Staking **off** unless operators agree; native/precompiles **on** |
 | 5 | Publish | RPC URL, chain ID `2205`, bootnode list, faucet rate rules, explorer base or `(none)` |
-| 6 | Faucet | Optional `dewfaucet` ([faucet.md](./faucet.md)): allowlist or captcha; rate limits; never Anvil keys |
+| 6 | Faucet | Optional `dewfaucet` ([faucet.md](../product/faucet.md)): allowlist or captcha; rate limits; never Anvil keys |
 | 7 | Monitor | RPC 4xx/5xx, mempool rejects, peer count; ready to stop RPC only |
 
 ### Public publish template (path B) — live
@@ -103,9 +103,9 @@ Faucet:      https://faucet-dew.fadosoft.com     # captcha · 1 DEW/address/24h 
 Bootnodes:   n/a (single-host controlled RPC)
 ```
 
-Block explorer URL conventions and MetaMask base URL: [Block explorer (web)](./block-explorer.md).  
+Block explorer URL conventions and MetaMask base URL: [Block explorer (web)](../product/block-explorer.md).  
 Docker packaging: [`deploy/explorer/`](../../deploy/explorer/) (standalone) or combined [`deploy/docker-compose.yml`](../../deploy/docker-compose.yml).  
-Production faucet service: [Production faucet](./faucet.md) (`go build -o bin/dewfaucet ./cmd/dewfaucet`).
+Production faucet service: [Production faucet](../product/faucet.md) (`go build -o bin/dewfaucet ./cmd/dewfaucet`).
 
 ## C. Emergency stop
 
@@ -116,6 +116,6 @@ Production faucet service: [Production faucet](./faucet.md) (`go build -o bin/de
 ## Related
 
 - [Public testnet freeze](./public-testnet.md)  
-- [Block explorer (web)](./block-explorer.md)  
+- [Block explorer (web)](../product/block-explorer.md)  
 - [Private multi-host](./private-testnet.md)  
 - [deploy/README](../../deploy/README.md)  

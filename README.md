@@ -4,7 +4,7 @@ High-performance, EVM-compatible Layer 1 blockchain — built **from scratch** i
 
 | Goal | Approach |
 | :--- | :--- |
-| **Faster** than Ethereum | ~1s blocks, flat state, later parallel execution |
+| **Faster** than Ethereum | ~1s blocks, flat state + SMT commit, parallel execution |
 | **More secure** | Dew-BFT instant finality + slashing |
 | **Cheaper** | Higher capacity, discounted storage gas, later native micro-fees |
 | **ETH-first** | Solidity / MetaMask / Foundry path before Dew-native features |
@@ -20,7 +20,7 @@ This repository is a **single monorepo** for the whole Dew stack:
 
 Protocol logic lives in Go. Node is for docs web + developer tooling — not a second consensus client.
 
-Layout details: [docs/development/go-project-layout.md](./docs/development/go-project-layout.md).
+Layout details: [docs/build/go-project-layout.md](./docs/build/go-project-layout.md).
 
 ## Go (L1 core)
 
@@ -45,7 +45,7 @@ node scripts/smoke-rpc.mjs              # eth_chainId smoke check
 ./bin/dew init --out genesis.json
 ./bin/dew devnet --http.port 8545
 go test ./devnet/ -count=1              # BFT + ERC-20 over RPC
-# Faucet (Anvil #0): 0xf39F… / ac0974… — see docs/development/devnet.md
+# Faucet (Anvil #0): 0xf39F… / ac0974… — see docs/ops/devnet.md
 ```
 
 | Package | Role |
@@ -53,18 +53,21 @@ go test ./devnet/ -count=1              # BFT + ERC-20 over RPC
 | [`crypto/`](./crypto/) | secp256k1, Keccak-256, address derivation, sign/verify |
 | [`crypto/wallet/`](./crypto/wallet/) | Encrypted keystore (Web3 Secret Storage) |
 | [`cmd/dewcli/`](./cmd/dewcli/) | Wallet CLI |
-| [`db/`](./db/) | KV store interface + in-memory backend |
-| [`core/types/`](./core/types/) | Account, Header, Block, EVM tx / receipt |
-| [`core/state/`](./core/state/) | Flat state DB + journal / access list (EVM-ready) |
-| [`core/vm/`](./core/vm/) | EVM bridge + sequential `Executor` (Cancun) |
+| [`db/`](./db/) | KV store interface + **Pebble** backend (`chaindata/`) |
+| [`core/types/`](./core/types/) | Account, Header, Block, EVM tx / receipt / DewTx |
+| [`core/state/`](./core/state/) | Flat state + SMT commit, journal / access list |
+| [`core/vm/`](./core/vm/) | EVM bridge, sequential + parallel executor, precompiles |
+| [`core/native/`](./core/native/) | DewTx executor, staking module |
+| [`mempool/`](./mempool/) | Unified EVM + DewTx admission pool |
 | [`config/`](./config/) | Genesis JSON load + alloc commit |
-| [`node/`](./node/) | In-process backend (genesis, auto-mine, state) |
-| [`rpc/`](./rpc/) | Ethereum JSON-RPC HTTP (`eth_*` / `net_*` / `web3_*`) |
-| [`consensus/`](./consensus/) | Dew-BFT engine + local multi-validator cluster (Phase A5) |
-| [`p2p/`](./p2p/) | TCP host, handshake, gossip, sync, consensus fan-out (Phase A6) |
-| [`devnet/`](./devnet/) | Local 3-validator + RPC network helpers (Phase A7) |
+| [`params/`](./params/) | Fees, freeze tag, staking constants |
+| [`node/`](./node/) | Backend, Stack, durable Open, ImportCommittedBlock |
+| [`rpc/`](./rpc/) | Ethereum JSON-RPC **HTTP** (`eth_*` / `net_*` / `web3_*` / `dew_*`) |
+| [`consensus/`](./consensus/) | Dew-BFT engine, builder, multiproc runner |
+| [`p2p/`](./p2p/) | Encrypted TCP host, gossip, sync, peer redial |
+| [`devnet/`](./devnet/) | Local + multiproc BFT network helpers |
 | [`cmd/dew/`](./cmd/dew/) | Full node entrypoint (`run`, `init`, `devnet`) |
-| [`faucet/`](./faucet/) · [`cmd/dewfaucet/`](./cmd/dewfaucet/) | Production faucet HTTP service (Phase D2; ops, not consensus) |
+| [`faucet/`](./faucet/) · [`cmd/dewfaucet/`](./cmd/dewfaucet/) | Production faucet HTTP service (ops, not consensus) |
 | [`genesis.json`](./genesis.json) | Dev genesis (chainId 2205, 3 validators, faucet alloc) |
 
 ## Documentation
@@ -88,7 +91,7 @@ pnpm explorer:dev    # http://localhost:4321 — needs RPC (e.g. dew devnet :854
 pnpm explorer:build  # → explorer/dist
 ```
 
-See [`explorer/README.md`](./explorer/README.md) and [block explorer design](./docs/development/block-explorer.md).
+See [`explorer/README.md`](./explorer/README.md) and [block explorer design](./docs/product/block-explorer.md).
 
 **Production faucet (Phase D2):**
 
@@ -98,7 +101,7 @@ go build -o bin/dewfaucet ./cmd/dewfaucet
 # Local only: -mode dev -allow-anvil-key
 ```
 
-See [docs/development/faucet.md](./docs/development/faucet.md).
+See [docs/product/faucet.md](./docs/product/faucet.md).
 
 **Faucet Web App (React SPA):**
 
@@ -148,7 +151,7 @@ Layout after merge:
 | [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) | Deploy combined `dist/` to GitHub Pages (`main` only) |
 | [`.github/dependabot.yml`](./.github/dependabot.yml) | Weekly dependency update PRs (Go / npm / Actions) |
 
-Layout notes: [docs/development/go-project-layout.md](./docs/development/go-project-layout.md) § CI.
+Layout notes: [docs/build/go-project-layout.md](./docs/build/go-project-layout.md) § CI.
 
 ### GitHub Pages
 
@@ -175,12 +178,12 @@ Custom domain later: set `SITE_BASE=/` and `SITE_URL=https://your.domain` in the
 
 1. [Vision](./docs/overview/vision.md)
 2. [Design principles](./docs/overview/design-principles.md)
-3. [Roadmap](./docs/development/roadmap.md)
-4. [Implementation phases](./docs/development/phases.md)
+3. [Roadmap](./docs/build/roadmap.md)
+4. [Implementation phases](./docs/build/phases.md)
 
 ## Status
 
-Docs site + landing are wired. **Phase A1–A7** done (crypto → EVM → JSON-RPC → Dew-BFT → P2P → devnet). Next: [Phase B1](./docs/development/phases.md) — parallel execution (Dew-PE).
+Docs site + landing + explorer + faucet are wired. **Bands A–C done** (`public-testnet-v1` live path B). **D1–D2** + **D3a/D3b** + durable chaindata done. Next on demand: [D3c–D3e](./docs/scale/d3-scale.md) (staking residuals, Path A, audit).
 
 ## License
 

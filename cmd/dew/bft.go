@@ -66,7 +66,7 @@ func runBFTStack(cfg bftRunConfig) error {
 		fmt.Printf("  p2p:         listen=%s encrypt=%v peers=%d\n",
 			stack.Host.ListenAddr(), stack.Host.EncryptEnabled(), stack.Host.PeerCount())
 	}
-	fmt.Println("hint: launch checklist — docs/development/launch-checklist.md")
+	fmt.Println("hint: launch checklist — docs/ops/launch-checklist.md")
 
 	if !cfg.HTTPEnabled {
 		waitSignal()

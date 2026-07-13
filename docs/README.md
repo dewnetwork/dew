@@ -3,68 +3,71 @@ title: Dew Documentation
 description: Index of Dew protocol, architecture, and development docs.
 category: root
 order: 0
-status: draft
+status: stable
 ---
 
 # Dew Documentation
 
 **Dew** is a high-performance, EVM-compatible Layer 1 blockchain built **from scratch** in a **monorepo** with **Go + Node.js**.
 
-| Goal                      | Meaning                                                               |
-| :------------------------ | :-------------------------------------------------------------------- |
-| **Faster than Ethereum**  | Sub-second blocks, parallel execution, flat state DB                  |
-| **More secure**           | BFT instant finality, clear slashing, minimal trusted surface         |
-| **Cheaper than Ethereum** | Lower gas for storage/ops, EIP-1559 burn, Dew-native micro-fees later |
-| **ETH-compatible first**  | MetaMask, Solidity, Hardhat/Foundry work out of the box               |
+| Goal | Meaning |
+| :--- | :--- |
+| **Faster than Ethereum** | Sub-second blocks, parallel execution, flat state + SMT commit |
+| **More secure** | BFT instant finality, clear slashing, minimal trusted surface |
+| **Cheaper than Ethereum** | Higher capacity, discounted storage gas, EIP-1559 burn, Dew-native micro-fees |
+| **ETH-compatible first** | MetaMask, Solidity, Hardhat/Foundry work out of the box |
 
 ## Monorepo (Go + Node)
 
 | Stack | Owns |
 | :--- | :--- |
-| **Go** | Chain node, CLI, consensus, P2P, state, EVM, JSON-RPC server |
-| **Node.js** | **Docs website** (build/preview static site from this `docs/` tree); scripts, localnet, RPC smoke tests, later SDK |
+| **Go** | Chain node, CLI, consensus, P2P, state, EVM, JSON-RPC, ops faucet |
+| **Node.js** | Docs website (VitePress from this tree); landing; explorer + faucet-web; scripts |
 
-Markdown under `docs/` is the source of truth. **Node builds the web docs with VitePress** (`pnpm docs:dev` / `pnpm docs:build` from the monorepo root). Frontmatter on every page drives titles, SEO, and navigation. See [Monorepo layout](./development/go-project-layout.md).
+Markdown under `docs/` is the source of truth. **Node builds the web docs with VitePress** (`pnpm docs:dev` / `pnpm docs:build`). See [Monorepo layout](./build/go-project-layout.md).
 
-## Product strategy
+## Product status
 
 ```
-Phase A — Ethereum parity (ship first)
-  Crypto · Types · Flat state · EVM · JSON-RPC · BFT · P2P · Devnet
-
-Phase B — Dew advantages (after parity)
-  Parallel execution (Dew-PE) · Dew-native txs · Native modules · Precompiles
+A — Ethereum parity          done
+B — Dew-PE / DewTx / native  done
+C — Testnet readiness        done (public-testnet-v1 freeze)
+D — Product surface + scale  D1–D2 + D3a/D3b + durable chaindata done;
+                             D3c–D3e on demand
 ```
 
-Do **not** block Phase A on parallel execution or Dew-native formats. Compatibility and a correct single-node → multi-validator path come first.
+**public-testnet-v1 is live** on path B (July 2026): RPC `https://rpc-dew.fadosoft.com`, explorer `https://explorer-dew.fadosoft.com`, faucet `https://faucet-dew.fadosoft.com`. Details: [Public testnet freeze](./ops/public-testnet.md).
 
 ## Categories
 
-| Category                        | Path                 | What you will find                          |
-| :------------------------------ | :------------------- | :------------------------------------------ |
-| [Overview](./overview/)         | `docs/overview/`     | Vision, principles, ETH compatibility scope |
-| [Architecture](./architecture/) | `docs/architecture/` | Node components, system diagram             |
-| [Protocol](./protocol/)         | `docs/protocol/`     | Crypto, addresses, txs, blocks, state       |
-| [Execution](./execution/)       | `docs/execution/`    | EVM, gas, precompiles, parallel, Dew-native |
-| [Consensus](./consensus/)       | `docs/consensus/`    | Dew-BFT, validators, slashing               |
-| [Networking](./networking/)     | `docs/networking/`   | P2P, gossip, sync                           |
-| [API](./api/)                   | `docs/api/`          | JSON-RPC (`eth_*`, later `dew_*`)           |
-| [Economics](./economics/)       | `docs/economics/`    | Tokenomics, genesis                         |
-| [Development](./development/)   | `docs/development/`  | Monorepo layout, roadmap, testnet, explorer |
-| [Security](./security/)         | `docs/security/`     | Threat model, security principles           |
+| Category | Path | What you will find |
+| :--- | :--- | :--- |
+| [Overview](./overview/) | `docs/overview/` | Vision, principles, ETH compatibility |
+| [Architecture](./architecture/) | `docs/architecture/` | Node components, lifecycle |
+| [Protocol](./protocol/) | `docs/protocol/` | Crypto, addresses, txs, blocks, state |
+| [Execution](./execution/) | `docs/execution/` | EVM, gas, precompiles, PE, Dew-native |
+| [Consensus](./consensus/) | `docs/consensus/` | Dew-BFT, validators, slashing |
+| [Networking](./networking/) | `docs/networking/` | P2P, gossip, sync |
+| [API](./api/) | `docs/api/` | JSON-RPC (`eth_*`, `dew_*`) |
+| [Economics](./economics/) | `docs/economics/` | Tokenomics, genesis |
+| [Build](./build/) | `docs/build/` | Monorepo layout, roadmap, phases |
+| [Networks & ops](./ops/) | `docs/ops/` | Devnet, private/public testnet, launch, chaindata |
+| [Product surface](./product/) | `docs/product/` | Explorer, faucet |
+| [Scale](./scale/) | `docs/scale/` | D3 workstreams (done vs pending) |
+| [Security](./security/) | `docs/security/` | Threat model, principles, Phase B audit |
 
 ## Suggested reading order
 
 1. [Vision](./overview/vision.md)
 2. [Design principles](./overview/design-principles.md)
 3. [Architecture overview](./architecture/overview.md)
-4. [Ethereum compatibility](./overview/ethereum-compatibility.md)
-5. [Development roadmap](./development/roadmap.md)
+4. [Public testnet freeze](./ops/public-testnet.md) (if operating or integrating)
+5. [Roadmap](./build/roadmap.md) → [Phases](./build/phases.md)
 6. Protocol → Execution → Consensus → Networking → API as needed
 
 ## Diagrams & charts (Mermaid)
 
-The docs site renders [Mermaid](https://mermaid.js.org/) fenced blocks (` ```mermaid `). Prefer a diagram when prose alone is hard to scan: flows, state machines, sequences, splits, and comparisons.
+The docs site renders Mermaid fenced blocks. Prefer a diagram when prose alone is hard to scan.
 
 | Page | Visualization |
 | :--- | :--- |
@@ -76,44 +79,35 @@ The docs site renders [Mermaid](https://mermaid.js.org/) fenced blocks (` ```mer
 | [Parallel execution](./execution/parallel-execution.md) | Dew-PE validate / re-exec loop |
 | [Gas and fees](./execution/gas-and-fees.md) | EIP-1559 fee split |
 | [Dew-BFT](./consensus/dew-bft.md) | Round state machine |
-| [Validators](./consensus/validators.md) | Epoch active-set rotation |
 | [Gossip and sync](./networking/gossip-and-sync.md) | Inventory sequence; catch-up |
-| [Tokenomics](./economics/tokenomics.md) | Reward pie; supply flow |
-| [Threat model](./security/threat-model.md) | Assets mindmap; adversary map |
-| [Roadmap](./development/roadmap.md) | Phase A / B dependency graphs |
-| [D3 scale](./development/d3-scale.md) | Post–testnet BFT, staking, Path A design spec |
-| [Monorepo layout](./development/go-project-layout.md) | Docs web build flow |
-
-**Author tip:** keep ASCII only when a one-liner is clearer; otherwise use Mermaid so the web site can render interactively. Theme colors follow Dew brand via VitePress config.
+| [Roadmap](./build/roadmap.md) | Phase A–D dependency graph |
+| [D3 scale](./scale/d3-scale.md) | Workstream map |
+| [Monorepo layout](./build/go-project-layout.md) | Docs web build flow |
 
 ## Frontmatter convention (docs web)
-
-Every page uses YAML frontmatter so a **Node-based docs site** can render sidebars, titles, and SEO metadata:
 
 ```yaml
 ---
 title: Page title
 description: One-line summary for SEO and sidebars
-category: overview | architecture | protocol | execution | consensus | networking | api | economics | development | security
-order: 10 # sort within category (lower first)
+category: overview | architecture | protocol | execution | consensus | networking | api | economics | build | ops | product | scale | security
+order: 10
 status: draft | stable
 ---
 ```
 
-Category folders also include `_category.md` for sidebar labels and ordering. Navigation map: [`sidebar.yaml`](./sidebar.yaml).
-
 | Concern | Where |
 | :--- | :--- |
 | Source markdown | `docs/**/*.md` |
-| Sidebar order | frontmatter `order` + `sidebar.yaml` (VitePress loads `sidebar.yaml`) |
+| Sidebar order | frontmatter `order` + [`sidebar.yaml`](./sidebar.yaml) |
 | Site config / theme | `docs/.vitepress/` |
-| Build / preview site | **Node.js (pnpm)** — `pnpm docs:dev` · `docs:build` · `docs:preview` |
-| Hosting output | `docs/.vitepress/dist` |
+| Build / preview | `pnpm docs:dev` · `docs:build` · `docs:preview` |
+| Hosting output | `docs/.vitepress/dist` (merged into root `dist/` via `site:build`) |
 
 ## Spec status
 
-Phase **C6** freezes **public-testnet-v1** wire and fee surfaces (see [Public testnet freeze](./development/public-testnet.md) and `params/freeze.go`). **public-testnet-v1 is live** on path B (July 2026): RPC `https://rpc-dew.fadosoft.com`, explorer `https://explorer-dew.fadosoft.com`, faucet `https://faucet-dew.fadosoft.com`. Many pages remain `status: draft` for prose polish; numbers in the freeze table should not churn without a documented re-genesis / hardfork note. Residual `_tentative_` (e.g. tokenomics issuance) is mainnet- or economics-review scope.
+Phase **C6** freezes **public-testnet-v1** wire and fee surfaces (`params/freeze.go`). Numbers in the freeze table should not churn without a documented re-genesis / hardfork note. Residual `_tentative_` (e.g. tokenomics issuance) is mainnet- or economics-review scope.
 
 ## Repository layout
 
-This project is a **monorepo**. Docs live under `docs/` (source of truth); **Node builds the web docs** from that tree; Go owns the chain. Full tree and ownership: [Monorepo layout](./development/go-project-layout.md).
+Full tree and ownership: [Monorepo layout](./build/go-project-layout.md).

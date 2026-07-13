@@ -9,7 +9,7 @@ hero:
   actions:
     - theme: brand
       text: Public testnet
-      link: /development/public-testnet
+      link: /ops/public-testnet
     - theme: alt
       text: Start with vision
       link: /overview/vision
@@ -18,7 +18,7 @@ hero:
       link: /architecture/overview
     - theme: alt
       text: Implementation phases
-      link: /development/phases
+      link: /build/phases
 features:
   - title: public-testnet-v1 live
     details: Chain ID 2205 — RPC rpc-dew.fadosoft.com · explorer · captcha faucet. Path B single-host; see Public testnet freeze.
@@ -27,7 +27,7 @@ features:
   - title: Dew-BFT finality
     details: Instant commit under BFT assumptions, with explicit slashing and validator rules.
   - title: Performance path
-    details: Flat state for execution, then parallel execution and native micro-fees after parity.
+    details: Flat state for execution, SMT at commit, parallel execution and native micro-fees after parity.
   - title: Single monorepo
-    details: Go owns the chain node. Node builds this site and later tooling — one product surface.
+    details: Go owns the chain node. Node builds this site, explorer, and faucet UI — one product surface.
 ---

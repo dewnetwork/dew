@@ -1,19 +1,19 @@
 ---
 title: D3 scale (design spec)
 description: Post–public-testnet-v1 workstreams — multi-process BFT, staking residuals, Path A, and audit prep.
-category: development
+category: scale
 order: 35
-status: draft
+status: stable
 ---
 
 # D3 scale (design spec)
 
 **Status:** D3a + D3b + D3a residual (pace + bulk backpressure) implemented (July 2026); **durable chaindata** implemented (July 2026); D3c–D3e pending.  
-**Freeze:** `public-testnet-v1` wire formats stay frozen — D3 changes **packaging, ops, and consensus wiring**, not DewTx / fee floors / precompile addresses. See [Public testnet freeze](./public-testnet.md).
+**Freeze:** `public-testnet-v1` wire formats stay frozen — D3 changes **packaging, ops, and consensus wiring**, not DewTx / fee floors / precompile addresses. See [Public testnet freeze](../ops/public-testnet.md).
 
-**Context:** Path B is live (single-host controlled RPC). Bands A–C and D1–D2 are done. This document is the **implementation spec** for Phase D3. Acceptance summaries remain in [Phases](./phases.md#d3--scale-when-needed-path-a--c4--audit); residuals are tracked in [agents/debt.md](../../agents/debt.md).
+**Context:** Path B is live (single-host controlled RPC). Bands A–C and D1–D2 are done. This document is the **implementation spec** for Phase D3. Acceptance summaries remain in [Phases](../build/phases.md#d3--scale-when-needed-path-a--c4--audit); residuals are tracked in [agents/debt.md](../../agents/debt.md).
 
-**Durable chaindata:** with `--datadir`, chain + state live under `<datadir>/chaindata` (Pebble); peers remain in `peers.json`. Spec: [Durable chaindata](./durable-chaindata.md).
+**Durable chaindata:** with `--datadir`, chain + state live under `<datadir>/chaindata` (Pebble); peers remain in `peers.json`. Spec: [Durable chaindata](../ops/durable-chaindata.md).
 
 ---
 
@@ -50,18 +50,20 @@ flowchart LR
 
 ---
 
-## Current gaps (honest)
+## Status: implemented vs remaining
 
-| Surface | Today | Gap |
+| Surface | Today (July 2026) | Notes |
 | :--- | :--- | :--- |
-| `dew devnet` | In-process `consensus.LocalCluster` + encrypted loopback P2P + RPC auto-mine | BFT commits do **not** drive the RPC execution chain |
-| `dew run --p2p.*` | Encrypted mesh + JSON-RPC **auto-mine per tx** | Each process seals its **own** chain from shared genesis |
-| `p2p.Host` | `BroadcastProposal` / `BroadcastVote`; `OnProposal` / `OnVote` handlers | No `consensus.Engine` wired on multi-process path |
-| `node.Node` | `SendRawTransaction` / `SendDewRawTransaction` auto-mine | No `ImportBlock` / commit-from-BFT API |
-| `consensus.Engine` | `Broadcaster` interface (“local bus or P2P later”) | Only `LocalCluster` bus is implemented |
-| Compose `multi` | Packaging + transport practice | Not a single canonical chain |
+| `dew devnet` | In-process `LocalCluster` + loopback P2P + RPC | Fastest local DX; not multiproc |
+| `dew run --validator` | Multi-process Dew-BFT via `node.Stack` | Shared canonical chain (**D3a done**) |
+| `ImportCommittedBlock` | Single apply path for BFT commits + sync | Used by validators and full nodes |
+| Peer store | `<datadir>/peers.json` + Host auto-redial | **D3b done** |
+| Chain + state | Pebble `<datadir>/chaindata` (default `/var/lib/dew`) | **Durable chaindata done** |
+| Compose `multi` | ≥3 validators + optional RPC | Single chain; see [private testnet](../ops/private-testnet.md) |
+| Path B | Single-host auto-mine + public RPC | Still valid until operators migrate to Path A |
+| D3c–D3e | Staking residuals / Path A public / audit prep | **Pending** — sections below |
 
-Path B (`deploy/node/docker-compose.yml`) intentionally keeps **auto-mine** on one host — unchanged by D3a until operators opt into validator mode.
+Path B (`deploy/node/docker-compose.yml`) keeps **auto-mine** on one host unless operators opt into validator mode.
 
 ---
 
@@ -132,7 +134,7 @@ flowchart TB
 3. `OnBlock` from sync applies blocks via the same `ImportCommittedBlock` path as validators.
 4. JSON-RPC reads local `node` state after sync.
 
-### CLI / config (proposed)
+### CLI / config
 
 | Flag | Role | Notes |
 | :--- | :--- | :--- |
@@ -197,7 +199,7 @@ Consensus messages use a **dedicated queue** priority over bulk sync (see [P2P](
 | Partition | Stall at height; no conflicting commits (BFT safety) |
 | Bad proposal | Nil prevote; round advance |
 | RPC ahead of validators | `eth_blockNumber` lags until sync catches up |
-| Process restart | Rejoin from persisted **chaindata** ([durable chaindata](./durable-chaindata.md); peers via D3b `peers.json`); dial bootnodes |
+| Process restart | Rejoin from persisted **chaindata** ([durable chaindata](../ops/durable-chaindata.md); peers via D3b `peers.json`); dial bootnodes |
 
 ### Tests & acceptance (D3a)
 
@@ -226,7 +228,7 @@ Consensus messages use a **dedicated queue** priority over bulk sync (see [P2P](
 
 ## D3b — Peer store and auto-redial
 
-**Status:** implemented (July 2026). Spec detail: [d3b design](../superpowers/specs/2026-07-12-d3b-peer-store-redial-design.md).
+**Status:** implemented (July 2026).
 
 ### Goals
 
@@ -247,7 +249,7 @@ After validator/RPC process restart, nodes **reconnect** to last-known peers wit
 
 - `go test ./p2p/ -run 'AutoRedial|ReloadAndRedial|PeerStore_'` — disconnect/reload redial without helper.
 - Kill one container in compose `multi` (fixed ports + volume); within 2 min without operator action, peer count recovers and sync resumes.
-- Data dir layout: [Private testnet](./private-testnet.md#data-directory-layout-d3b).
+- Data dir layout: [Private testnet](../ops/private-testnet.md#data-directory-layout-d3b).
 
 ---
 
@@ -278,7 +280,7 @@ Only required when operators enable `--staking` on a network. Public-testnet-v1 
 
 ### Topology
 
-Same as [Private multi-host testnet](./private-testnet.md), but on **public** hosts with **new keys** (never Anvil).
+Same as [Private multi-host testnet](../ops/private-testnet.md), but on **public** hosts with **new keys** (never Anvil).
 
 ```mermaid
 flowchart LR
@@ -305,9 +307,9 @@ flowchart LR
 | RPC | Full node behind TLS proxy; emergency stop proxy first |
 | Faucet | Existing `dewfaucet` service; captcha + rate limits |
 | Explorer | Points at public RPC URL |
-| Publish | Update [launch checklist](./launch-checklist.md) template: RPC, bootnodes, faucet, explorer |
+| Publish | Update [launch checklist](../ops/launch-checklist.md) template: RPC, bootnodes, faucet, explorer |
 
-Full step table: [Launch checklist — Path A](./launch-checklist.md#path-a--multi-host-public-later).
+Full step table: [Launch checklist — Path A](../ops/launch-checklist.md#path-a--multi-host-public-later).
 
 ### Acceptance
 
@@ -348,9 +350,9 @@ Allowed: CLI flags, process layout, peer persistence, BFT wiring, staking **beha
 
 ## Related
 
-- [Phases — D3](./phases.md#d3--scale-when-needed-path-a--c4--audit)
-- [Roadmap](./roadmap.md)
-- [Private multi-host testnet](./private-testnet.md)
-- [Launch checklist](./launch-checklist.md)
+- [Phases — D3](../build/phases.md#d3--scale-when-needed-path-a--c4--audit)
+- [Roadmap](../build/roadmap.md)
+- [Private multi-host testnet](../ops/private-testnet.md)
+- [Launch checklist](../ops/launch-checklist.md)
 - [Deploy packaging](../../deploy/README.md)
 - [agents/debt.md](../../agents/debt.md)

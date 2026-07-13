@@ -1,7 +1,7 @@
 ---
 title: Private multi-host testnet
 description: Topology, ops runbook stubs, and chaos expectations beyond in-process devnet.
-category: development
+category: ops
 order: 45
 status: draft
 ---
@@ -82,7 +82,7 @@ Private multi-validator staging on **one machine** (pre–Path A):
 5. Pace: default empty-block interval is **1s** (`--bft.min-block-interval`); raise if load tests show P2P pressure.
 6. In-process gate: `DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -run MultiProcessBFT_LongEmpty -timeout 5m` (≥150 empty heights).
 
-Manual multi-host uses the same flags with real hostnames in `--p2p.bootnodes` and unique `--datadir` / keys per host. Path A public publish is [D3d](./d3-scale.md#d3d--path-a-multi-host-public).
+Manual multi-host uses the same flags with real hostnames in `--p2p.bootnodes` and unique `--datadir` / keys per host. Path A public publish is [D3d](../scale/d3-scale.md#d3d--path-a-multi-host-public).
 
 ### Data directory layout (D3b + durable chaindata)
 
@@ -153,4 +153,4 @@ Full public faucet / incentive policy is in [Public testnet freeze](./public-tes
 - [deploy packaging](../../deploy/README.md)
 - [P2P encrypted transport](../networking/p2p.md)
 - [Security principles](../security/security-principles.md) — private testnet bar
-- [Phases C5](./phases.md)
+- [Phases C5](../build/phases.md)

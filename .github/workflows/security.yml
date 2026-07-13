@@ -1,6 +1,6 @@
 # Security lane: vulns, short fuzz, dependency audit, CodeQL, FS scan.
 # Complements ci-go.yml (unit/security package tests) — does not replace them.
-# See docs/development/go-project-layout.md § CI and agents/debt.md C6.
+# See docs/build/go-project-layout.md § CI and agents/debt.md C6.
 
 name: Security
 
