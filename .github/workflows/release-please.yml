@@ -114,6 +114,8 @@ jobs:
       - name: Download release assets and write checksums
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No checkout in this job — tell gh which repo (avoids "not a git repository").
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
           set -euo pipefail
