@@ -25,7 +25,7 @@ This page is the **single map** of upgrade options. Implement **one track (or on
 | **1 — Product surface** | Explorer, faucet UI, Guestbook | Demo / DX depth; **v1–v1.2 shipped** — deferred slices optional | This page § Track 1 |
 | **2 — Protocol (D3c)** | Staking residuals (C4) | When intentionally enabling staking (lab or product) | [d3-scale § D3c](../scale/d3-scale.md#d3c--staking-residuals-c4) |
 | **3 — Ops scale (D3d)** | Path A multi-host public | When leaving single-host Path B for public multi-validator | [d3-scale § D3d](../scale/d3-scale.md#d3d--path-a-multi-host-public) |
-| **4 — Core node** | PE upgrade, chaindata hydrate, mempool/fee telemetry | **Research-friendly default** for performance features | [durable-chaindata](../ops/durable-chaindata.md), [debt](../../agents/debt.md), [PE](../execution/parallel-execution.md) |
+| **4 — Core node** | PE upgrade, chaindata hydrate; mempool telemetry **done** | **Research-friendly default** for performance features | [durable-chaindata](../ops/durable-chaindata.md), [debt](../../agents/debt.md), [PE](../execution/parallel-execution.md), [dew_getMempoolStats](../api/dew-extensions.md#dew_getmempoolstats) |
 | **5 — Mainnet gate (D3e)** | External audit pack | **Only** before mainnet / production claims | [d3-scale § D3e](../scale/d3-scale.md#d3e--external-audit-prep) |
 | **Plan S0–S6** | Ordered path → Precompile slots | Active research plan | [phases S0–S6](../build/phases.md#recommended-sequence--research-lab--precompile-slots) |
 
@@ -161,7 +161,7 @@ Detail: [phases D3d](../build/phases.md#d3d--path-a-multi-host-public-optional-o
 
 **Acceptance:**
 
-- [ ] Mempool / fee telemetry RPC (optional DX; keep C6 abuse limits)
+- [x] Mempool / fee telemetry RPC (optional DX; keep C6 abuse limits) — `dew_getMempoolStats` (2026-07-13)
 - [ ] Lazy hydrate / log index at large tip
 - [ ] PE upgrade toward full Block-STM / lower conflict cost (serial-equivalent)
 - [ ] Tokenomics issuance numbers frozen only if mainnet economics are claimed — otherwise [tokenomics.md](../economics/tokenomics.md) stays draft

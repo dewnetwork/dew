@@ -50,6 +50,48 @@ type Entry struct {
 	AddedAt time.Time
 }
 
+// RejectCounters tracks admission rejections by reason (read-only telemetry).
+type RejectCounters struct {
+	PoolFull      uint64 `json:"pool_full"`
+	SenderLimit   uint64 `json:"sender_limit"`
+	Underpriced   uint64 `json:"underpriced"`
+	ReplaceUnder  uint64 `json:"replace_underpriced"`
+	AlreadyKnown  uint64 `json:"already_known"`
+	TxTooLarge    uint64 `json:"tx_too_large"`
+	Invalid       uint64 `json:"invalid"`
+	WrongChain    uint64 `json:"wrong_chain"`
+	RBFDisabled   uint64 `json:"rbf_disabled"`
+	Total         uint64 `json:"total"`
+}
+
+// SenderPending is one address's pending count for telemetry top-N lists.
+type SenderPending struct {
+	Address crypto.Address `json:"address"`
+	Pending int            `json:"pending"`
+}
+
+// Telemetry is a read-only snapshot of pool size, fee floors, and counters.
+// Admission policy is not changed by reading this.
+type Telemetry struct {
+	Pending          int            `json:"pending"`
+	Senders          int            `json:"senders"`
+	PendingEVM       int            `json:"pending_evm"`
+	PendingDew       int            `json:"pending_dew"`
+	MaxGlobal        int            `json:"max_global"`
+	MaxPerSender     int            `json:"max_per_sender"`
+	MaxTxBytes       int            `json:"max_tx_bytes"`
+	MinGasPriceWei   string         `json:"min_gas_price_wei"`
+	MinTipWei        string         `json:"min_tip_wei"`
+	MinDewFeeWei     uint64         `json:"min_dew_fee_wei"`
+	PriceBumpPercent uint64         `json:"price_bump_percent"`
+	Admits           uint64         `json:"admits"`
+	Replaces         uint64         `json:"replaces"`
+	Evictions        uint64         `json:"evictions"`
+	Rejects          RejectCounters `json:"rejects"`
+	// TopSenders is at most 16 senders with the most pending txs (desc).
+	TopSenders []SenderPending `json:"top_senders"`
+}
+
 // Pool is a unified mempool for EVM and DewTx.
 type Pool struct {
 	cfg Config
@@ -58,6 +100,12 @@ type Pool struct {
 	byHash  map[dewtypes.Hash]*Entry
 	// bySender maps sender → nonce → hash
 	bySender map[crypto.Address]map[uint64]dewtypes.Hash
+
+	// Lifetime counters (not reset on Remove). Protected by mu.
+	admits    uint64
+	replaces  uint64
+	evictions uint64
+	rejects   RejectCounters
 }
 
 // New creates a pool with cfg (defaults applied for zero fields).
@@ -143,24 +191,30 @@ func (p *Pool) removeLocked(hash dewtypes.Hash) {
 // (admission uses fee cap / gas price floors, not baseFee market simulation).
 func (p *Pool) AddEVM(tx *ethtypes.Transaction, from crypto.Address, raw []byte, chainID *big.Int) (dewtypes.Hash, error) {
 	if tx == nil {
+		p.noteReject(ErrInvalidTx)
 		return dewtypes.Hash{}, ErrInvalidTx
 	}
 	if len(raw) == 0 {
 		var err error
 		raw, err = tx.MarshalBinary()
 		if err != nil {
-			return dewtypes.Hash{}, fmt.Errorf("%w: marshal: %v", ErrInvalidTx, err)
+			wrapped := fmt.Errorf("%w: marshal: %v", ErrInvalidTx, err)
+			p.noteReject(ErrInvalidTx)
+			return dewtypes.Hash{}, wrapped
 		}
 	}
 	if len(raw) > p.cfg.MaxTxBytes {
+		p.noteReject(ErrTxTooLarge)
 		return dewtypes.Hash{}, ErrTxTooLarge
 	}
 	if tx.ChainId() != nil && tx.ChainId().Sign() != 0 && chainID != nil && tx.ChainId().Cmp(chainID) != 0 {
+		p.noteReject(ErrWrongChain)
 		return dewtypes.Hash{}, ErrWrongChain
 	}
 
 	price, tip, err := p.evmPrice(tx)
 	if err != nil {
+		p.noteReject(err)
 		return dewtypes.Hash{}, err
 	}
 
@@ -182,19 +236,24 @@ func (p *Pool) AddEVM(tx *ethtypes.Transaction, from crypto.Address, raw []byte,
 // AddDew admits a decoded DewTx.
 func (p *Pool) AddDew(tx *dewtypes.DewTx, raw []byte, chainID *big.Int) (dewtypes.Hash, error) {
 	if tx == nil {
+		p.noteReject(ErrInvalidTx)
 		return dewtypes.Hash{}, ErrInvalidTx
 	}
 	if len(raw) == 0 {
 		var err error
 		raw, err = tx.MarshalBinary()
 		if err != nil {
-			return dewtypes.Hash{}, fmt.Errorf("%w: marshal: %v", ErrInvalidTx, err)
+			wrapped := fmt.Errorf("%w: marshal: %v", ErrInvalidTx, err)
+			p.noteReject(ErrInvalidTx)
+			return dewtypes.Hash{}, wrapped
 		}
 	}
 	if len(raw) > p.cfg.MaxTxBytes {
+		p.noteReject(ErrTxTooLarge)
 		return dewtypes.Hash{}, ErrTxTooLarge
 	}
 	if tx.ChainID == nil || (chainID != nil && tx.ChainID.Cmp(chainID) != 0) {
+		p.noteReject(ErrWrongChain)
 		return dewtypes.Hash{}, ErrWrongChain
 	}
 
@@ -204,6 +263,7 @@ func (p *Pool) AddDew(tx *dewtypes.DewTx, raw []byte, chainID *big.Int) (dewtype
 		fee = p.cfg.MinDewFeeWei
 	}
 	if fee < p.cfg.MinDewFeeWei {
+		p.noteReject(ErrUnderpriced)
 		return dewtypes.Hash{}, ErrUnderpriced
 	}
 
@@ -250,9 +310,11 @@ func (p *Pool) add(e *Entry) (dewtypes.Hash, error) {
 	defer p.mu.Unlock()
 
 	if _, ok := p.byHash[e.Hash]; ok {
+		p.noteRejectLocked(ErrAlreadyKnown)
 		return e.Hash, ErrAlreadyKnown
 	}
 
+	replaced := false
 	// Same sender+nonce → replace-by-fee or reject.
 	if m, ok := p.bySender[e.From]; ok {
 		if oldHash, exists := m[e.Nonce]; exists {
@@ -261,16 +323,19 @@ func (p *Pool) add(e *Entry) (dewtypes.Hash, error) {
 				delete(m, e.Nonce)
 			} else {
 				if p.cfg.PriceBumpPercent == 0 {
+					p.noteRejectLocked(ErrRBFDisabled)
 					return dewtypes.Hash{}, ErrRBFDisabled
 				}
 				// Require price * (100+bump)/100
 				min := new(big.Int).Mul(old.Price, big.NewInt(int64(100+p.cfg.PriceBumpPercent)))
 				min.Div(min, big.NewInt(100))
 				if e.Price.Cmp(min) < 0 {
+					p.noteRejectLocked(ErrReplaceUnder)
 					return dewtypes.Hash{}, ErrReplaceUnder
 				}
 				// Same kind preferred; allow cross-kind RBF by price only.
 				p.removeLocked(oldHash)
+				replaced = true
 			}
 		}
 	}
@@ -281,6 +346,7 @@ func (p *Pool) add(e *Entry) (dewtypes.Hash, error) {
 		senderCount = len(m)
 	}
 	if senderCount >= p.cfg.MaxPerSender {
+		p.noteRejectLocked(ErrSenderLimit)
 		return dewtypes.Hash{}, ErrSenderLimit
 	}
 
@@ -288,6 +354,7 @@ func (p *Pool) add(e *Entry) (dewtypes.Hash, error) {
 	// if none cheaper, reject.
 	if len(p.byHash) >= p.cfg.MaxGlobal {
 		if !p.evictCheaperThan(e.Price) {
+			p.noteRejectLocked(ErrPoolFull)
 			return dewtypes.Hash{}, ErrPoolFull
 		}
 	}
@@ -297,6 +364,10 @@ func (p *Pool) add(e *Entry) (dewtypes.Hash, error) {
 		p.bySender[e.From] = make(map[uint64]dewtypes.Hash)
 	}
 	p.bySender[e.From][e.Nonce] = e.Hash
+	p.admits++
+	if replaced {
+		p.replaces++
+	}
 	return e.Hash, nil
 }
 
@@ -316,6 +387,7 @@ func (p *Pool) evictCheaperThan(price *big.Int) bool {
 		return false
 	}
 	p.removeLocked(worst.Hash)
+	p.evictions++
 	return true
 }
 
@@ -335,4 +407,109 @@ func (p *Pool) Stats() (global, senders int) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return len(p.byHash), len(p.bySender)
+}
+
+// Telemetry returns a read-only snapshot for lab / RPC observability.
+func (p *Pool) Telemetry() Telemetry {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	pendingEVM, pendingDew := 0, 0
+	for _, e := range p.byHash {
+		switch e.Kind {
+		case KindEVM:
+			pendingEVM++
+		case KindDew:
+			pendingDew++
+		}
+	}
+
+	// Top senders by pending count (cap 16).
+	type pair struct {
+		from crypto.Address
+		n    int
+	}
+	list := make([]pair, 0, len(p.bySender))
+	for from, m := range p.bySender {
+		list = append(list, pair{from: from, n: len(m)})
+	}
+	// Simple insertion sort by n desc (N is small, max pool size).
+	for i := 1; i < len(list); i++ {
+		j := i
+		for j > 0 && list[j].n > list[j-1].n {
+			list[j], list[j-1] = list[j-1], list[j]
+			j--
+		}
+	}
+	const topN = 16
+	if len(list) > topN {
+		list = list[:topN]
+	}
+	top := make([]SenderPending, len(list))
+	for i, it := range list {
+		top[i] = SenderPending{Address: it.from, Pending: it.n}
+	}
+
+	minGas := "0"
+	if p.cfg.MinGasPriceWei != nil {
+		minGas = p.cfg.MinGasPriceWei.String()
+	}
+	minTip := "0"
+	if p.cfg.MinTipWei != nil {
+		minTip = p.cfg.MinTipWei.String()
+	}
+
+	return Telemetry{
+		Pending:          len(p.byHash),
+		Senders:          len(p.bySender),
+		PendingEVM:       pendingEVM,
+		PendingDew:       pendingDew,
+		MaxGlobal:        p.cfg.MaxGlobal,
+		MaxPerSender:     p.cfg.MaxPerSender,
+		MaxTxBytes:       p.cfg.MaxTxBytes,
+		MinGasPriceWei:   minGas,
+		MinTipWei:        minTip,
+		MinDewFeeWei:     p.cfg.MinDewFeeWei,
+		PriceBumpPercent: p.cfg.PriceBumpPercent,
+		Admits:           p.admits,
+		Replaces:         p.replaces,
+		Evictions:        p.evictions,
+		Rejects:          p.rejects,
+		TopSenders:       top,
+	}
+}
+
+func (p *Pool) noteReject(err error) {
+	// Caller must hold p.mu when incrementing counters that race with Telemetry,
+	// OR call noteRejectLocked. Pre-lock rejects use noteReject with its own lock.
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.noteRejectLocked(err)
+}
+
+func (p *Pool) noteRejectLocked(err error) {
+	if err == nil {
+		return
+	}
+	p.rejects.Total++
+	switch {
+	case errors.Is(err, ErrPoolFull):
+		p.rejects.PoolFull++
+	case errors.Is(err, ErrSenderLimit):
+		p.rejects.SenderLimit++
+	case errors.Is(err, ErrUnderpriced):
+		p.rejects.Underpriced++
+	case errors.Is(err, ErrReplaceUnder):
+		p.rejects.ReplaceUnder++
+	case errors.Is(err, ErrAlreadyKnown):
+		p.rejects.AlreadyKnown++
+	case errors.Is(err, ErrTxTooLarge):
+		p.rejects.TxTooLarge++
+	case errors.Is(err, ErrWrongChain):
+		p.rejects.WrongChain++
+	case errors.Is(err, ErrRBFDisabled):
+		p.rejects.RBFDisabled++
+	default:
+		p.rejects.Invalid++
+	}
 }

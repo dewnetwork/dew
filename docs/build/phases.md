@@ -31,7 +31,7 @@ Not a Phase E. Pick **one track row** (or the ordered plan). Same freeze (`publi
 | **1 — Product** | Partial | v1–v1.2 done; P1e–f / P3c deferred | [Track 1](#track-1--product-surface) |
 | **2 — Protocol (D3c)** | Partial | Staking MVP done; slash % / delegation open | [Track 2](#track-2--protocol--d3c-staking) |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public | [Track 3](#track-3--ops--d3d-path-a) |
-| **4 — Core node** | Open | Telemetry, PE upgrade, chaindata hydrate | [Track 4](#track-4--core-node) |
+| **4 — Core node** | Partial | Mempool telemetry (S3) done; hydrate / PE upgrade open | [Track 4](#track-4--core-node) |
 | **5 — Mainnet (D3e)** | Optional | Audit pack only before production claims | [Track 5](#track-5--mainnet-gate-d3e) |
 | **Plan S0–S6** | **Active** | Ordered path research → **Precompile slots** | [Recommended sequence](#recommended-sequence--research-lab--precompile-slots) |
 
@@ -513,15 +513,15 @@ Detail: [upgrades Track 1](../product/upgrades.md#track-1--product-surface).
 
 | | |
 | :--- | :--- |
-| **Status** | Open — research-friendly default for features |
+| **Status** | Partial — `dew_getMempoolStats` **done** (S3); hydrate / PE upgrade open |
 | **Goals** | PE, chaindata, mempool/fee telemetry |
 | **Packages** | `core/vm/`, `mempool/`, `rpc/`, `node/`, `db/` |
 
 **Acceptance:**
 
-- [ ] Mempool / fee telemetry RPC (optional DX)
+- [x] Mempool / fee telemetry RPC (optional DX) — `dew_getMempoolStats` (2026-07-13)
 - [ ] Lazy hydrate / log index at large tip
-- [ ] PE upgrade toward full Block-STM / lower conflict cost (serial-equivalent)
+- [ ] PE upgrade toward full Block-STM / lower conflict cost (serial-equivalent) — not justified by S2 simple-transfer matrix
 - [ ] Other core ergonomics only with docs + tests
 
 ### Track 5 — Mainnet gate (D3e)
@@ -612,10 +612,10 @@ flowchart LR
 
 **Acceptance:**
 
-- [ ] Spec methods under `dew_*` (names, fields, rate/abuse limits aligned with C6)
-- [ ] Implement read-only telemetry (pool size, per-sender, fee floors, drop/evict counters as available)
-- [ ] Unit tests + docs in [JSON-RPC](../api/json-rpc.md) / [dew-extensions](../api/dew-extensions.md)
-- [ ] Does not change admission policy or fee floors
+- [x] Spec methods under `dew_*` (names, fields, rate/abuse limits aligned with C6) — `dew_getMempoolStats` ([dew-extensions](../api/dew-extensions.md#dew_getmempoolstats)) (2026-07-13)
+- [x] Implement read-only telemetry (pool size, per-sender, fee floors, drop/evict counters as available)
+- [x] Unit tests + docs in [JSON-RPC](../api/json-rpc.md) / [dew-extensions](../api/dew-extensions.md)
+- [x] Does not change admission policy or fee floors
 
 **Packages:** `mempool/`, `rpc/`, `node/`, `docs/api/` · **Verify:** `go test ./rpc/ ./mempool/` · **Scope:** M  
 **Depends on:** Checkpoint A

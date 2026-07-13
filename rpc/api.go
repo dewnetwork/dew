@@ -63,9 +63,10 @@ func (a *API) Handlers() map[string]Handler {
 		"web3_sha3":                      a.web3Sha3,
 		"eth_getUncleCountByBlockNumber": a.ethUncleZero,
 		"eth_getUncleCountByBlockHash":   a.ethUncleZero,
-		// Phase B dew_* extensions
+		// Phase B / Track 4 dew_* extensions
 		"dew_sendRawTransaction": a.dewSendRawTransaction,
 		"dew_getExecutionStats":  a.dewGetExecutionStats,
+		"dew_getMempoolStats":    a.dewGetMempoolStats,
 	}
 }
 
@@ -310,6 +311,49 @@ func (a *API) dewGetExecutionStats(_ json.RawMessage) (interface{}, error) {
 		"speculative_ok":  st.SpeculativeOK,
 		"total_txs":       st.TotalTxs,
 		"total_rollbacks": st.TotalRollbacks,
+	}, nil
+}
+
+// dewGetMempoolStats is read-only mempool / fee-floor telemetry (S3).
+// Params: none. Same HTTP body/batch limits as other methods (C6).
+// Does not change admission policy or fee floors.
+func (a *API) dewGetMempoolStats(_ json.RawMessage) (interface{}, error) {
+	st := a.n.MempoolTelemetry()
+	top := make([]map[string]interface{}, 0, len(st.TopSenders))
+	for _, s := range st.TopSenders {
+		top = append(top, map[string]interface{}{
+			"address": EncodeAddress(s.Address),
+			"pending": s.Pending,
+		})
+	}
+	return map[string]interface{}{
+		"pending":            st.Pending,
+		"senders":            st.Senders,
+		"pending_evm":        st.PendingEVM,
+		"pending_dew":        st.PendingDew,
+		"max_global":         st.MaxGlobal,
+		"max_per_sender":     st.MaxPerSender,
+		"max_tx_bytes":       st.MaxTxBytes,
+		"min_gas_price_wei":  st.MinGasPriceWei,
+		"min_tip_wei":        st.MinTipWei,
+		"min_dew_fee_wei":    st.MinDewFeeWei,
+		"price_bump_percent": st.PriceBumpPercent,
+		"admits":             st.Admits,
+		"replaces":           st.Replaces,
+		"evictions":          st.Evictions,
+		"rejects": map[string]interface{}{
+			"total":               st.Rejects.Total,
+			"pool_full":           st.Rejects.PoolFull,
+			"sender_limit":        st.Rejects.SenderLimit,
+			"underpriced":         st.Rejects.Underpriced,
+			"replace_underpriced": st.Rejects.ReplaceUnder,
+			"already_known":       st.Rejects.AlreadyKnown,
+			"tx_too_large":        st.Rejects.TxTooLarge,
+			"invalid":             st.Rejects.Invalid,
+			"wrong_chain":         st.Rejects.WrongChain,
+			"rbf_disabled":        st.Rejects.RBFDisabled,
+		},
+		"top_senders": top,
 	}, nil
 }
 

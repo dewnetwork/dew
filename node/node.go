@@ -101,6 +101,17 @@ func (n *Node) MempoolStats() (global, senders int) {
 	return n.pool.Stats()
 }
 
+// MempoolTelemetry returns a read-only pool snapshot (size, fee floors, counters).
+func (n *Node) MempoolTelemetry() mempool.Telemetry {
+	n.mu.RLock()
+	pool := n.pool
+	n.mu.RUnlock()
+	if pool == nil {
+		return mempool.Telemetry{}
+	}
+	return pool.Telemetry()
+}
+
 // SetNativeEnabled toggles dew_sendRawTransaction / DewTx execution.
 func (n *Node) SetNativeEnabled(v bool) {
 	n.mu.Lock()

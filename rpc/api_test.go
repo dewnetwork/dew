@@ -270,3 +270,86 @@ func TestEncodeChainIDPublicTestnet(t *testing.T) {
 	}
 	_ = fmt.Sprintf
 }
+
+func TestRPC_DewGetMempoolStats(t *testing.T) {
+	g, err := config.ParseGenesis([]byte(`{
+	  "config": {"chainId": 2205, "homesteadBlock": 0, "eip150Block": 0, "eip155Block": 0, "eip158Block": 0,
+	    "byzantiumBlock": 0, "constantinopleBlock": 0, "petersburgBlock": 0, "istanbulBlock": 0,
+	    "muirGlacierBlock": 0, "berlinBlock": 0, "londonBlock": 0, "shanghaiBlock": 0, "cancunBlock": 0},
+	  "timestamp": 0, "extraData": "0x", "gasLimit": "0x7270e00", "baseFeePerGas": "0x3b9aca00",
+	  "alloc": {
+	    "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266": {"balance": "1000000000000000000000000"}
+	  }
+	}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := node.OpenTest(t, g)
+	// Disable auto-mine so admitted txs stay pending for telemetry.
+	n.SetAutoMine(false)
+	srv := NewServer()
+	srv.RegisterAll(NewAPI(n).Handlers())
+
+	empty := rpcCall(t, srv, "dew_getMempoolStats", nil)
+	em, ok := empty.(map[string]interface{})
+	if !ok {
+		t.Fatalf("empty stats type %T", empty)
+	}
+	for _, key := range []string{
+		"pending", "senders", "pending_evm", "pending_dew",
+		"max_global", "max_per_sender", "min_gas_price_wei", "min_dew_fee_wei",
+		"admits", "evictions", "rejects", "top_senders",
+	} {
+		if _, ok := em[key]; !ok {
+			t.Fatalf("missing field %q in %v", key, em)
+		}
+	}
+	rejects, ok := em["rejects"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("rejects = %T", em["rejects"])
+	}
+	if _, ok := rejects["underpriced"]; !ok {
+		t.Fatal("missing rejects.underpriced")
+	}
+
+	// Admit one EVM tx into the pool (no auto-mine).
+	key, err := ethcrypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+	if err != nil {
+		t.Fatal(err)
+	}
+	to := ethcrypto.PubkeyToAddress(key.PublicKey)
+	tx := ethtypes.NewTx(&ethtypes.LegacyTx{
+		Nonce:    0,
+		To:       &to,
+		Value:    big.NewInt(0),
+		Gas:      21_000,
+		GasPrice: big.NewInt(1_000_000_000),
+		Data:     nil,
+	})
+	signer := ethtypes.LatestSignerForChainID(big.NewInt(2205))
+	signed, err := ethtypes.SignTx(tx, signer, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := signed.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = rpcCall(t, srv, "eth_sendRawTransaction", []interface{}{EncodeBytes(raw)})
+
+	st := rpcCall(t, srv, "dew_getMempoolStats", nil)
+	m := st.(map[string]interface{})
+	// JSON numbers decode as float64
+	if m["pending"].(float64) != 1 {
+		t.Fatalf("pending=%v want 1", m["pending"])
+	}
+	if m["pending_evm"].(float64) != 1 {
+		t.Fatalf("pending_evm=%v", m["pending_evm"])
+	}
+	if m["admits"].(float64) < 1 {
+		t.Fatalf("admits=%v", m["admits"])
+	}
+	if m["min_gas_price_wei"] == "" || m["min_gas_price_wei"] == nil {
+		t.Fatal("expected min_gas_price_wei floor")
+	}
+}

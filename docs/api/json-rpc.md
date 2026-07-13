@@ -100,8 +100,18 @@ Support: `latest`, `earliest`, `pending` (pending may equal latest in early vers
 
 Standard JSON-RPC errors; use Ethereum-like error codes where tooling expects them (e.g. intrinsic gas too low).
 
+## Dew extensions (same HTTP server)
+
+| Method | Notes |
+| :--- | :--- |
+| `dew_sendRawTransaction` | Native DewTx submit |
+| `dew_getExecutionStats` | PE / operational metrics |
+| `dew_getMempoolStats` | Mempool size, fee floors, admit/reject/evict counters (read-only) |
+
+Full shapes: [Dew RPC extensions](./dew-extensions.md).
+
 ## Out of scope for Phase A
 
 - `debug_*` full traces (add when needed for Foundry traces)  
-- `txpool_*` (optional)  
+- Full Ethereum `txpool_*` content/inspect (Dew exposes summary telemetry via `dew_getMempoolStats` instead)  
 - Engine API (not a CL/EL split node)

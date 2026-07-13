@@ -58,15 +58,19 @@ go test ./tests/load/ -count=1 -timeout 120s -run TestLoad_PE_Matrix -v
 go test ./core/vm/ -count=1 -timeout 60s -run 'Parallel' -v
 ```
 
-Optional RPC stats after a local node has run PE blocks:
+Optional RPC stats after a local node has run PE blocks or admitted txs:
 
 ```bash
 curl -s -X POST http://127.0.0.1:8545 \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"dew_getExecutionStats","params":[]}'
+
+curl -s -X POST http://127.0.0.1:8545 \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"dew_getMempoolStats","params":[]}'
 ```
 
-See [dew_getExecutionStats](../api/dew-extensions.md#dew_getexecutionstats).
+See [dew_getExecutionStats](../api/dew-extensions.md#dew_getexecutionstats) · [dew_getMempoolStats](../api/dew-extensions.md#dew_getmempoolstats) (S3).
 
 ### What to capture
 
@@ -157,7 +161,7 @@ Notes:
 
 ---
 
-## Next (after Checkpoint A)
+## Next (after S3)
 
-- **S3** — mempool / fee telemetry RPC (Track 4, small)
+- **S4** — staking precompile edges (`0x102`) in lab
 - Optional: heavier PE fixtures only if product load needs it

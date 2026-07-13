@@ -30,7 +30,7 @@ All phases land in the **same monorepo** (Go core + Node for **web docs**, explo
 | **1 — Product** | Partial | v1 done; P1e–f / P3c deferred |
 | **2 — Protocol (D3c)** | Partial | Staking MVP done; slash % / delegation open |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public |
-| **4 — Core node** | Open | Telemetry, PE upgrade, hydrate |
+| **4 — Core node** | Partial | Mempool telemetry done; hydrate / PE upgrade open |
 | **5 — Mainnet (D3e)** | Optional | Audit pack before production claims |
 | **Plan S0–S6** | **Active** | Ordered path → [Precompile slots](./phases.md#recommended-sequence--research-lab--precompile-slots) |
 
@@ -102,7 +102,7 @@ Phase D foundation is done. Remaining work is **tracks** under freeze `public-te
 | S0 | Lab baseline (`go test`, devnet) — **done** 2026-07-13 | — |
 | S1 | Hypothesis + harness — **done** 2026-07-13 ([research-lab](../ops/research-lab.md)) | R |
 | S2 | PE measurement matrix — **done** 2026-07-13 (Checkpoint A) | R · 4 |
-| S3 | Mempool / fee telemetry RPC | 4 |
+| S3 | Mempool / fee telemetry RPC — **done** 2026-07-13 (`dew_getMempoolStats`) | 4 |
 | S4 | `0x102` staking edges | 2 |
 | S5 | Staking lab scenarios | R · 2 |
 | **S6** | **Precompile slots registry** | protocol docs + `core/vm` |

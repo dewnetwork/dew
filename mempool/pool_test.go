@@ -241,3 +241,71 @@ func TestUnifiedSurface_EVMAndDewShareLimits(t *testing.T) {
 	}
 	// third fills global with different sender and higher price — ok eviction path tested above
 }
+
+func TestTelemetry_CountersAndFloors(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.MaxGlobal = 2
+	cfg.MaxPerSender = 10
+	cfg.MinGasPriceWei = big.NewInt(1_000_000_000)
+	p := New(cfg)
+	chainID := big.NewInt(2205)
+
+	// underpriced
+	key, from := testKey(t)
+	tx, raw := signLegacy(t, key, chainID, 0, big.NewInt(1), nil)
+	if _, err := p.AddEVM(tx, from, raw, chainID); err != ErrUnderpriced {
+		t.Fatalf("underpriced: %v", err)
+	}
+
+	k1, f1 := testKey(t)
+	k2, f2 := testKey(t)
+	k3, f3 := testKey(t)
+	tx1, r1 := signLegacy(t, k1, chainID, 0, big.NewInt(1_000_000_000), nil)
+	tx2, r2 := signLegacy(t, k2, chainID, 0, big.NewInt(2_000_000_000), nil)
+	tx3, r3 := signLegacy(t, k3, chainID, 0, big.NewInt(3_000_000_000), nil)
+	if _, err := p.AddEVM(tx1, f1, r1, chainID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.AddEVM(tx2, f2, r2, chainID); err != nil {
+		t.Fatal(err)
+	}
+	// evict cheapest
+	if _, err := p.AddEVM(tx3, f3, r3, chainID); err != nil {
+		t.Fatal(err)
+	}
+
+	// RBF replace
+	txHi, rHi := signLegacy(t, k2, chainID, 0, big.NewInt(2_200_000_000), nil)
+	if _, err := p.AddEVM(txHi, f2, rHi, chainID); err != nil {
+		t.Fatal(err)
+	}
+
+	st := p.Telemetry()
+	if st.Pending != 2 {
+		t.Fatalf("pending=%d", st.Pending)
+	}
+	if st.PendingEVM != 2 || st.PendingDew != 0 {
+		t.Fatalf("evm=%d dew=%d", st.PendingEVM, st.PendingDew)
+	}
+	if st.Admits != 4 { // 2 initial + 1 after eviction + 1 replace
+		t.Fatalf("admits=%d want 4", st.Admits)
+	}
+	if st.Evictions != 1 {
+		t.Fatalf("evictions=%d", st.Evictions)
+	}
+	if st.Replaces != 1 {
+		t.Fatalf("replaces=%d", st.Replaces)
+	}
+	if st.Rejects.Underpriced != 1 || st.Rejects.Total < 1 {
+		t.Fatalf("rejects=%+v", st.Rejects)
+	}
+	if st.MinGasPriceWei != "1000000000" {
+		t.Fatalf("min gas floor %q", st.MinGasPriceWei)
+	}
+	if st.MaxGlobal != 2 || st.MaxPerSender != 10 {
+		t.Fatalf("limits global=%d per=%d", st.MaxGlobal, st.MaxPerSender)
+	}
+	if len(st.TopSenders) == 0 {
+		t.Fatal("expected top_senders")
+	}
+}
