@@ -7,6 +7,23 @@ Software releases use **semver** tags (`vX.Y.Z`) managed by
 The protocol freeze tag **`public-testnet-v1`** is independent of package versions
 (see [Public testnet freeze](./docs/ops/public-testnet.md)).
 
+## [0.4.0](https://github.com/dewnetwork/dew/compare/v0.3.0...v0.4.0) (2026-07-13)
+
+
+### Features
+
+* **examples:** add mintable mock asset basket for Dew testnets ([b40601e](https://github.com/dewnetwork/dew/commit/b40601e37811e7d0a65cadb2e3b440d2ce9c0670))
+
+
+### Bug Fixes
+
+* close CodeQL alerts for block number overflow and guestbook XSS ([8b1bd16](https://github.com/dewnetwork/dew/commit/8b1bd1610af8d7ca771d5583563e6e4ca3db26df))
+
+
+### Documentation
+
+* **ops:** pin path B mock asset addresses and explorer known tokens ([0dd1912](https://github.com/dewnetwork/dew/commit/0dd1912b5ea3f6bafa3c854813c68a0d1eabe23b))
+
 ## [0.3.0](https://github.com/dewnetwork/dew/compare/v0.2.0...v0.3.0) (2026-07-13)
 
 
