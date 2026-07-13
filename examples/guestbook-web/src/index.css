@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* Align with faucet-web / landing maritime ink system */
+
+@theme {
+  --color-ink: #070f1a;
+  --color-ink-deep: #0a1628;
+  --color-ink-soft: #0f1f33;
+  --color-panel: #122033;
+  --color-panel-raised: #15263d;
+  --color-cyan: #5eead4;
+  --color-cyan-mid: #3db8a8;
+  --color-teal: #2a9d8f;
+  --color-mist: #8fd4c8;
+  --color-frost: #e8f4f1;
+  --color-muted: #7a8fa3;
+  --color-slate: #94a3b8;
+  --color-gold: #e8b86d;
+  --color-danger: #f87171;
+  --color-success: #34d399;
+  --color-line: rgb(94 234 212 / 0.12);
+  --color-line-strong: rgb(94 234 212 / 0.28);
+
+  --font-display: "Syne", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+
+  --shadow-panel: 0 24px 48px -24px rgb(0 0 0 / 0.55);
+  --shadow-card: 0 18px 40px -28px rgb(0 0 0 / 0.65);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-ink text-frost antialiased;
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01" on, "cv11" on;
+    background-image:
+      radial-gradient(ellipse 90% 55% at 50% -15%, rgb(61 184 168 / 0.14), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 100% 20%, rgb(56 189 248 / 0.05), transparent 50%),
+      linear-gradient(180deg, var(--color-ink) 0%, var(--color-ink-deep) 40%, var(--color-ink) 100%);
+    background-attachment: fixed;
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: rgb(94 234 212 / 0.28);
+    color: var(--color-frost);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 3px;
+  }
+}

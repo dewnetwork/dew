@@ -80,6 +80,17 @@ Public explorer: `https://explorer-dew.fadosoft.com/address/<GUESTBOOK>` (or tx 
 
 **Why this demo:** one contract, faucet DEW, MetaMask-friendly, visible on explorer — good “I used Dew” story without bridges or staking.
 
+### Read UI (browser)
+
+Public Guestbook (example deploy): `0x83bB4E539BE46503481E66094b01b854990BF84a`
+
+```bash
+pnpm guestbook:dev
+# http://localhost:4323 — defaults to public RPC + address above
+```
+
+SPA source: [examples/guestbook-web](../../examples/guestbook-web/). Sign still uses Foundry (`SignGuestbook`); the UI only **reads**.
+
 ---
 
 ## Recipe 3 — Multi-tx batch (C1 pack)

@@ -50,7 +50,7 @@ dew/                            # monorepo root
 ├── devnet/                     # Multi-validator + multiproc BFT tests
 ├── tests/                      # load + security suites
 ├── deploy/                     # Docker Compose, systemd, nginx samples
-├── examples/                   # Builder samples (Foundry ERC-20 → chain 2205)
+├── examples/                   # Foundry samples + Guestbook read UI
 ├── scripts/                    # Node/shell helpers (smoke-rpc, build-site)
 ├── web/                        # Astro marketing landing
 ├── explorer/                   # Block explorer SPA (React/Vite)
