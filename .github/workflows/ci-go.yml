@@ -51,6 +51,11 @@ jobs:
       - name: Build binaries
         run: |
           mkdir -p bin
-          go build -o bin/dew ./cmd/dew
-          go build -o bin/dewcli ./cmd/dewcli
-          go build -o bin/dewfaucet ./cmd/dewfaucet
+          # Smoke that -X version inject links (CI uses "ci" not a release tag).
+          ldflags="-X github.com/dewnetwork/dew/version.Version=ci"
+          go build -ldflags="$ldflags" -o bin/dew ./cmd/dew
+          go build -ldflags="$ldflags" -o bin/dewcli ./cmd/dewcli
+          go build -ldflags="$ldflags" -o bin/dewfaucet ./cmd/dewfaucet
+          ./bin/dew version | grep -F 'dew ci'
+          ./bin/dewcli version | grep -F 'dewcli ci'
+          ./bin/dewfaucet version | grep -F 'dewfaucet ci'

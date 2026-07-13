@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/dewnetwork/dew/crypto/wallet"
+	"github.com/dewnetwork/dew/version"
 	"golang.org/x/term"
 )
 
@@ -39,6 +40,9 @@ func run(args []string) error {
 		case a == "-h" || a == "--help" || a == "help":
 			printUsage()
 			return nil
+		case a == "version" || a == "-version" || a == "--version":
+			fmt.Println(version.Line("dewcli"))
+			return nil
 		default:
 			rest = append(rest, args[i:]...)
 			i = len(args)
@@ -57,8 +61,8 @@ func run(args []string) error {
 	switch rest[0] {
 	case "wallet":
 		return cmdWallet(store, rest[1:])
-	case "version":
-		fmt.Println("dewcli 0.1.0 (phase A1)")
+	case "version", "-version", "--version":
+		fmt.Println(version.Line("dewcli"))
 		return nil
 	default:
 		printUsage()

@@ -97,7 +97,7 @@ See [Guestbook](./guestbook.md).
 - [x] App docs + product pages note product-v1 slices  
 - [x] product-v1.1: P1d known-token balances · P2c wallet paste · P3b `?author=` share  
 - [x] product-v1.2: P2d funder `balanceWei` on `/info` + UI  
-- [x] Deploy rebuild of live path B surfaces (operator) — verified live 2026-07-13: explorer P1a–d markers; faucet `/api/info` `balanceWei` + SPA P2c/P2d; Guestbook `URLSearchParams.get("author")` + Share/Mine/Burst (P3a–b). Acceptance is **public HTTPS smoke** only (no SSH). Optional residual: host operator may pin GHCR `:0.2.0` via their own console (`web3_clientVersion` may still show `Dew/v0.1.0` until ldflags/version inject).
+- [x] Deploy rebuild of live path B surfaces (operator) — verified live 2026-07-13: explorer P1a–d markers; faucet `/api/info` `balanceWei` + SPA P2c/P2d; Guestbook `URLSearchParams.get("author")` + Share/Mine/Burst (P3a–b). Acceptance is **public HTTPS smoke** only (no SSH). Optional residual: host operator may pin GHCR to a release that injects `version.Version` so live `web3_clientVersion` matches the tag.
 
 ---
 

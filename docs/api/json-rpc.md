@@ -42,7 +42,7 @@ Oversized body/batch → JSON-RPC error `-32600`. Tx admission also enforces mem
 
 | Method | Notes |
 | :--- | :--- |
-| `web3_clientVersion` | e.g. `Dew/v0.1.0/go1.22` |
+| `web3_clientVersion` | e.g. `Dew/v0.2.0/go1.25.x` (semver from `version.Version` / release ldflags; local builds often `Dew/vdev/…`) |
 | `net_version` | Decimal network id string, e.g. `"2205"` |
 | `eth_chainId` | Hex chain id, e.g. `"0x89d"` (2205) |
 | `net_listening` | Boolean |

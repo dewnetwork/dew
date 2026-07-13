@@ -46,6 +46,7 @@ dew/                            # monorepo root
 ├── rpc/                        # JSON-RPC HTTP server
 ├── config/                     # Genesis load
 ├── params/                     # Chain constants, fees, freeze, staking
+├── version/                    # Software semver (ldflags inject) + web3_clientVersion
 ├── faucet/                     # Faucet library (ops HTTP)
 ├── devnet/                     # Multi-validator + multiproc BFT tests
 ├── tests/                      # load + security suites
@@ -190,7 +191,12 @@ Local binary build (no release):
 go build -o bin/dew ./cmd/dew
 go build -o bin/dewcli ./cmd/dewcli
 go build -o bin/dewfaucet ./cmd/dewfaucet
+# default: dew version → "dew dev (public-testnet-v1)"
+# inject software semver (also drives web3_clientVersion):
+# go build -ldflags="-X github.com/dewnetwork/dew/version.Version=0.2.0" -o bin/dew ./cmd/dew
 ```
+
+Release binaries and GHCR Go images inject `version.Version` from the tag (`vX.Y.Z` → `X.Y.Z`) via `-ldflags` / Docker `VERSION` build-arg. Protocol freeze tag **`public-testnet-v1`** is independent.
 
 ## What is not multi-repo
 

@@ -20,6 +20,7 @@ import (
 	"github.com/dewnetwork/dew/devnet"
 	"github.com/dewnetwork/dew/node"
 	"github.com/dewnetwork/dew/p2p"
+	"github.com/dewnetwork/dew/version"
 )
 
 func main() {
@@ -35,8 +36,8 @@ func run(args []string) error {
 		return fmt.Errorf("missing command")
 	}
 	switch args[0] {
-	case "version":
-		fmt.Println("dew 0.1.0 (public-testnet-v1)")
+	case "version", "-version", "--version":
+		fmt.Println(version.Line("dew"))
 		return nil
 	case "help", "-h", "--help":
 		printUsage()

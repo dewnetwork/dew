@@ -9,7 +9,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/dew ./cmd/dew
+# VERSION is software semver (no required leading v); inject via build-arg on release.
+ARG VERSION=dev
+RUN CGO_ENABLED=0 go build -trimpath \
+  -ldflags="-s -w -X github.com/dewnetwork/dew/version.Version=${VERSION}" \
+  -o /out/dew ./cmd/dew
 
 FROM debian:bookworm-slim
 RUN apt-get update \

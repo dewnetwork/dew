@@ -73,7 +73,8 @@ jobs:
           mkdir -p dist
           out="dist/dew_${TAG}_${GOOS}_${GOARCH}"
           mkdir -p "$out"
-          ldflags="-s -w"
+          VERSION="${TAG#v}"
+          ldflags="-s -w -X github.com/dewnetwork/dew/version.Version=${VERSION}"
           go build -trimpath -ldflags="$ldflags" -o "$out/dew" ./cmd/dew
           go build -trimpath -ldflags="$ldflags" -o "$out/dewcli" ./cmd/dewcli
           go build -trimpath -ldflags="$ldflags" -o "$out/dewfaucet" ./cmd/dewfaucet

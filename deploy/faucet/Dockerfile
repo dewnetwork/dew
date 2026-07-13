@@ -9,7 +9,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/dewfaucet ./cmd/dewfaucet
+ARG VERSION=dev
+RUN CGO_ENABLED=0 go build -trimpath \
+  -ldflags="-s -w -X github.com/dewnetwork/dew/version.Version=${VERSION}" \
+  -o /out/dewfaucet ./cmd/dewfaucet
 
 FROM debian:bookworm-slim
 RUN apt-get update \

@@ -135,7 +135,10 @@ jobs:
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
-          build-args: ${{ matrix.build_args }}
+          # VERSION injects software semver into Go images (dew, dew-faucet); SPA Dockerfiles ignore it.
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            ${{ matrix.build_args }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
           provenance: false

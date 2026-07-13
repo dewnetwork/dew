@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"runtime"
 	"strings"
 
 	"github.com/holiman/uint256"
@@ -13,6 +12,7 @@ import (
 	"github.com/dewnetwork/dew/core/vm"
 	"github.com/dewnetwork/dew/crypto"
 	"github.com/dewnetwork/dew/node"
+	"github.com/dewnetwork/dew/version"
 )
 
 // API binds Ethereum JSON-RPC methods to a Node backend.
@@ -70,7 +70,7 @@ func (a *API) Handlers() map[string]Handler {
 }
 
 func (a *API) web3ClientVersion(_ json.RawMessage) (interface{}, error) {
-	return fmt.Sprintf("Dew/v0.1.0/%s", runtime.Version()), nil
+	return version.ClientVersion(), nil
 }
 
 func (a *API) netVersion(_ json.RawMessage) (interface{}, error) {

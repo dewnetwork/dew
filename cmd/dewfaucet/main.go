@@ -18,9 +18,19 @@ import (
 
 	"github.com/dewnetwork/dew/faucet"
 	"github.com/dewnetwork/dew/params"
+	"github.com/dewnetwork/dew/version"
 )
 
 func main() {
+	// version before flag.Parse so `dewfaucet version` works without other flags.
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "version", "-version", "--version", "-v":
+			fmt.Println(version.Line("dewfaucet"))
+			return
+		}
+	}
+
 	cfg := faucet.DefaultConfig()
 
 	listen := flag.String("http.addr", envOr("FAUCET_LISTEN", cfg.ListenAddr), "HTTP listen address")
@@ -38,7 +48,13 @@ func main() {
 	perIPWin := flag.Duration("limit.ip-window", envDuration("FAUCET_LIMIT_IP_WINDOW", cfg.PerIPWindow), "IP rate window")
 	allowAnvil := flag.Bool("allow-anvil-key", envBool("FAUCET_ALLOW_ANVIL_KEY", false), "permit Anvil #0 key (local only)")
 	trustedProxy := flag.Bool("trusted-proxy", envBool("FAUCET_TRUSTED_PROXY", false), "trust X-Forwarded-For for IP limits")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(version.Line("dewfaucet"))
+		return
+	}
 
 	amount, ok := new(big.Int).SetString(strings.TrimSpace(*amountWei), 10)
 	if !ok || amount.Sign() <= 0 {

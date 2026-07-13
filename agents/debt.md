@@ -59,7 +59,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] GitHub Release Please + cross-platform Go binaries (`release-please.yml` / `release-binaries.yml`) — July 2026
 - [x] GHCR multi-arch image push on release (`release-images.yml`: dew, faucet, explorer, guestbook) — July 2026
 - [x] Compose path B / full stack default to GHCR pull (`image:` + `pull_policy`; `build:` kept for `--build`) — July 2026
-- [ ] Optional: `ldflags` version injection for `dew` / `dewcli` / `web3_clientVersion`
+- [x] `ldflags` version injection for `dew` / `dewcli` / `dewfaucet` / `web3_clientVersion` (`version` package; release CI + Docker `VERSION` arg) — July 2026
 
 ## Deferred / mainnet
 
@@ -76,7 +76,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] P1d known-token balances · P2c wallet paste · P3b share `?author=` (product-v1.1)
 - [x] P2d faucet funder `balanceWei` on `/info` + UI (product-v1.2)
 - [x] Deploy rebuild of live path B surfaces (operator) — live verify 2026-07-13 via public HTTPS only; **no SSH** to path B host from this workflow (see [upgrades.md](../docs/product/upgrades.md) product-v1 DoD)
-- [ ] Optional (host console only, not SSH from monorepo agents): pin GHCR `:0.2.0` + recreate stack; `web3_clientVersion` may still report `Dew/v0.1.0` until ldflags inject
+- [ ] Optional (host console only, not SSH from monorepo agents): pin GHCR to a release that includes ldflags inject (post–this change) + recreate stack so live `web3_clientVersion` matches the tag
 - [ ] P1e indexer history · P1f verified source · P3c reactions (deferred)
 
 ## Docs
