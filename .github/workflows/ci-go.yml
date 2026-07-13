@@ -1,0 +1,54 @@
+# Go L1 core CI: vet, unit/integration tests, binary builds.
+# See docs/development/go-project-layout.md § CI (monorepo).
+
+name: Go CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-go-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        # -count=1 disables cache so CI always re-runs.
+        # Default multiproc/devnet tests run; heavy soak needs DEW_HEAVY_INTEGRATION=1 (nightly / manual).
+        run: go test ./... -count=1
+
+      - name: Security / load / freeze / chaos (explicit gates)
+        run: |
+          go test ./tests/security/ -count=1
+          go test ./tests/load/ -count=1
+          go test ./params/ -run Freeze -count=1
+          go test ./devnet/ -run Chaos -count=1
+
+      - name: Build binaries
+        run: |
+          mkdir -p bin
+          go build -o bin/dew ./cmd/dew
+          go build -o bin/dewcli ./cmd/dewcli
+          go build -o bin/dewfaucet ./cmd/dewfaucet

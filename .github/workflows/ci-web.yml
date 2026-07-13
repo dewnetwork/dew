@@ -1,0 +1,111 @@
+# Node monorepo CI: docs site, landing merge build, explorer, faucet-web.
+# Production Pages deploy stays in pages.yml (push main only).
+# See docs/development/go-project-layout.md § CI (monorepo).
+
+name: Web CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-web-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    name: Docs + landing
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Version from package.json "packageManager" (do not also set version: here).
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install monorepo deps (docs / VitePress)
+        run: pnpm install --frozen-lockfile
+
+      - name: Install web deps (Astro landing)
+        run: pnpm install --frozen-lockfile
+        working-directory: web
+
+      - name: Typecheck monorepo tooling
+        run: pnpm typecheck
+
+      - name: Build combined site
+        env:
+          # Match project Pages base so PR builds catch path issues.
+          SITE_BASE: /dew/
+          SITE_URL: https://dewnetwork.github.io
+        run: pnpm site:build
+
+  explorer:
+    name: Explorer
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # explorer/package.json has no packageManager field — pin to monorepo major.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: explorer/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        working-directory: explorer
+
+      - name: Build
+        run: pnpm build
+        working-directory: explorer
+
+  faucet-web:
+    name: Faucet web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: faucet-web/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        working-directory: faucet-web
+
+      - name: Build
+        run: pnpm build
+        working-directory: faucet-web

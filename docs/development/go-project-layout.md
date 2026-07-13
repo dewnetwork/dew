@@ -130,13 +130,23 @@ Root scripts (wired):
 
 ## CI (monorepo)
 
-Typical pipeline lanes:
+Workflows under [`.github/workflows/`](../../.github/workflows/):
 
-1. **Go**: `go test ./...`, lint, build `dew` / `dewcli`
-2. **Node / docs**: install deps, `docs:build` (markdown site still compiles)
-3. **Integration** (later): start Go node → run Node RPC smoke tests
+| Workflow | Trigger | What it runs |
+| :--- | :--- | :--- |
+| [`ci-go.yml`](../../.github/workflows/ci-go.yml) | PR + push `main` | `go vet`, `go test ./...`, explicit security/load/freeze/chaos gates, build `dew` / `dewcli` / `dewfaucet` |
+| [`ci-web.yml`](../../.github/workflows/ci-web.yml) | PR + push `main` | monorepo typecheck + `site:build` (landing + docs); `explorer` and `faucet-web` builds |
+| [`pages.yml`](../../.github/workflows/pages.yml) | push `main` only | production GitHub Pages deploy of `dist/` |
 
-Failing either stack fails the monorepo build for that PR when that stack is in use.
+Pipeline lanes (all PR-blocking except Pages deploy and optional later jobs):
+
+1. **Go**: `go vet ./...`, `go test ./...`, build `dew` / `dewcli` / `dewfaucet` (static analysis via `go vet` today; `golangci-lint` optional later)
+2. **Node / docs / SPAs**: install deps, combined site build, explorer + faucet-web production builds
+3. **Integration** (later / optional): start Go node → Node RPC smoke (`scripts/smoke-rpc.mjs`, `devnet-erc20.mjs`)
+4. **Long fuzz** (scheduled residual): `-fuzztime` on codec/RPC entrypoints — see `agents/debt.md` C6
+
+Failing Go or Web CI fails the monorepo build for that PR. Heavy multiproc soak (`DEW_HEAVY_INTEGRATION=1`) is not required on every PR.
+
 
 ## What is not multi-repo
 

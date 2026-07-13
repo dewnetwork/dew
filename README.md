@@ -138,6 +138,16 @@ Layout after merge:
 | `/` | Astro landing (`web/dist`) |
 | `/docs/` | VitePress docs (`docs/.vitepress/dist`, base `/docs/`) |
 
+### CI
+
+| Workflow | Role |
+| :--- | :--- |
+| [`.github/workflows/ci-go.yml`](./.github/workflows/ci-go.yml) | Go vet, tests, binary builds (PR + `main`) |
+| [`.github/workflows/ci-web.yml`](./.github/workflows/ci-web.yml) | Docs/landing site + explorer + faucet-web builds (PR + `main`) |
+| [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) | Deploy combined `dist/` to GitHub Pages (`main` only) |
+
+Layout notes: [docs/development/go-project-layout.md](./docs/development/go-project-layout.md) § CI.
+
 ### GitHub Pages
 
 CI deploys `dist/` on every push to `main` via [`.github/workflows/pages.yml`](./.github/workflows/pages.yml).
