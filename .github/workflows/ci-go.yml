@@ -28,7 +28,9 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          # Patched 1.25.x (stdlib fixes); language minimum stays go 1.25.0 in go.mod.
+          go-version: "1.25.x"
+          check-latest: true
           cache: true
 
       - name: Vet

@@ -6,9 +6,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/core/types/bal"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 
 	"github.com/dewnetwork/dew/core/state"
@@ -21,15 +21,11 @@ var _ ethvm.StateDB = (*Bridge)(nil)
 // Bridge adapts Dew's flat StateDB to go-ethereum's vm.StateDB interface.
 type Bridge struct {
 	state *state.StateDB
-	pc    *utils.PointCache
 }
 
 // NewBridge wraps a Dew StateDB for EVM execution.
 func NewBridge(s *state.StateDB) *Bridge {
-	return &Bridge{
-		state: s,
-		pc:    utils.NewPointCache(4096),
-	}
+	return &Bridge{state: s}
 }
 
 // State returns the underlying Dew StateDB.
@@ -101,10 +97,6 @@ func (b *Bridge) SetState(addr ethcommon.Address, key, value ethcommon.Hash) eth
 	return toEthHash(prev)
 }
 
-func (b *Bridge) GetStorageRoot(addr ethcommon.Address) ethcommon.Hash {
-	return toEthHash(b.state.GetStorageRoot(fromEthAddr(addr)))
-}
-
 func (b *Bridge) GetTransientState(addr ethcommon.Address, key ethcommon.Hash) ethcommon.Hash {
 	return toEthHash(b.state.GetTransientState(fromEthAddr(addr), fromEthHash(key)))
 }
@@ -113,20 +105,27 @@ func (b *Bridge) SetTransientState(addr ethcommon.Address, key, value ethcommon.
 	b.state.SetTransientState(fromEthAddr(addr), fromEthHash(key), fromEthHash(value))
 }
 
-func (b *Bridge) SelfDestruct(addr ethcommon.Address) uint256.Int {
-	return b.state.SelfDestruct(fromEthAddr(addr))
+// SelfDestruct marks the account for deletion. Balance transfer is handled by the
+// EVM opcode (geth ≥1.17); StateDB only records the destruct flag.
+func (b *Bridge) SelfDestruct(addr ethcommon.Address) {
+	_ = b.state.SelfDestruct(fromEthAddr(addr))
 }
 
 func (b *Bridge) HasSelfDestructed(addr ethcommon.Address) bool {
 	return b.state.HasSelfDestructed(fromEthAddr(addr))
 }
 
-func (b *Bridge) SelfDestruct6780(addr ethcommon.Address) (uint256.Int, bool) {
-	return b.state.SelfDestruct6780(fromEthAddr(addr))
-}
-
 func (b *Bridge) Exist(addr ethcommon.Address) bool {
 	return b.state.ExistEVM(fromEthAddr(addr))
+}
+
+// Touch is required for Amsterdam block-access-list recording. Dew runs Cancun-era
+// rules without Amsterdam, so this is a no-op.
+func (b *Bridge) Touch(_ ethcommon.Address) {}
+
+// IsNewContract reports whether addr was created in the current transaction (EIP-6780).
+func (b *Bridge) IsNewContract(addr ethcommon.Address) bool {
+	return b.state.IsNewContract(fromEthAddr(addr))
 }
 
 func (b *Bridge) Empty(addr ethcommon.Address) bool {
@@ -148,8 +147,6 @@ func (b *Bridge) AddAddressToAccessList(addr ethcommon.Address) {
 func (b *Bridge) AddSlotToAccessList(addr ethcommon.Address, slot ethcommon.Hash) {
 	b.state.AddSlotToAccessList(fromEthAddr(addr), fromEthHash(slot))
 }
-
-func (b *Bridge) PointCache() *utils.PointCache { return b.pc }
 
 func (b *Bridge) Prepare(
 	rules params.Rules,
@@ -187,6 +184,9 @@ func (b *Bridge) AddLog(log *ethtypes.Log) {
 	b.state.AddLog(fromEthLog(log))
 }
 
+// LogsForBurnAccounts is used for Amsterdam eth-burn logs. Dew is Cancun-era only.
+func (b *Bridge) LogsForBurnAccounts() []*ethtypes.Log { return nil }
+
 func (b *Bridge) AddPreimage(_ ethcommon.Hash, _ []byte) {
 	// preimage recording not required for Phase A
 }
@@ -197,6 +197,12 @@ func (b *Bridge) Witness() *stateless.Witness { return nil }
 // rules without Verkle, so there is no access-events witness to expose.
 func (b *Bridge) AccessEvents() *ethstate.AccessEvents { return nil }
 
-func (b *Bridge) Finalise(deleteEmptyObjects bool) {
+// Finalise ends the transaction. Block-access-list construction (geth ≥1.17) is
+// unused on Dew; always return nil.
+func (b *Bridge) Finalise(deleteEmptyObjects bool) *bal.ConstructionBlockAccessList {
 	b.state.Finalise(deleteEmptyObjects)
+	return nil
 }
+
+// SetTxContext is required for geth block-access-list indexing; no-op for Dew.
+func (b *Bridge) SetTxContext(_ ethcommon.Hash, _ int, _ uint32) {}

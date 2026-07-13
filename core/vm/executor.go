@@ -161,9 +161,11 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 		Random:      &random,
 	}
 	evm := ethvm.NewEVM(blockCtx, e.bridge, e.config, ethvm.Config{})
+	gp := new(uint256.Int)
+	_ = gp.SetFromBig(msg.GasPrice)
 	evm.SetTxContext(ethvm.TxContext{
 		Origin:   toEthAddr(msg.From),
-		GasPrice: msg.GasPrice,
+		GasPrice: gp,
 	})
 	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles, msg.From, msg.Value, e.stakingEnabled)
 
@@ -184,7 +186,9 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 	}
 	e.bridge.Prepare(rules, toEthAddr(msg.From), toEthAddr(e.block.Coinbase), dest, precompiles, nil)
 
-	gasLeft := msg.GasLimit
+	// geth ≥1.17 uses multidimensional GasBudget; Cancun-era puts all gas in regular.
+	initialBudget := ethvm.NewGasBudget(msg.GasLimit, 0)
+	budget := initialBudget
 	var (
 		ret         []byte
 		err         error
@@ -195,7 +199,7 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 	if msg.To == nil {
 		// CREATE increments nonce inside the EVM.
 		var ethAddr ethcommon.Address
-		ret, ethAddr, gasLeft, err = evm.Create(caller, msg.Data, gasLeft, msg.Value)
+		ret, ethAddr, budget, err = evm.Create(caller, msg.Data, budget, msg.Value)
 		if err == nil {
 			a := fromEthAddr(ethAddr)
 			createdAddr = &a
@@ -203,10 +207,11 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 	} else {
 		// CALL: nonce is incremented by the state transition (even on revert).
 		e.statedb.SetNonceJournaled(msg.From, e.statedb.GetNonce(msg.From)+1)
-		ret, gasLeft, err = evm.Call(caller, toEthAddr(*msg.To), msg.Data, gasLeft, msg.Value)
+		ret, budget, err = evm.Call(caller, toEthAddr(*msg.To), msg.Data, budget, msg.Value)
 	}
 
-	usedGas := msg.GasLimit - gasLeft
+	usedGas := budget.Used(initialBudget)
+	gasLeft := msg.GasLimit - usedGas
 
 	// Apply refund (capped at usedGas/5 post London)
 	refund := e.statedb.GetRefund()

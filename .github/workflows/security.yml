@@ -29,11 +29,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Match module language from go.mod; check-latest pulls the newest patch.
+      # Use 1.25.x (not go.mod's language line alone) so CI gets patched stdlib
+      # for govulncheck. Module also sets toolchain go1.25.12.
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: "1.25.x"
           check-latest: true
           cache: true
 
@@ -54,7 +55,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: "1.25.x"
           check-latest: true
           cache: true
 
@@ -141,7 +142,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: "1.25.x"
           check-latest: true
           cache: true
 
@@ -183,6 +184,8 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-results.sarif
+          # Without this, SARIF mode includes all severities and exit-code fails on MEDIUM.
+          limit-severities-for-sarif: true
           # Skip huge generated / vendor trees; focus on source + lockfiles + deploy.
           skip-dirs: node_modules,dist,web/dist,explorer/dist,faucet-web/dist,docs/.vitepress/dist
 

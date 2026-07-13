@@ -26,6 +26,12 @@ func (s *StateDB) CreateContract(addr crypto.Address) {
 	s.newContracts[addr] = struct{}{}
 }
 
+// IsNewContract reports whether addr was marked created in the current transaction.
+func (s *StateDB) IsNewContract(addr crypto.Address) bool {
+	_, ok := s.newContracts[addr]
+	return ok
+}
+
 // SubBalance subtracts amount from the balance. Returns the previous balance.
 func (s *StateDB) SubBalance(addr crypto.Address, amount *uint256.Int) uint256.Int {
 	s.noteWrite(AccountKey(addr))

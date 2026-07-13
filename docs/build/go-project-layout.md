@@ -75,7 +75,8 @@ Optional later (not present today): `packages/sdk`, `packages/localnet`.
 | Codecs versioned | Avoid silent fork of encodings |
 | Disk via Pebble | Single `db.PebbleDB` backend; tests use `db.OpenTest` |
 
-- Go **1.25+** (see root `go.mod`)
+- Go **1.25+** (see root `go.mod`; `toolchain go1.25.12` for patched stdlib; CI uses `go-version: 1.25.x`)
+- EVM via **go-ethereum v1.17.x** (`core/vm` Bridge implements geth `vm.StateDB`)
 - Unit tests next to packages; multi-node / soak under `devnet/` and `tests/`
 
 ## Node packages
@@ -118,7 +119,7 @@ Root scripts: `docs:dev` · `docs:build` · `docs:preview` · `site:build` (land
 | :--- | :--- | :--- |
 | [`ci-go.yml`](../../.github/workflows/ci-go.yml) | PR + push `main` | `go vet`, `go test ./...`, security/load/freeze/chaos gates, build `dew` / `dewcli` / `dewfaucet` |
 | [`ci-web.yml`](../../.github/workflows/ci-web.yml) | PR + push `main` | typecheck + `site:build`; explorer + faucet-web builds |
-| [`security.yml`](../../.github/workflows/security.yml) | PR + push `main` + weekly | govulncheck, fuzz, pnpm audit, CodeQL, Trivy |
+| [`security.yml`](../../.github/workflows/security.yml) | PR + push `main` + weekly | govulncheck, fuzz, pnpm audit, CodeQL, Trivy (HIGH/CRITICAL; SARIF limited to same severities) |
 | [`pages.yml`](../../.github/workflows/pages.yml) | push `main` | GitHub Pages deploy of `dist/` |
 
 Heavy multiproc soak (`DEW_HEAVY_INTEGRATION=1`) is not required on every PR.
