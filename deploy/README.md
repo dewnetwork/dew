@@ -281,7 +281,7 @@ docker compose -f deploy/faucet/docker-compose.yml --env-file deploy/faucet/fauc
 docker compose -f deploy/faucet/docker-compose.yml --env-file deploy/faucet/faucet.env up -d
 ```
 
-Frontend runs on `:8081` by default and routes backend requests internally. Custom SPA `PUBLIC_*` needs `up --build`. Path B GHCR `dew-faucet-web` bakes captcha site key from GitHub Environment **testnet** (`PUBLIC_CAPTCHA_PROVIDER` / `PUBLIC_CAPTCHA_SITE_KEY`); backend secret stays in `FAUCET_CAPTCHA_SECRET` on the host only.
+Frontend runs on `:8081` by default and routes backend requests internally. Custom SPA `PUBLIC_*` needs `up --build`. Path B GHCR `dew-faucet-web` bakes captcha site key from GitHub Environment **testnet** (`PUBLIC_CAPTCHA_PROVIDER` / `PUBLIC_CAPTCHA_SITE_KEY`) in the **Release images** job step (not `strategy.matrix` — environment-scoped vars are empty there); backend secret stays in `FAUCET_CAPTCHA_SECRET` on the host only. After re-baking, pull the new `dew-faucet-web` image on the host — rebuild alone does not update a running stack.
 
 ## Explorer Deployment (Dockerized)
 

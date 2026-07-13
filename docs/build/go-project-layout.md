@@ -175,7 +175,7 @@ Config: [`release-please-config.json`](../../release-please-config.json) (`relea
 | Path B deploy | `deploy/docker-compose.yml` pulls GHCR by default (`pull` + `up -d`); pin `*_IMAGE` in `deploy/.env` |
 | Soak / private | Keep `docker-compose.soak.yml` local build (`dew:local`) — public GHCR bakes `genesis.public.json` |
 | SPA rebuild | Path B URLs are **build-time** in GHCR images; other domains need `docker compose … --build` with `PUBLIC_*` |
-| Faucet captcha (path B) | GitHub Environment **testnet** variables `PUBLIC_CAPTCHA_PROVIDER` + `PUBLIC_CAPTCHA_SITE_KEY` are baked into `dew-faucet-web` by `release-images.yml` (site key is public by design). Server still needs `FAUCET_CAPTCHA_SECRET` in `deploy/.env` only — never in the image. |
+| Faucet captcha (path B) | GitHub Environment **testnet** variables `PUBLIC_CAPTCHA_PROVIDER` + `PUBLIC_CAPTCHA_SITE_KEY` are baked into `dew-faucet-web` by `release-images.yml` (site key is public by design). Injected at **step** level — environment-scoped `vars` are empty inside `strategy.matrix`. Job fails if site key is missing. Server still needs `FAUCET_CAPTCHA_SECRET` in `deploy/.env` only — never in the image. |
 
 Pull example (after a release):
 

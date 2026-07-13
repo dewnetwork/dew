@@ -52,15 +52,13 @@ jobs:
             dockerfile: deploy/faucet/Dockerfile
             build_args: ""
           # SPA PUBLIC_* bake path B hostnames (browser-facing; no secrets).
-          # Captcha site key/provider from Environment "testnet" variables.
-          # Rebuild with different args for alternate domains.
+          # Captcha site key/provider are NOT listed here: environment-scoped
+          # vars are empty inside strategy.matrix — inject at step level below.
           - image: dew-faucet-web
             dockerfile: deploy/faucet/Dockerfile.web
             build_args: |
               PUBLIC_FAUCET_API_URL=/api
               PUBLIC_EXPLORER_URL=https://explorer-dew.fadosoft.com
-              PUBLIC_CAPTCHA_PROVIDER=${{ vars.PUBLIC_CAPTCHA_PROVIDER }}
-              PUBLIC_CAPTCHA_SITE_KEY=${{ vars.PUBLIC_CAPTCHA_SITE_KEY }}
           - image: dew-explorer
             dockerfile: deploy/explorer/Dockerfile
             build_args: |
@@ -133,6 +131,41 @@ jobs:
             type=raw,value=${{ steps.meta.outputs.tag }}
             type=raw,value=latest,enable=${{ steps.meta.outputs.is_stable == 'true' }}
 
+      # Environment-scoped vars only resolve in job steps (not strategy.matrix).
+      # Without this, PUBLIC_CAPTCHA_* bake empty and the SPA shows
+      # "PUBLIC_CAPTCHA_SITE_KEY missing" while /info mode is still captcha.
+      - name: Resolve build-args
+        id: build_args
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          MATRIX_ARGS: ${{ matrix.build_args }}
+          IMAGE: ${{ matrix.image }}
+          PUBLIC_CAPTCHA_PROVIDER: ${{ vars.PUBLIC_CAPTCHA_PROVIDER }}
+          PUBLIC_CAPTCHA_SITE_KEY: ${{ vars.PUBLIC_CAPTCHA_SITE_KEY }}
+        run: |
+          set -euo pipefail
+          {
+            echo "VERSION=${VERSION}"
+            # matrix.build_args may be empty (dew-faucet) or multi-line
+            if [ -n "${MATRIX_ARGS}" ]; then
+              printf '%s\n' "${MATRIX_ARGS}"
+            fi
+            if [ "${IMAGE}" = "dew-faucet-web" ]; then
+              if [ -z "${PUBLIC_CAPTCHA_SITE_KEY}" ]; then
+                echo "::error::PUBLIC_CAPTCHA_SITE_KEY is empty. Set Environment variable on 'testnet' (Settings → Environments → testnet). Environment-scoped vars must be read in a job step, not strategy.matrix."
+                exit 1
+              fi
+              echo "PUBLIC_CAPTCHA_PROVIDER=${PUBLIC_CAPTCHA_PROVIDER:-turnstile}"
+              echo "PUBLIC_CAPTCHA_SITE_KEY=${PUBLIC_CAPTCHA_SITE_KEY}"
+              echo "Baking captcha provider=${PUBLIC_CAPTCHA_PROVIDER:-turnstile} site_key_len=${#PUBLIC_CAPTCHA_SITE_KEY}"
+            fi
+          } > /tmp/docker-build-args.txt
+          {
+            echo "list<<EOF"
+            cat /tmp/docker-build-args.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -143,9 +176,8 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           # VERSION injects software semver into Go images (dew, dew-faucet); SPA Dockerfiles ignore it.
-          build-args: |
-            VERSION=${{ steps.meta.outputs.version }}
-            ${{ matrix.build_args }}
+          # Captcha PUBLIC_* for dew-faucet-web come from the step above (Environment testnet vars).
+          build-args: ${{ steps.build_args.outputs.list }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
           provenance: false
