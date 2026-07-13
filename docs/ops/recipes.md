@@ -100,7 +100,9 @@ npx hardhat run scripts/deploy-usdt.js --network dewPublic
 | Contract | `src/MockUSDT.sol` | `contracts/MockUSDT.sol` |
 | Deploy | `script/DeployUSDT.s.sol` | `scripts/deploy-usdt.js` |
 
-MetaMask custom token: paste contract address, symbol **USDT**, decimals **6**. Explorer known-token list: `PUBLIC_KNOWN_TOKENS=USDT:0x…` at explorer build time.
+MetaMask custom token: paste contract address, symbol **USDT**, decimals **6**.
+
+**Path B live Mock USDT (no redeploy required):** `0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8` — full basket in [Recipe 1c](#recipe-1c--mock-assets-basket-testnet) and [public-testnet.md](./public-testnet.md#live-mock-erc-20-basket-path-b).
 
 ---
 
@@ -108,15 +110,28 @@ MetaMask custom token: paste contract address, symbol **USDT**, decimals **6**. 
 
 Deploy the full mock suite in one go: **USDT · USDC · DAI · WETH · WBTC**. All are OpenZeppelin `ERC20` + `Ownable` with owner `mint`. **Not** real assets — for dApp / MetaMask / multi-token testing only.
 
-| Symbol | Name | Decimals | Default supply |
-| :--- | :--- | ---: | :--- |
-| USDT | Tether USD | 6 | 1_000_000 |
-| USDC | USD Coin | 6 | 1_000_000 |
-| DAI | Dai Stablecoin | 18 | 1_000_000 |
-| WETH | Wrapped Ether | 18 | 10_000 (mintable stand-in; no native wrap) |
-| WBTC | Wrapped BTC | 8 | 100 |
+| Symbol | Name | Decimals | Default supply | Path B live address |
+| :--- | :--- | ---: | :--- | :--- |
+| USDT | Tether USD | 6 | 1_000_000 | `0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8` |
+| USDC | USD Coin | 6 | 1_000_000 | `0xacDd0BF26C96879b4c4CeE8F92928f1760F07119` |
+| DAI | Dai Stablecoin | 18 | 1_000_000 | `0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B` |
+| WETH | Wrapped Ether | 18 | 10_000 (mintable stand-in; no native wrap) | `0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB` |
+| WBTC | Wrapped BTC | 8 | 100 | `0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E` |
 
-Base type: `MockERC20` (custom name/symbol/decimals). Named wrappers fix metadata.
+Base type: `MockERC20` (custom name/symbol/decimals). Named wrappers fix metadata. Live list: [public-testnet.md](./public-testnet.md#live-mock-erc-20-basket-path-b).
+
+**Use live contracts (public path B)** — no redeploy:
+
+```bash
+# MetaMask: import each address with symbol + decimals from the table above
+# Explorer rebuild: bake PUBLIC_KNOWN_TOKENS (see below)
+```
+
+```text
+PUBLIC_KNOWN_TOKENS=USDT:0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8,USDC:0xacDd0BF26C96879b4c4CeE8F92928f1760F07119,DAI:0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B,WETH:0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB,WBTC:0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E
+```
+
+**Deploy your own basket (local or a new public key)**
 
 **Foundry**
 
@@ -146,7 +161,7 @@ npx hardhat run scripts/deploy-mock-assets.js --network dewPublic
 | Deploy all | `script/DeployMockAssets.s.sol` | `scripts/deploy-mock-assets.js` |
 | Deploy USDT only | `script/DeployUSDT.s.sol` | `scripts/deploy-usdt.js` |
 
-Script logs print each address and a ready-to-paste `PUBLIC_KNOWN_TOKENS=USDT:0x…,USDC:0x…,…` line for explorer build time.
+Script logs print each address and a ready-to-paste `PUBLIC_KNOWN_TOKENS=…` line for explorer rebuild.
 
 ---
 

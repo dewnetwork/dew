@@ -30,6 +30,15 @@ pnpm explorer:dev
 | `PUBLIC_RPC_URL` | `http://127.0.0.1:8545` | Browser JSON-RPC endpoint |
 | `PUBLIC_CHAIN_ID` | `2205` | Must match network |
 | `PUBLIC_EXPLORER_BASE` | _(empty)_ | Canonical origin for share links |
+| `PUBLIC_KNOWN_TOKENS` | _(empty)_ | Optional `SYMBOL:0xaddr` list for address balance tab |
+
+Path B mock basket (bake into production image):
+
+```text
+PUBLIC_KNOWN_TOKENS=USDT:0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8,USDC:0xacDd0BF26C96879b4c4CeE8F92928f1760F07119,DAI:0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B,WETH:0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB,WBTC:0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E
+```
+
+Live addresses: [docs/ops/public-testnet.md](../docs/ops/public-testnet.md#live-mock-erc-20-basket-path-b).
 
 Vite is configured with `envPrefix: "PUBLIC_"`.
 

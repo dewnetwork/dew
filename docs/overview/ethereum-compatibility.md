@@ -50,8 +50,13 @@ Dew should feel like a **custom EVM chain** to developers: same keys, same contr
 | Faucet | `https://faucet-dew.fadosoft.com` |
 | Guestbook SPA | `https://guestbook-dew.fadosoft.com` |
 | Guestbook contract | `0x83bB4E539BE46503481E66094b01b854990BF84a` |
+| Mock USDT | `0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8` (6 dec, test only) |
+| Mock USDC | `0xacDd0BF26C96879b4c4CeE8F92928f1760F07119` (6 dec) |
+| Mock DAI | `0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B` (18 dec) |
+| Mock WETH | `0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB` (18 dec) |
+| Mock WBTC | `0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E` (8 dec) |
 
-MetaMask: add custom network with the RPC URL above; block explorer URL = explorer base only. Full publish template: [Launch checklist](../ops/launch-checklist.md). Browser-only path: [Try public testnet](../ops/try-public.md).
+MetaMask: add custom network with the RPC URL above; block explorer URL = explorer base only. Import mock tokens by address (or use explorer known-token balances). Full publish template: [Launch checklist](../ops/launch-checklist.md). Browser-only path: [Try public testnet](../ops/try-public.md). Live mock table: [Public testnet freeze](../ops/public-testnet.md#live-mock-erc-20-basket-path-b).
 
 ## Dew-specific (optional; does not block ETH tooling)
 

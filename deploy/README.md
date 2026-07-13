@@ -219,6 +219,8 @@ node scripts/smoke-rpc.mjs https://rpc-dew.fadosoft.com
 
 **Guestbook:** set `PUBLIC_GUESTBOOK` in `deploy/.env` to the deployed contract. After adding the hostname, expand the LE cert (or re-issue) so SAN includes `guestbook-dew.fadosoft.com`. Standalone: [guestbook/docker-compose.yml](./guestbook/docker-compose.yml).
 
+**Explorer known tokens:** set `PUBLIC_KNOWN_TOKENS` (path B mock basket default in `.env.example`) and rebuild the explorer SPA (`docker compose … up --build` or next GHCR release) so address pages show the Token balances tab. Live addresses: [docs/ops/public-testnet.md](../docs/ops/public-testnet.md#live-mock-erc-20-basket-path-b).
+
 Configs: [nginx/dew-edge.docker.conf](./nginx/dew-edge.docker.conf), [nginx/certbot-entrypoint.sh](./nginx/certbot-entrypoint.sh).
 
 | TLS mode | When | Key settings |

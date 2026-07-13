@@ -52,7 +52,13 @@ Search resolves address / tx hash / block number (and block hash when applicable
 | Recent search | Up to 8 queries in `localStorage` (`dew-explorer-ui`) |
 | Known-token balances | `PUBLIC_KNOWN_TOKENS` (`SYMBOL:0xaddr` list) → `balanceOf` tab on address page |
 
-Env: `PUBLIC_KNOWN_TOKENS` optional. Upgrade backlog: [upgrades.md](./upgrades.md).
+Env: `PUBLIC_KNOWN_TOKENS` optional. Path B live mock basket (bake into explorer image):
+
+```text
+PUBLIC_KNOWN_TOKENS=USDT:0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8,USDC:0xacDd0BF26C96879b4c4CeE8F92928f1760F07119,DAI:0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B,WETH:0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB,WBTC:0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E
+```
+
+Live addresses: [public-testnet.md](../ops/public-testnet.md#live-mock-erc-20-basket-path-b). Upgrade backlog: [upgrades.md](./upgrades.md).
 
 ### Deep-links from demos
 
@@ -73,6 +79,7 @@ Consumers should use the explorer **base URL** only (MetaMask “Block explorer 
 | `PUBLIC_RPC_URL` | `https://rpc-dew.fadosoft.com` or `http://127.0.0.1:8545` |
 | `PUBLIC_CHAIN_ID` | `2205` |
 | `PUBLIC_EXPLORER_BASE` | optional public base URL |
+| `PUBLIC_KNOWN_TOKENS` | path B mock basket (see above) — optional for local dev |
 
 Root scripts: `pnpm explorer:dev` · `explorer:build` · `explorer:preview`.
 

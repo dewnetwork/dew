@@ -75,6 +75,18 @@ Read-only works without a wallet (**Refresh**). Product notes: [Guestbook demo](
 
 Home: `https://explorer-dew.fadosoft.com`. Routes: [Block explorer](../product/block-explorer.md).
 
+Optional MetaMask custom tokens (mock / test only — live path B):
+
+| Symbol | Decimals | Address |
+| :--- | ---: | :--- |
+| USDT | 6 | `0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8` |
+| USDC | 6 | `0xacDd0BF26C96879b4c4CeE8F92928f1760F07119` |
+| DAI | 18 | `0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B` |
+| WETH | 18 | `0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB` |
+| WBTC | 8 | `0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E` |
+
+Full table: [public-testnet.md](./public-testnet.md#live-mock-erc-20-basket-path-b).
+
 Optional smoke from a machine with Node:
 
 ```bash

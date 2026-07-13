@@ -101,6 +101,22 @@ npx hardhat run scripts/deploy-mock-assets.js --network dewPublic
 
 Logs include addresses + a ready-to-paste `PUBLIC_KNOWN_TOKENS=…` line for the explorer.
 
+**Path B live (no redeploy required):**
+
+| Symbol | Decimals | Address |
+| :--- | ---: | :--- |
+| USDT | 6 | `0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8` |
+| USDC | 6 | `0xacDd0BF26C96879b4c4CeE8F92928f1760F07119` |
+| DAI | 18 | `0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B` |
+| WETH | 18 | `0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB` |
+| WBTC | 8 | `0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E` |
+
+```text
+PUBLIC_KNOWN_TOKENS=USDT:0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8,USDC:0xacDd0BF26C96879b4c4CeE8F92928f1760F07119,DAI:0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B,WETH:0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB,WBTC:0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E
+```
+
+Canonical table: [docs/ops/public-testnet.md](../../docs/ops/public-testnet.md#live-mock-erc-20-basket-path-b).
+
 ## Guestbook
 
 ```bash

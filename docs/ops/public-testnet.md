@@ -25,7 +25,26 @@ Private multi-host ops remain in [Private multi-host testnet](./private-testnet.
 | Faucet | `https://faucet-dew.fadosoft.com` |
 | Guestbook SPA | `https://guestbook-dew.fadosoft.com` |
 | Guestbook contract | `0x83bB4E539BE46503481E66094b01b854990BF84a` (override SPA via `PUBLIC_GUESTBOOK`) |
+| Mock assets (test only) | See table below — explorer `PUBLIC_KNOWN_TOKENS` |
 | Bootnodes | **n/a** (path B — no public P2P dial list) |
+
+### Live mock ERC-20 basket (path B)
+
+Mintable test tokens for dApps / MetaMask / explorer balances. **Not** real USDT/USDC/DAI/WETH/WBTC. Redeploy changes only ops env + docs (not wire freeze).
+
+| Symbol | Decimals | Address |
+| :--- | ---: | :--- |
+| USDT | 6 | `0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8` |
+| USDC | 6 | `0xacDd0BF26C96879b4c4CeE8F92928f1760F07119` |
+| DAI | 18 | `0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B` |
+| WETH | 18 | `0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB` |
+| WBTC | 8 | `0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E` |
+
+```text
+PUBLIC_KNOWN_TOKENS=USDT:0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8,USDC:0xacDd0BF26C96879b4c4CeE8F92928f1760F07119,DAI:0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B,WETH:0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB,WBTC:0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E
+```
+
+Deployer (owner / mint): `0x0daEeD75872d3277C012B9f7762549c64B403F76`. Contracts + scripts: [examples/foundry](../../examples/foundry/) · [examples/hardhat](../../examples/hardhat/) · [Recipe 1c](./recipes.md#recipe-1c--mock-assets-basket-testnet).
 
 | Item | Value |
 | :--- | :---- |
@@ -38,7 +57,7 @@ Private multi-host ops remain in [Private multi-host testnet](./private-testnet.
 
 MetaMask: custom network RPC = JSON-RPC URL above; block explorer URL = explorer base only (no path suffix). Path A (multi-host validators + bootnodes) is [D3](../build/phases.md#d3--scale-when-needed-path-a--c4--audit) — see [D3 scale](../scale/d3-scale.md) — not required for the current deployment.
 
-**Demo apps are ops surface**, not wire-freeze constants: redeploying Guestbook changes only `PUBLIC_GUESTBOOK` + publish text, not chain ID or fee floors.
+**Demo apps are ops surface**, not wire-freeze constants: redeploying Guestbook or mock assets changes only `PUBLIC_GUESTBOOK` / `PUBLIC_KNOWN_TOKENS` + publish text, not chain ID or fee floors.
 
 ## Freeze table
 

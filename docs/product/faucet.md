@@ -181,6 +181,7 @@ Explorer:    https://explorer-dew.fadosoft.com
 Faucet:      https://faucet-dew.fadosoft.com   # captcha · 1 DEW/address/24h · 10/IP/hour
 Guestbook:   https://guestbook-dew.fadosoft.com
 Guestbook:   0x83bB4E539BE46503481E66094b01b854990BF84a
+Mock assets: see docs/ops/public-testnet.md (USDT/USDC/DAI/WETH/WBTC · PUBLIC_KNOWN_TOKENS)
 Bootnodes:   n/a (path B single-host RPC)
 ```
 
