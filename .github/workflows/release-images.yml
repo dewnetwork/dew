@@ -35,6 +35,9 @@ jobs:
   publish-images:
     name: ${{ matrix.image }}
     runs-on: ubuntu-latest
+    # Path B captcha site key lives in GitHub Environment "testnet" (vars, not secrets).
+    # Without this, environment-scoped PUBLIC_CAPTCHA_* are empty at bake time.
+    environment: testnet
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -49,12 +52,15 @@ jobs:
             dockerfile: deploy/faucet/Dockerfile
             build_args: ""
           # SPA PUBLIC_* bake path B hostnames (browser-facing; no secrets).
+          # Captcha site key/provider from Environment "testnet" variables.
           # Rebuild with different args for alternate domains.
           - image: dew-faucet-web
             dockerfile: deploy/faucet/Dockerfile.web
             build_args: |
               PUBLIC_FAUCET_API_URL=/api
               PUBLIC_EXPLORER_URL=https://explorer-dew.fadosoft.com
+              PUBLIC_CAPTCHA_PROVIDER=${{ vars.PUBLIC_CAPTCHA_PROVIDER }}
+              PUBLIC_CAPTCHA_SITE_KEY=${{ vars.PUBLIC_CAPTCHA_SITE_KEY }}
           - image: dew-explorer
             dockerfile: deploy/explorer/Dockerfile
             build_args: |

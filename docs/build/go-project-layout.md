@@ -154,7 +154,7 @@ Software versions are **semver** tags (`vX.Y.Z`), independent of the protocol fr
    | :--- | :--- | :--- |
    | `ghcr.io/<owner>/dew` | `deploy/node/Dockerfile` | Bakes `genesis.public.json` (path B) |
    | `ghcr.io/<owner>/dew-faucet` | `deploy/faucet/Dockerfile` | Go faucet |
-   | `ghcr.io/<owner>/dew-faucet-web` | `deploy/faucet/Dockerfile.web` | SPA; `PUBLIC_*` path B defaults |
+   | `ghcr.io/<owner>/dew-faucet-web` | `deploy/faucet/Dockerfile.web` | SPA; path B URLs + captcha (`PUBLIC_CAPTCHA_*` from GitHub Environment **testnet** vars) |
    | `ghcr.io/<owner>/dew-explorer` | `deploy/explorer/Dockerfile` | SPA; RPC/base path B defaults |
    | `ghcr.io/<owner>/dew-guestbook` | `deploy/guestbook/Dockerfile` | SPA; guestbook + RPC path B defaults |
 
@@ -175,6 +175,7 @@ Config: [`release-please-config.json`](../../release-please-config.json) (`relea
 | Path B deploy | `deploy/docker-compose.yml` pulls GHCR by default (`pull` + `up -d`); pin `*_IMAGE` in `deploy/.env` |
 | Soak / private | Keep `docker-compose.soak.yml` local build (`dew:local`) — public GHCR bakes `genesis.public.json` |
 | SPA rebuild | Path B URLs are **build-time** in GHCR images; other domains need `docker compose … --build` with `PUBLIC_*` |
+| Faucet captcha (path B) | GitHub Environment **testnet** variables `PUBLIC_CAPTCHA_PROVIDER` + `PUBLIC_CAPTCHA_SITE_KEY` are baked into `dew-faucet-web` by `release-images.yml` (site key is public by design). Server still needs `FAUCET_CAPTCHA_SECRET` in `deploy/.env` only — never in the image. |
 
 Pull example (after a release):
 
