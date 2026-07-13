@@ -27,7 +27,7 @@ Not a Phase E. Pick **one track row** (or the ordered plan). Same freeze (`publi
 
 | Track | Status | Theme | Detail |
 | :--- | :----- | :---- | :--- |
-| **R — Research lab** | Open | Hypotheses, PE/BFT/state measurements | [Track R](#track-r--research-lab) |
+| **R — Research lab** | Partial | H1 + harness done; PE matrix (S2) open | [Track R](#track-r--research-lab) · [research-lab](../ops/research-lab.md) |
 | **1 — Product** | Partial | v1–v1.2 done; P1e–f / P3c deferred | [Track 1](#track-1--product-surface) |
 | **2 — Protocol (D3c)** | Partial | Staking MVP done; slash % / delegation open | [Track 2](#track-2--protocol--d3c-staking) |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public | [Track 3](#track-3--ops--d3d-path-a) |
@@ -451,19 +451,19 @@ Open work after the Phase D foundation. **One track per row** in the [summary ta
 
 | | |
 | :--- | :--- |
-| **Status** | Open |
+| **Status** | Partial — S1 hypothesis + harness **done** ([research-lab](../ops/research-lab.md)); S2 matrix open |
 | **Goals** | Measure and explain PE, BFT, state, or staking economics without real mainnet users |
 | **Packages** | `tests/load/`, `tests/security/`, `core/vm/`, `devnet/`, `docs/` |
 
 **Acceptance (pick a focus; not all required):**
 
-- [ ] At least one written hypothesis (throughput, finality, storage, or staking)
-- [ ] Reproducible harness (load / multiproc / soak command documented)
-- [ ] PE: sequential vs parallel matrix (conflict rate, workers, rollback metrics)
+- [x] At least one written hypothesis (throughput, finality, storage, or staking) — PE wall-clock vs conflict structure ([research-lab.md](../ops/research-lab.md)) (2026-07-13)
+- [x] Reproducible harness (load / multiproc / soak command documented) — `tests/load` + `core/vm` Parallel ([research-lab.md](../ops/research-lab.md)) (2026-07-13)
+- [ ] PE: sequential vs parallel matrix (conflict rate, workers, rollback metrics) — **S2**
 - [ ] BFT: multiproc soak or chaos (commit latency / recovery notes)
 - [ ] State: SMT commit or tip-growth measurement vs flat hot path
 - [ ] Staking lab (optional): private net with `--staking` scenario notes
-- [ ] Results recorded under docs or lab notes; code changes keep serial-equivalent tests green
+- [x] Results recorded under docs or lab notes; code changes keep serial-equivalent tests green — S1 baseline table in [research-lab.md](../ops/research-lab.md)
 
 ### Track 1 — Product surface
 
@@ -564,10 +564,10 @@ flowchart LR
 
 **Acceptance:**
 
-- [ ] `go test ./...` green on a clean tree
-- [ ] `go test ./devnet/ -count=1` green (BFT + ERC-20 path)
+- [x] `go test ./...` green on a clean tree (2026-07-13)
+- [x] `go test ./devnet/ -count=1` green (BFT + ERC-20 path) (2026-07-13)
 - [ ] Optional: `dew devnet` + `node scripts/smoke-rpc.mjs` chainId **2205**
-- [ ] Note Path B is optional; do not block on public HTTPS
+- [x] Note Path B is optional; do not block on public HTTPS
 
 **Packages:** whole monorepo · **Verify:** commands above · **Scope:** S
 
@@ -577,10 +577,10 @@ flowchart LR
 
 **Acceptance:**
 
-- [ ] Hypothesis written (e.g. PE speedup vs conflict rate; or multiproc commit latency)
-- [ ] Document harness commands under `docs/` (ops recipe or short lab note linked from [Track R](#track-r--research-lab))
-- [ ] Baseline run recorded once (numbers or log path); no code required if existing tests suffice
-- [ ] Track R “hypothesis” + “reproducible harness” boxes ticked when done
+- [x] Hypothesis written (e.g. PE speedup vs conflict rate; or multiproc commit latency) — H1 in [research-lab.md](../ops/research-lab.md) (2026-07-13)
+- [x] Document harness commands under `docs/` (ops recipe or short lab note linked from [Track R](#track-r--research-lab))
+- [x] Baseline run recorded once (numbers or log path); no code required if existing tests suffice — table in [research-lab.md](../ops/research-lab.md) (2026-07-13)
+- [x] Track R “hypothesis” + “reproducible harness” boxes ticked when done
 
 **Packages:** `docs/`, `tests/load/`, `devnet/` · **Verify:** follow the documented commands · **Scope:** S–M  
 **Depends on:** S0

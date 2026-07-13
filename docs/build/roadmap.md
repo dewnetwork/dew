@@ -26,7 +26,7 @@ All phases land in the **same monorepo** (Go core + Node for **web docs**, explo
 
 | Track | Status | Theme |
 | :--- | :--- | :--- |
-| **R — Research lab** | Open | Hypotheses + PE / BFT / state measurements |
+| **R — Research lab** | Partial | H1 + harness done ([research-lab](../ops/research-lab.md)); S2 matrix open |
 | **1 — Product** | Partial | v1 done; P1e–f / P3c deferred |
 | **2 — Protocol (D3c)** | Partial | Staking MVP done; slash % / delegation open |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public |
@@ -99,8 +99,8 @@ Phase D foundation is done. Remaining work is **tracks** under freeze `public-te
 
 | Step | Focus | Track |
 | :--- | :--- | :--- |
-| S0 | Lab baseline (`go test`, devnet) | — |
-| S1 | Hypothesis + harness | R |
+| S0 | Lab baseline (`go test`, devnet) — **done** 2026-07-13 | — |
+| S1 | Hypothesis + harness — **done** 2026-07-13 ([research-lab](../ops/research-lab.md)) | R |
 | S2 | PE measurement matrix | R · 4 |
 | S3 | Mempool / fee telemetry RPC | 4 |
 | S4 | `0x102` staking edges | 2 |
@@ -139,7 +139,7 @@ These are **not** open tasks (no checkboxes):
 | C5–C6 | [Private testnet](../ops/private-testnet.md), [Public testnet freeze](../ops/public-testnet.md) |
 | D1–D2 + DX demos | [Block explorer](../product/block-explorer.md), [Faucet](../product/faucet.md), [Guestbook](../product/guestbook.md), [Try public](../ops/try-public.md), [Launch checklist](../ops/launch-checklist.md) |
 | D3a–b + chaindata | [D3 scale](../scale/d3-scale.md), [Durable chaindata](../ops/durable-chaindata.md) |
-| **Track R** | [Phases — Track R](./phases.md#track-r--research-lab) |
+| **Track R** | [Phases — Track R](./phases.md#track-r--research-lab), [research-lab](../ops/research-lab.md) |
 | **Track 1** | [upgrades §1](../product/upgrades.md#track-1--product-surface), [Phases — Track 1](./phases.md#track-1--product-surface) |
 | **Track 2** | [D3c](../scale/d3-scale.md#d3c--staking-residuals-c4), [Phases — Track 2](./phases.md#track-2--protocol--d3c-staking) |
 | **Track 3** | [D3d](../scale/d3-scale.md#d3d--path-a-multi-host-public), [Phases — Track 3](./phases.md#track-3--ops--d3d-path-a) |

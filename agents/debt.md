@@ -10,7 +10,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); deferred: P1e–f / P3c. Research-friendly default rows: Track **R** + Track **4**; Track **5** only before mainnet claims.
 
-**Active ordered plan (S0–S6 → Precompile slots):** [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots) — end milestone formalizes [Precompile slots](../docs/protocol/addresses.md#precompile-slots-evm-space) registry (`0x100`/`0x101` reserved/`0x102`), not Path A/mainnet.
+**Active ordered plan (S0–S6 → Precompile slots):** [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots) — end milestone formalizes [Precompile slots](../docs/protocol/addresses.md#precompile-slots-evm-space) registry (`0x100`/`0x101` reserved/`0x102`), not Path A/mainnet. **S0–S1 done** 2026-07-13 (lab baseline + [research-lab.md](../docs/ops/research-lab.md) H1/harness); next **S2** PE measurement matrix.
 
 ## Durable chaindata
 
