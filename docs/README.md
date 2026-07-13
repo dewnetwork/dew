@@ -56,6 +56,12 @@ D — Product surface + scale  D1–D2 + D3a/D3b + durable chaindata done;
 | [Scale](./scale/) | `docs/scale/` | D3 workstreams (done vs pending) |
 | [Security](./security/) | `docs/security/` | Threat model, principles, Phase B audit |
 
+## Builder quick start
+
+1. [Quick start (5 minutes)](./ops/quickstart.md) — `dew devnet` + MetaMask + Foundry ERC-20  
+2. Sample project: [examples/foundry](../examples/foundry/)  
+3. Live public RPC: [Public testnet freeze](./ops/public-testnet.md)
+
 ## Suggested reading order
 
 1. [Vision](./overview/vision.md)

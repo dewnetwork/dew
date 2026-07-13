@@ -50,6 +50,7 @@ dew/                            # monorepo root
 ├── devnet/                     # Multi-validator + multiproc BFT tests
 ├── tests/                      # load + security suites
 ├── deploy/                     # Docker Compose, systemd, nginx samples
+├── examples/                   # Builder samples (Foundry ERC-20 → chain 2205)
 ├── scripts/                    # Node/shell helpers (smoke-rpc, build-site)
 ├── web/                        # Astro marketing landing
 ├── explorer/                   # Block explorer SPA (React/Vite)
@@ -87,6 +88,7 @@ Optional later (not present today): `packages/sdk`, `packages/localnet`.
 | Landing | `web/` Astro site |
 | Explorer / faucet UI | `explorer/`, `faucet-web/` |
 | Scripts | `scripts/smoke-rpc.mjs`, `devnet-erc20.mjs`, `build-site.mjs` |
+| Foundry sample | `examples/foundry/` — [Quick start](../ops/quickstart.md) |
 
 ### Docs web flow
 

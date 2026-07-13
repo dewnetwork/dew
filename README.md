@@ -46,7 +46,15 @@ node scripts/smoke-rpc.mjs              # eth_chainId smoke check
 ./bin/dew devnet --http.port 8545
 go test ./devnet/ -count=1              # BFT + ERC-20 over RPC
 # Faucet (Anvil #0): 0xf39F… / ac0974… — see docs/ops/devnet.md
+
+# Foundry sample (chain 2205) — see docs/ops/quickstart.md
+cd examples/foundry && forge install foundry-rs/forge-std --no-git
+export DEW_RPC_URL=http://127.0.0.1:8545
+export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+forge script script/Deploy.s.sol:Deploy --rpc-url $DEW_RPC_URL --broadcast -vvv
 ```
+
+**Builder DX:** [Quick start (5 minutes)](./docs/ops/quickstart.md) · [examples/foundry](./examples/foundry/)
 
 | Package | Role |
 | :--- | :--- |

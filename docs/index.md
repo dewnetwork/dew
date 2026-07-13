@@ -8,6 +8,9 @@ hero:
   tagline: Faster finality, flatter state, ETH-first DX — documented for builders of the Go + Node monorepo.
   actions:
     - theme: brand
+      text: Quick start (5 min)
+      link: /ops/quickstart
+    - theme: alt
       text: Public testnet
       link: /ops/public-testnet
     - theme: alt
@@ -16,9 +19,6 @@ hero:
     - theme: alt
       text: Architecture
       link: /architecture/overview
-    - theme: alt
-      text: Implementation phases
-      link: /build/phases
 features:
   - title: public-testnet-v1 live
     details: Chain ID 2205 — RPC rpc-dew.fadosoft.com · explorer · captcha faucet. Path B single-host; see Public testnet freeze.

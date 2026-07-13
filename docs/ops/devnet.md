@@ -80,18 +80,21 @@ Validators for BFT are the same three accounts (#0–#2) with `votingPower: 1` i
 
 ## Foundry
 
+**Copy-paste sample project:** [examples/foundry](../../examples/foundry/) · end-to-end: [Quick start (5 minutes)](./quickstart.md).
+
 ```bash
-export ETH_RPC_URL=http://127.0.0.1:8545
-export PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+export DEW_RPC_URL=http://127.0.0.1:8545
+export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
-cast chain-id                          # 2205
-cast balance 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+cast chain-id --rpc-url $DEW_RPC_URL   # 2205
+cast balance 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --rpc-url $DEW_RPC_URL
 
-# Deploy any Solidity contract
-forge create src/MyToken.sol:MyToken \
-  --rpc-url $ETH_RPC_URL \
-  --private-key $PRIVATE_KEY \
-  --broadcast
+cd examples/foundry
+forge install foundry-rs/forge-std --no-git   # once
+forge script script/Deploy.s.sol:Deploy \
+  --rpc-url $DEW_RPC_URL \
+  --broadcast \
+  -vvv
 ```
 
 ## ERC-20 demo

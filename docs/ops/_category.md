@@ -8,4 +8,4 @@ status: stable
 
 # Networks & ops
 
-Operator runbooks: local devnet, private multi-host, public-testnet-v1 freeze, launch checklist, and disk persistence.
+Builder quick start (Foundry + MetaMask), local devnet, private multi-host, public-testnet-v1 freeze, launch checklist, and disk persistence.

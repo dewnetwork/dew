@@ -79,4 +79,6 @@ See [JSON-RPC](../api/json-rpc.md) for the full matrix.
 4. `eth_call` view methods match on-chain state
 5. Replay known RLP fixtures against local node
 
-Detailed vectors will live under monorepo `tests/` (Go) and optional Node RPC smoke scripts as phases land.
+**Copy-paste path:** [Quick start (5 minutes)](../ops/quickstart.md) and [examples/foundry](../../examples/foundry/) (ERC-20 + `forge script` against local or public RPC).
+
+Detailed vectors live under monorepo `tests/` / `devnet/` (Go) and Node scripts (`scripts/smoke-rpc.mjs`, `scripts/devnet-erc20.mjs`).

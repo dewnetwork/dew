@@ -69,6 +69,7 @@
 - category: Networks & ops
   path: ops
   items:
+    - quickstart.md
     - devnet.md
     - private-testnet.md
     - public-testnet.md

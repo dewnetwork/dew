@@ -100,6 +100,12 @@ lightchaindata/
 *.log
 logs/
 
+# --- Foundry (examples/foundry; lib/ installed via forge install) ---
+examples/foundry/cache/
+examples/foundry/out/
+examples/foundry/broadcast/
+examples/foundry/lib/
+
 # --- Test / fuzz artifacts ---
 testdata/generated/
 __debug_bin*
