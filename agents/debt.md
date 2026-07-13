@@ -8,7 +8,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Phase D** — D1 explorer + D2 faucet done; D3a + D3b + D3a residual done; **durable chaindata done** → D3d Path A / D3c / D3e when needed. Design: [durable-chaindata.md](../docs/ops/durable-chaindata.md). D3 scale: [d3-scale.md](../docs/scale/d3-scale.md). Acceptance in [phases.md](../docs/build/phases.md).
 
-**Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 (product) first: product-v1 P1a–c / P2a–b / P3a shipped; remaining P1d–f / P2c–d / P3b–c planned or deferred.
+**Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); deferred: P1e–f / P3c.
 
 ## Durable chaindata
 
@@ -75,6 +75,8 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] Guestbook P3a author / mine filter
 - [x] P1d known-token balances · P2c wallet paste · P3b share `?author=` (product-v1.1)
 - [x] P2d faucet funder `balanceWei` on `/info` + UI (product-v1.2)
+- [x] Deploy rebuild of live path B surfaces (operator) — live verify 2026-07-13 via public HTTPS only; **no SSH** to path B host from this workflow (see [upgrades.md](../docs/product/upgrades.md) product-v1 DoD)
+- [ ] Optional (host console only, not SSH from monorepo agents): pin GHCR `:0.2.0` + recreate stack; `web3_clientVersion` may still report `Dew/v0.1.0` until ldflags inject
 - [ ] P1e indexer history · P1f verified source · P3c reactions (deferred)
 
 ## Docs
