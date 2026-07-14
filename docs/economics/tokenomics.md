@@ -67,7 +67,8 @@ flowchart LR
 | :----------------------- | :------------ | :----------------------------------------------------- |
 | Min validator self-stake | 100,000 DEW   | Frozen candidate public-testnet-v1                     |
 | Unbonding                | 7 days        | Prefer seconds or fixed block delta — one unit in code |
-| Commission               | Validator-set | Bounded range e.g. 0–100%                              |
+| Commission               | Validator-set | Bounded range e.g. 0–100% — **not implemented** (D3c open) |
+| Slash burn %             | _tentative_   | **Not on-chain (S4 deferred)** — jail only until numbers freeze; see [slashing](../consensus/slashing.md) |
 
 ## Design goals vs Ethereum
 

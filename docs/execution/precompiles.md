@@ -65,19 +65,29 @@ Enabled when Dew precompiles are on **and** `Executor.EnableStaking(true)` / `No
 | Method | Input | Value | Gas | Effect |
 | :--- | :--- | :--- | --: | :--- |
 | `0x00` bond | `[0x00]` | self-stake amount | 50_000 | Escrow CALLVALUE; credit **immediate CALL payer** (nested `msg.sender`) |
-| `0x01` unbond | `[0x01 \|\| amount uint256]` | 0 | 40_000 | Reduce stake; queue amount until unbonding period |
+| `0x01` unbond | `[0x01 \|\| amount uint256]` | 0 | 40_000 | Reduce **tx.origin** stake; queue until unbonding period |
 | `0x02` getSelfStake | `[0x02 \|\| addr20]` | 0 | 2_000 | Return stake uint256 |
 | `0x03` getVotingPower | `[0x03 \|\| addr20]` | 0 | 2_000 | 0 if jailed / not candidate |
 | `0x04` activeCount | `[0x04]` | 0 | 2_000 | Top-K set size |
 | `0x05` activeAt | `[0x05 \|\| index uint256]` | 0 | 2_000 | Address at rank |
 | `0x06` jail | `[0x06 \|\| voteA(114) \|\| voteB(114)]` | 0 | 30_000 | Dual-vote double-sign verify → jail offender |
 | `0x07` isJailed | `[0x07 \|\| addr20]` | 0 | 2_000 | 0/1 |
-| `0x08` withdraw | `[0x08]` | 0 | 40_000 | Claim matured unbond to sender (D3c) |
+| `0x08` withdraw | `[0x08]` | 0 | 40_000 | Claim matured unbond to **tx.origin** (D3c) |
 | `0x09` pendingUnbond | `[0x09 \|\| addr20]` | 0 | 2_000 | `amount` (32) \|\| `unlockAt` unix (32) |
 
 **Jail vote wire (114 bytes each):** `type(1) || height(8 BE) || round(8 BE) || blockHash(32) || signature(65)`. Both votes must verify; same type/height/round/validator; distinct hashes.
 
-**Rules:** min self-stake `100_000 * 10^18` wei (**public-testnet-v1**); active set = top `K` (default 100) by voting power among candidates ≥ min and not jailed. **Unbonding** uses block timestamp + genesis `unbondingPeriodSeconds` (default 604_800); funds stay at `0x102` until `withdraw` after unlock. **Bond** credits the address that transferred value into `0x102` (works for nested CALL). Zero-value methods still attribute to top-level tx origin (EVM precompile API has no call stack). See [Public testnet freeze](../ops/public-testnet.md) and [D3 scale — D3c](../scale/d3-scale.md).
+**Actor rules (S4, fail-closed):**
+
+| Method | Actor | Nested CALL |
+| :--- | :--- | :--- |
+| `0x00` bond | Immediate value-payer (`Transfer` hook) | **Correct** — contract can self-bond with CALLVALUE |
+| `0x01` unbond / `0x08` withdraw | Always **tx.origin** | **Not** intermediate `msg.sender` — go-ethereum precompile `Run` has no call stack |
+| Queries / jail | Explicit address in input (or evidence) | N/A |
+
+Implication: a contract that nested-bonds to itself **cannot** unbond/withdraw that stake via a nested zero-value CALL under this freeze. Prefer top-level EOA calls for unbond/withdraw, or wait for a hardfork (call-stack or explicit address arg — ABI change). Covered by `TestStakingUnbondWithdraw_ActorIsTxOrigin_NestedForwarder`.
+
+**Rules:** min self-stake `100_000 * 10^18` wei (**public-testnet-v1** defaults; lab tests may lower via config); active set = top `K` (default 100) by voting power among candidates ≥ min and not jailed. **Unbonding** uses block timestamp + genesis `unbondingPeriodSeconds` (default 604_800); funds stay at `0x102` until `withdraw` after unlock. **Slash burn percentages** are **not** applied on-chain yet (economics still draft — [tokenomics](../economics/tokenomics.md), [slashing](../consensus/slashing.md)); jail-only today. **Delegation / commission** out of scope. See [Public testnet freeze](../ops/public-testnet.md) and [D3 scale — D3c](../scale/d3-scale.md).
 
 Module state: `core/native/staking.go` storage under address `0x102`.
 

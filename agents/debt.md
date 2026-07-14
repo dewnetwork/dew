@@ -10,7 +10,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); deferred: P1e–f / P3c. Research-friendly default rows: Track **R** + Track **4**; Track **5** only before mainnet claims.
 
-**Active ordered plan (S0–S6 → Precompile slots):** [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots) — end milestone formalizes [Precompile slots](../docs/protocol/addresses.md#precompile-slots-evm-space) registry (`0x100`/`0x101` reserved/`0x102`), not Path A/mainnet. **S0–S3 done** 2026-07-13 (PE lab + `dew_getMempoolStats`); next **S4** staking precompile edges (`0x102`).
+**Active ordered plan (S0–S6 → Precompile slots):** [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots) — end milestone formalizes [Precompile slots](../docs/protocol/addresses.md#precompile-slots-evm-space) registry (`0x100`/`0x101` reserved/`0x102`), not Path A/mainnet. **S0–S4 done** 2026-07-14 (`0x102` fail-closed actor + deferred slash %); next **S5** staking lab scenarios.
 
 ## Durable chaindata
 
@@ -38,8 +38,8 @@ Owned by D3c — see [d3-scale.md](../docs/scale/d3-scale.md#d3c--staking-residu
 - [x] Full double-sign evidence verification (dual-vote wire + VerifyDoubleSign) (July 2026)
 - [x] Nested CALL bond credits immediate value-payer (Transfer hook) (July 2026)
 - [x] Wire ActiveSet into live Dew-BFT set rotation each epoch (when staking on) (July 2026)
-- [ ] On-chain slash burn percentages (economics still tentative)
-- [ ] Zero-value nested unbond/withdraw still use tx origin (EVM precompile has no call stack)
+- [ ] On-chain slash burn percentages (economics still tentative) — **S4 deferred** with notes in tokenomics/slashing (2026-07-14)
+- [x] Zero-value nested unbond/withdraw still use tx origin (EVM precompile has no call stack) — **documented fail-closed + tests** (S4, 2026-07-14); hardfork if contract self-unbond is required
 - [ ] Delegation / commission
 
 ## C5 residuals

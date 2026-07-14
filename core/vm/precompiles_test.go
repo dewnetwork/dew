@@ -7,6 +7,7 @@ import (
 	"github.com/holiman/uint256"
 
 	"github.com/dewnetwork/dew/consensus"
+	"github.com/dewnetwork/dew/core/native"
 	"github.com/dewnetwork/dew/core/state"
 	"github.com/dewnetwork/dew/core/types"
 	"github.com/dewnetwork/dew/crypto"
@@ -291,5 +292,235 @@ func TestStakingBond_CreditsImmediateCallerViaTransfer(t *testing.T) {
 	}
 	if new(uint256.Int).SetBytes(res.ReturnData).Cmp(min) != 0 {
 		t.Fatalf("stake %x", res.ReturnData)
+	}
+}
+
+// stakingForwarderRuntime forwards CALL(+value)+calldata to 0x102 and bubbles revert.
+func stakingForwarderRuntime() []byte {
+	addr := make([]byte, 20)
+	copy(addr, StakingPrecompile[:])
+	// See offset comments in S4 notes: JUMPDEST at 0x2b.
+	out := []byte{
+		0x36, 0x5f, 0x5f, 0x37, // calldatacopy(0,0,calldatasize)
+		0x5f, 0x5f, 0x36, 0x5f, 0x34, // retLen retOff argLen argOff callvalue
+		0x73, // PUSH20
+	}
+	out = append(out, addr...)
+	out = append(out,
+		0x5a, 0xf1, // GAS CALL
+		0x3d, 0x5f, 0x5f, 0x3e, // returndatacopy(0,0,returndatasize)
+		0x15,       // ISZERO
+		0x60, 0x2b, // PUSH1 JUMPDEST
+		0x57,       // JUMPI → revert path
+		0x3d, 0x5f, 0xf3, // RETURN
+		0x5b,             // JUMPDEST
+		0x3d, 0x5f, 0xfd, // REVERT
+	)
+	return out
+}
+
+func stakingForwarderDeployCode() []byte {
+	rt := stakingForwarderRuntime()
+	if len(rt) > 255 {
+		panic("forwarder runtime too long")
+	}
+	init := []byte{
+		0x60, byte(len(rt)),
+		0x80,
+		0x60, 0x0b,
+		0x60, 0x00,
+		0x39,
+		0x60, 0x00,
+		0xf3,
+	}
+	return append(init, rt...)
+}
+
+func stakingTestExec(t *testing.T, statedb *state.StateDB, time uint64) *Executor {
+	t.Helper()
+	exec := NewExecutor(statedb, BlockContext{
+		Number: 1, Time: time, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
+		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
+		ChainID:  big.NewInt(2205),
+	})
+	exec.EnableDewPrecompiles(true)
+	exec.EnableStaking(true)
+	cfg := native.DefaultStakingConfig()
+	cfg.MinSelfStake = big.NewInt(1000)
+	cfg.UnbondSeconds = 100
+	exec.SetStakingConfig(cfg)
+	return exec
+}
+
+func stakeAddr() crypto.Address {
+	var a crypto.Address
+	copy(a[:], StakingPrecompile[:])
+	return a
+}
+
+func TestStakingPrecompile_BondUnbondWithdraw(t *testing.T) {
+	mdb := db.OpenTest(t)
+	statedb := state.New(mdb)
+	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	const bondAmt uint64 = 5000
+	statedb.SetBalance(caller, uint256.NewInt(1_000_000_000_000_000_000))
+	const t0 uint64 = 1_000
+	exec := stakingTestExec(t, statedb, t0)
+	to := stakeAddr()
+
+	// Bond
+	res, err := exec.ApplyMessage(Message{
+		From: caller, To: &to, Value: uint256.NewInt(bondAmt),
+		GasLimit: 200_000, GasPrice: big.NewInt(0), Data: []byte{StakeMethodBond},
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("bond: %v %v", err, res.Err)
+	}
+
+	// Unbond half
+	unbondIn := append([]byte{StakeMethodUnbond}, make([]byte, 32)...)
+	uint256.NewInt(bondAmt / 2).WriteToSlice(unbondIn[1:])
+	res, err = exec.ApplyMessage(Message{
+		From: caller, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: unbondIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("unbond: %v %v", err, res.Err)
+	}
+
+	// Early withdraw fails
+	res, err = exec.ApplyMessage(Message{
+		From: caller, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: []byte{StakeMethodWithdraw},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Failed {
+		t.Fatal("expected early withdraw failure")
+	}
+
+	// After unbond period
+	exec2 := stakingTestExec(t, statedb, t0+100)
+	balBefore := statedb.GetBalance(caller).Clone()
+	res, err = exec2.ApplyMessage(Message{
+		From: caller, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: []byte{StakeMethodWithdraw},
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("withdraw: %v %v", err, res.Err)
+	}
+	got := new(uint256.Int).SetBytes(res.ReturnData)
+	if got.Uint64() != bondAmt/2 {
+		t.Fatalf("withdraw return %s", got)
+	}
+	if statedb.GetBalance(caller).Uint64() != balBefore.Uint64()+bondAmt/2 {
+		t.Fatalf("balance after withdraw caller=%s before=%s", statedb.GetBalance(caller), balBefore)
+	}
+
+	// Remaining self-stake
+	q := append([]byte{StakeMethodGetSelfStake}, caller[:]...)
+	res, err = exec2.ApplyMessage(Message{
+		From: caller, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 50_000, GasPrice: big.NewInt(0), Data: q,
+	})
+	if err != nil || res.Failed {
+		t.Fatal(err, res.Err)
+	}
+	if new(uint256.Int).SetBytes(res.ReturnData).Uint64() != bondAmt/2 {
+		t.Fatalf("remaining stake %x", res.ReturnData)
+	}
+}
+
+func TestStakingUnbondWithdraw_ActorIsTxOrigin_NestedForwarder(t *testing.T) {
+	// S4 fail-closed: nested zero-value unbond/withdraw attribute to tx.origin, not the forwarder.
+	mdb := db.OpenTest(t)
+	statedb := state.New(mdb)
+	origin := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	const bondAmt uint64 = 5000
+	statedb.SetBalance(origin, uint256.NewInt(1_000_000_000_000_000_000))
+	const t0 uint64 = 2_000
+	exec := stakingTestExec(t, statedb, t0)
+	to := stakeAddr()
+
+	// Deploy CALL forwarder to 0x102.
+	deploy, err := exec.ApplyMessage(Message{
+		From: origin, To: nil, Value: uint256.NewInt(0),
+		GasLimit: 500_000, GasPrice: big.NewInt(0), Data: stakingForwarderDeployCode(),
+	})
+	if err != nil || deploy.Failed || deploy.ContractAddress == nil {
+		t.Fatalf("deploy forwarder: %v %v", err, deploy)
+	}
+	fwd := *deploy.ContractAddress
+
+	// Nested bond with value: credits forwarder (immediate CALL payer), not origin alone.
+	bondRes, err := exec.ApplyMessage(Message{
+		From: origin, To: &fwd, Value: uint256.NewInt(bondAmt),
+		GasLimit: 300_000, GasPrice: big.NewInt(0), Data: []byte{StakeMethodBond},
+	})
+	if err != nil || bondRes.Failed {
+		t.Fatalf("nested bond: %v %v", err, bondRes.Err)
+	}
+	qFwd := append([]byte{StakeMethodGetSelfStake}, fwd[:]...)
+	res, err := exec.ApplyMessage(Message{
+		From: origin, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 50_000, GasPrice: big.NewInt(0), Data: qFwd,
+	})
+	if err != nil || res.Failed {
+		t.Fatal(err, res.Err)
+	}
+	if new(uint256.Int).SetBytes(res.ReturnData).Uint64() != bondAmt {
+		t.Fatalf("forwarder stake %x want %d (nested bond should credit contract)", res.ReturnData, bondAmt)
+	}
+	qOrig := append([]byte{StakeMethodGetSelfStake}, origin[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: origin, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 50_000, GasPrice: big.NewInt(0), Data: qOrig,
+	})
+	if err != nil || res.Failed {
+		t.Fatal(err, res.Err)
+	}
+	if !new(uint256.Int).SetBytes(res.ReturnData).IsZero() {
+		t.Fatalf("origin should have 0 self-stake after nested bond to forwarder, got %x", res.ReturnData)
+	}
+
+	// Nested unbond via forwarder: acts on tx.origin (0 stake) → fail; forwarder stake unchanged.
+	unbondIn := append([]byte{StakeMethodUnbond}, make([]byte, 32)...)
+	uint256.NewInt(bondAmt).WriteToSlice(unbondIn[1:])
+	res, err = exec.ApplyMessage(Message{
+		From: origin, To: &fwd, Value: uint256.NewInt(0),
+		GasLimit: 200_000, GasPrice: big.NewInt(0), Data: unbondIn,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Failed {
+		t.Fatal("nested unbond should fail: actor is origin with zero stake (fail-closed)")
+	}
+	res, err = exec.ApplyMessage(Message{
+		From: origin, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 50_000, GasPrice: big.NewInt(0), Data: qFwd,
+	})
+	if err != nil || res.Failed {
+		t.Fatal(err, res.Err)
+	}
+	if new(uint256.Int).SetBytes(res.ReturnData).Uint64() != bondAmt {
+		t.Fatalf("forwarder stake should remain %d, got %x", bondAmt, res.ReturnData)
+	}
+
+	// Direct unbond as origin after origin self-bonds: works (control).
+	res, err = exec.ApplyMessage(Message{
+		From: origin, To: &to, Value: uint256.NewInt(bondAmt),
+		GasLimit: 200_000, GasPrice: big.NewInt(0), Data: []byte{StakeMethodBond},
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("origin bond: %v %v", err, res.Err)
+	}
+	res, err = exec.ApplyMessage(Message{
+		From: origin, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: unbondIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("direct origin unbond: %v %v", err, res.Err)
 	}
 }

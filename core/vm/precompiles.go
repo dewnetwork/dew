@@ -109,7 +109,8 @@ type stakingPrecompile struct {
 	cfg       native.StakingConfig
 }
 
-// bondCaller returns immediate CALL payer when present, else tx origin.
+// bondCaller returns the immediate CALL value-payer (nested msg.sender) recorded by
+// wrapStakingTransfer. Bond requires non-zero CALLVALUE into 0x102.
 func (p *stakingPrecompile) bondCaller() (crypto.Address, *uint256.Int, error) {
 	if p.valueCtx != nil && p.valueCtx.amount != nil && !p.valueCtx.amount.IsZero() {
 		return p.valueCtx.from, p.valueCtx.amount, nil
@@ -117,8 +118,14 @@ func (p *stakingPrecompile) bondCaller() (crypto.Address, *uint256.Int, error) {
 	return crypto.Address{}, nil, fmt.Errorf("staking: bond requires non-zero value")
 }
 
-// actor for unbond/withdraw: prefer last value-payer is wrong; use origin for zero-value.
-// Nested zero-value unbond still uses origin until EVM exposes call stack to precompiles.
+// actor returns the stake account for zero-value methods (unbond / withdraw).
+//
+// Fail-closed (S4 / public-testnet-v1): always the top-level tx.origin.
+// go-ethereum PrecompiledContract.Run has no call-stack / msg.sender, so a nested
+// contract CALL with value=0 cannot be attributed to the intermediate contract.
+// Nested payable bond is correct via Transfer hook; nested unbond/withdraw of a
+// contract's own stake is unsupported until a hardfork exposes call depth or an
+// explicit address argument (ABI change). Do not invent call-stack heuristics.
 func (p *stakingPrecompile) actor() crypto.Address {
 	return p.origin
 }

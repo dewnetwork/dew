@@ -267,6 +267,8 @@ Only required when operators enable `--staking` on a network. Public-testnet-v1 
 | **Double-sign evidence** | **Done** — dual-vote wire verify + jail (`0x06`); burn % still tentative | `consensus/evidence.go`, `core/vm` |
 | **ActiveSet → BFT** | **Done** — epoch boundary rotation when staking on + non-empty ActiveSet | `consensus/activeset.go`, `node/stack.go` |
 | **Nested CALL bond** | **Done** — bond credits immediate CALL value-payer via Transfer hook | `core/vm/precompiles.go`, `executor.go` |
+| **Nested unbond/withdraw actor** | **Documented fail-closed (S4)** — zero-value methods use **tx.origin** only; nested contract stake cannot unbond via intermediate CALL | `core/vm/precompiles.go`, tests |
+| **Slash burn %** | **Deferred (S4)** — economics draft; jail without on-chain burn | [tokenomics](../economics/tokenomics.md), [slashing](../consensus/slashing.md) |
 | **Delegation / commission** | Deferred unless scoped | — |
 
 ### Acceptance

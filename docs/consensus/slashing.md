@@ -10,6 +10,8 @@ status: stable
 
 Slashing aligns security with stake. **Penalty percentages below remain tentative** (economics review / mainnet). On-chain today: **double-sign evidence is verified** (dual signed prevote/precommit at same height/round, distinct hashes) then jail via `0x102` method `0x06`. Stake burn percentages still not applied on-chain.
 
+**S4 decision:** do **not** invent on-chain slash burn percentages until [tokenomics](../economics/tokenomics.md) freezes numbers. Residual tracked in [agents/debt.md](../../agents/debt.md) and [D3c](../scale/d3-scale.md#d3c--staking-residuals-c4).
+
 ## Offenses
 
 ### 1. Double-signing (equivocation)

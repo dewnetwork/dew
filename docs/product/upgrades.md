@@ -134,8 +134,8 @@ Only when `--staking` is intentionally enabled. Public-testnet-v1 keeps staking 
 - [x] Double-sign evidence verification — dual-vote verify + jail
 - [x] ActiveSet → BFT epoch rotation when staking on
 - [x] Nested CALL bond credits value payer (Transfer hook)
-- [ ] On-chain slash burn percentages (economics tentative)
-- [ ] Zero-value nested unbond/withdraw call-stack edge
+- [ ] On-chain slash burn percentages (economics tentative) — S4 deferred with docs
+- [x] Zero-value nested unbond/withdraw call-stack edge — S4 fail-closed (tx.origin) + tests
 - [ ] Delegation / commission (deferred unless scoped)
 
 Full acceptance: [phases D3c](../build/phases.md#d3c--staking-residuals-c4) · [d3-scale § D3c](../scale/d3-scale.md#d3c--staking-residuals-c4) · [debt C4](../../agents/debt.md#c4-residuals).
