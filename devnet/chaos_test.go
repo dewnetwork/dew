@@ -36,7 +36,8 @@ func TestPrivateNet_ChaosRestartAndSync(t *testing.T) {
 		netw.Chains[0].AddBlock(i, h, []byte{byte(i)})
 	}
 
-	// Restart host 2 (chaos)
+	// Restart host 2 (chaos) — Track R recovery timing for research-lab notes.
+	restartStart := time.Now()
 	if err := netw.RestartHost(2); err != nil {
 		t.Fatal(err)
 	}
@@ -55,6 +56,7 @@ func TestPrivateNet_ChaosRestartAndSync(t *testing.T) {
 	if netw.Hosts[2].PeerCount() < 1 {
 		t.Fatalf("host2 peers=%d after restart", netw.Hosts[2].PeerCount())
 	}
+	redialElapsed := time.Since(restartStart)
 
 	// Sync host2 from host0
 	var peer *p2p.Peer
@@ -75,12 +77,17 @@ func TestPrivateNet_ChaosRestartAndSync(t *testing.T) {
 		t.Fatal("no peer for sync")
 	}
 	peer.Height = netw.Chains[0].Height()
+	syncStart := time.Now()
 	if err := netw.Hosts[2].SyncFromPeer(peer); err != nil {
 		t.Fatal(err)
 	}
+	syncElapsed := time.Since(syncStart)
 	if netw.Chains[2].Height() != 3 {
 		t.Fatalf("host2 height %d want 3 after sync", netw.Chains[2].Height())
 	}
+	t.Logf("BFT_CHAOS_ROW redial_ms=%.1f sync_ms=%.1f target_height=3 host=2",
+		float64(redialElapsed)/float64(time.Millisecond),
+		float64(syncElapsed)/float64(time.Millisecond))
 
 	// ERC-20 still works on RPC after chaos
 	supply := new(big.Int).Mul(big.NewInt(1_000_000), big.NewInt(1e18))

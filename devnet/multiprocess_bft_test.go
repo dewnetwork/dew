@@ -54,7 +54,9 @@ func TestMultiProcessBFT_LongEmpty(t *testing.T) {
 		_ = netw.Stop()
 	})
 
+	start := time.Now()
 	tipHash, tipNum := waitUniformTip(t, netw, targetHeight, 4*time.Minute)
+	elapsed := time.Since(start)
 	if tipNum < targetHeight {
 		t.Fatalf("height=%d want >= %d", tipNum, targetHeight)
 	}
@@ -76,6 +78,87 @@ func TestMultiProcessBFT_LongEmpty(t *testing.T) {
 		}
 		t.Fatalf("full node block %d %s != %s", tipNum, got.Hex(), tipHash.Hex())
 	}
+	logBFTCommitRow(t, "long_empty", tipNum, 200*time.Millisecond, elapsed)
+}
+
+// TestMultiProcessBFT_CommitLatencyLab — Track R: short multiproc empty-chain pace.
+// Always runs in CI (unlike LongEmpty). Logs BFT_ROW for research-lab baselines.
+func TestMultiProcessBFT_CommitLatencyLab(t *testing.T) {
+	const targetHeight uint64 = 12
+	interval := 50 * time.Millisecond
+	enc := true
+	netw, err := StartMultiProcessBFT(MultiProcessConfig{
+		HTTPAddr:         "127.0.0.1:0",
+		EncryptP2P:       &enc,
+		MinBlockInterval: interval,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan struct{})
+	var catchUpWG sync.WaitGroup
+	catchUpWG.Add(1)
+	go func() {
+		defer catchUpWG.Done()
+		ticker := time.NewTicker(50 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				catchUpFullNode(netw)
+			}
+		}
+	}()
+	t.Cleanup(func() {
+		close(done)
+		catchUpWG.Wait()
+		_ = netw.Stop()
+	})
+
+	start := time.Now()
+	tipHash, tipNum := waitUniformTip(t, netw, targetHeight, 90*time.Second)
+	elapsed := time.Since(start)
+	if tipNum < targetHeight {
+		t.Fatalf("height=%d want >= %d", tipNum, targetHeight)
+	}
+	for i, v := range netw.Validators {
+		blk := v.Node.GetBlockByNumber(tipNum)
+		if blk == nil || blk.Hash() != tipHash {
+			got := types.Hash{}
+			if blk != nil {
+				got = blk.Hash()
+			}
+			t.Fatalf("validator %d block %d %s != %s", i, tipNum, got.Hex(), tipHash.Hex())
+		}
+	}
+	fullBlk := netw.Full.Node.GetBlockByNumber(tipNum)
+	if fullBlk == nil || fullBlk.Hash() != tipHash {
+		got := types.Hash{}
+		if fullBlk != nil {
+			got = fullBlk.Hash()
+		}
+		t.Fatalf("full node block %d %s != %s", tipNum, got.Hex(), tipHash.Hex())
+	}
+	logBFTCommitRow(t, "commit_latency_lab", tipNum, interval, elapsed)
+}
+
+func logBFTCommitRow(t *testing.T, scenario string, tipNum uint64, minInterval time.Duration, elapsed time.Duration) {
+	t.Helper()
+	ms := float64(elapsed) / float64(time.Millisecond)
+	hps := 0.0
+	if elapsed > 0 {
+		hps = float64(tipNum) / elapsed.Seconds()
+	}
+	// Mean wall-clock per height (includes boot + catch-up to uniform tip).
+	meanMs := 0.0
+	if tipNum > 0 {
+		meanMs = ms / float64(tipNum)
+	}
+	t.Logf("BFT_ROW scenario=%s tip=%d elapsed_ms=%.1f mean_ms_per_height=%.1f heights_per_s=%.2f min_interval_ms=%d validators=3 full=1",
+		scenario, tipNum, ms, meanMs, hps, minInterval.Milliseconds())
 }
 
 func TestMultiProcessBFT_SharedChain(t *testing.T) {

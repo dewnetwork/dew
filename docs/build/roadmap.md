@@ -26,7 +26,7 @@ All phases land in the **same monorepo** (Go core + Node for **web docs**, explo
 
 | Track | Status | Theme |
 | :--- | :--- | :--- |
-| **R — Research lab** | Partial | S0–S2 PE lab done ([research-lab](../ops/research-lab.md)); BFT/state optional |
+| **R — Research lab** | Partial | H1 PE + H2 multiproc BFT done ([research-lab](../ops/research-lab.md)); state optional |
 | **1 — Product** | Partial | v1 done; P1e–f / P3c deferred |
 | **2 — Protocol (D3c)** | Partial | MVP + S4 actor docs; slash % / delegation open |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public |

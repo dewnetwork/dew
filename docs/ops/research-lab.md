@@ -1,6 +1,6 @@
 ---
 title: Research lab harness
-description: Track R hypothesis, PE load matrix commands, and S1–S2 baseline numbers.
+description: Track R hypotheses, PE matrix, multiproc BFT latency, and recorded baselines.
 category: ops
 order: 55
 status: stable
@@ -8,9 +8,9 @@ status: stable
 
 # Research lab harness
 
-Lab note for **Track R** / plan **S0–S2**. One written hypothesis, reproducible commands, and recorded baselines. Not marketing; wall-clock numbers vary by machine.
+Lab note for **Track R** (S0–S2 PE, multiproc BFT, optional state). Written hypotheses, reproducible commands, and recorded baselines. Not marketing; wall-clock numbers vary by machine.
 
-**Related:** [Parallel execution](../execution/parallel-execution.md) · [Phases — Track R](../build/phases.md#track-r--research-lab) · [Plan S0–S6](../build/phases.md#recommended-sequence--research-lab--precompile-slots) · package `tests/load/`, `core/vm`.
+**Related:** [Parallel execution](../execution/parallel-execution.md) · [Phases — Track R](../build/phases.md#track-r--research-lab) · [Plan S0–S6](../build/phases.md#recommended-sequence--research-lab--precompile-slots) (done) · packages `tests/load/`, `core/vm`, `devnet/`.
 
 ---
 
@@ -56,6 +56,22 @@ go test ./tests/load/ -count=1 -timeout 120s -run TestLoad_PE_Matrix -v
 
 # PE unit path (equivalence + metrics)
 go test ./core/vm/ -count=1 -timeout 60s -run 'Parallel' -v
+```
+
+### Multiproc BFT + chaos (Track R)
+
+```bash
+# Short commit-latency lab (CI-safe; logs BFT_ROW)
+go test ./devnet/ -count=1 -timeout 180s -run TestMultiProcessBFT_CommitLatencyLab -v
+
+# Shared tip correctness + transfer (CI multiproc smoke)
+go test ./devnet/ -count=1 -timeout 180s -run TestMultiProcessBFT_SharedChain -v
+
+# Chaos restart / re-dial / sync (logs BFT_CHAOS_ROW)
+go test ./devnet/ -count=1 -timeout 60s -run TestPrivateNet_ChaosRestartAndSync -v
+
+# Optional heavy empty soak ≥150 heights (logs BFT_ROW scenario=long_empty)
+DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -count=1 -timeout 10m -run TestMultiProcessBFT_LongEmpty -v
 ```
 
 Optional RPC stats after a local node has run PE blocks or admitted txs:
@@ -157,7 +173,63 @@ Notes:
 | Hub-all → near-total rollbacks | Supported (~0.984) |
 | Block-STM now | **No** — measure first held |
 
-**Still open (out of S2):** multiproc BFT commit latency, SMT tip growth, heavier contract PE matrix.
+**Still open after S2:** heavier contract PE matrix (only if product load needs it). Multiproc BFT: see [H2](#hypothesis-h2--multiproc-bft-pace-and-recovery) below. SMT tip growth remains optional.
+
+---
+
+## Hypothesis H2 — multiproc BFT pace and recovery
+
+**H2 — empty-chain multiproc commit wall-clock and chaos recovery**
+
+On the current multiproc Dew-BFT path (`devnet.StartMultiProcessBFT`, 3 validators + 1 full node, encrypted P2P default):
+
+1. With a **lab** `MinBlockInterval` of 50 ms, mean wall-clock **per height** to a uniform tip (3 validators + full) is **on the order of 100–200 ms**, not the 50 ms floor — vote/gossip/catch-up dominate pure interval.
+2. Production default interval (1 s) remains the right ops pace for empty blocks; lab intervals are for CI/research only (`--bft.min-block-interval`).
+3. After **host kill + redial**, peer rejoin is **sub-second** on loopback; range **sync of a few heights** is also sub-second on this harness.
+4. Uniform tip at height \(N\) across validators and full node remains a hard gate (no split heads in the lab window).
+
+Falsifiers:
+
+- Lab mean ms/height consistently **&lt; min_interval** with uniform tip → timing bug or wrong start clock.
+- Chaos redial/sync regularly **&gt; 3 s** on loopback → mesh/sync regression.
+- Any validator/full tip hash mismatch after `waitUniformTip` success → freeze-severity consensus bug.
+
+### Baseline run (H2)
+
+| | |
+| :--- | :--- |
+| **Date** | 2026-07-14 |
+| **Host** | macOS (local developer machine) |
+| **Commands** | `go test ./devnet/ -run TestMultiProcessBFT_CommitLatencyLab -v` · `TestPrivateNet_ChaosRestartAndSync -v` |
+| **Result** | all PASS |
+
+#### Commit latency (`BFT_ROW`)
+
+| Scenario | Tip | Elapsed | Mean ms/height | Heights/s | Min interval |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| `commit_latency_lab` | 12 | 1724 ms | **143.7** | 6.96 | 50 ms |
+
+Notes:
+
+- Mean ≫ 50 ms supports H2.1 (interval is a floor, not end-to-end finality).
+- Heavy soak `long_empty` (150 heights, 200 ms interval) is optional: `DEW_HEAVY_INTEGRATION=1` · same `BFT_ROW` log format.
+
+#### Chaos recovery (`BFT_CHAOS_ROW`)
+
+| Metric | Value |
+| :--- | ---: |
+| Redial + peer wait | **1.9 ms** |
+| Sync to height 3 | **10.7 ms** |
+
+Supports H2.3 on loopback. Operator Path A / WAN will be slower; this is a harness floor, not a public SLA.
+
+### Reading vs H2
+
+| Claim | Outcome |
+| :--- | :--- |
+| Lab mean ms/height ≫ min_interval | Supported (~144 ms vs 50 ms) |
+| Chaos recovery sub-second loopback | Supported (~13 ms total redial+sync) |
+| Uniform tip hard gate | Supported (test PASS) |
 
 ---
 
@@ -171,7 +243,8 @@ go test ./node/ -count=1 -run TestStakingLab_Scenario -v
 
 Scenario: bond → ActiveSet rank → epoch rotation → unbond/withdraw → optional jail. Ops notes: [private-testnet — Staking lab](./private-testnet.md#staking-lab-s5). Actor rules: [precompiles 0x102](../execution/precompiles.md#0102--staking-entrypoint-phase-c4).
 
-## Next (after S5 / Checkpoint B)
+## Next (after Checkpoint C / H2)
 
-- **S6** — Precompile slots registry formalization
-- Optional: heavier PE fixtures only if product load needs it
+- Optional Track R: **state** — SMT commit or tip-growth vs flat hot path
+- Track **4**: lazy hydrate at large tip (core ergonomics)
+- Deferred: heavier PE fixtures, Path A, live `0x101`, delegation / slash %

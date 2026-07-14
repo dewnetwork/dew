@@ -10,7 +10,9 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); deferred: P1e–f / P3c. Research-friendly default rows: Track **R** + Track **4**; Track **5** only before mainnet claims.
 
-**Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`. Open work is **tracks** again (not a forced next step). Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, optional hydrate / PE / product P1e–f.
+**Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`.
+
+**Track R (post-S6):** H2 multiproc BFT commit latency + chaos recovery **done** 2026-07-14 ([research-lab.md](../docs/ops/research-lab.md)); open optional: state/SMT tip-growth. Research-friendly next: Track **4** lazy hydrate, or Track R state. Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, product P1e–f.
 
 ## Durable chaindata
 
