@@ -26,6 +26,7 @@ func NewAPI(n *node.Node) *API {
 }
 
 // Handlers returns all Phase A required method handlers plus Phase B dew_* extensions.
+// eth_subscribe / eth_unsubscribe are WebSocket-only (see Server.EnableSubscriptions).
 func (a *API) Handlers() map[string]Handler {
 	return map[string]Handler{
 		// identity
@@ -56,6 +57,9 @@ func (a *API) Handlers() map[string]Handler {
 		"eth_feeHistory":           a.ethFeeHistory,
 		// logs
 		"eth_getLogs": a.ethGetLogs,
+		// subscriptions: HTTP returns clear error; real path is WebSocket (ws.go)
+		"eth_subscribe":   a.ethSubscribeHTTP,
+		"eth_unsubscribe": a.ethUnsubscribeHTTP,
 		// misc
 		"eth_accounts":                   a.ethAccounts,
 		"eth_syncing":                    a.ethSyncing,
@@ -572,6 +576,43 @@ func (a *API) ethGetBlockTransactionCountByNumber(params json.RawMessage) (inter
 	return EncodeUint64(count), nil
 }
 
+func (a *API) ethSubscribeHTTP(_ json.RawMessage) (interface{}, error) {
+	return nil, fmt.Errorf("eth_subscribe is only supported over WebSocket")
+}
+
+func (a *API) ethUnsubscribeHTTP(_ json.RawMessage) (interface{}, error) {
+	return nil, fmt.Errorf("eth_unsubscribe is only supported over WebSocket")
+}
+
+// formatHeader builds a newHeads-style header object (no transactions list).
+func (a *API) formatHeader(h *types.Header, hash types.Hash) map[string]interface{} {
+	if h == nil {
+		return nil
+	}
+	return map[string]interface{}{
+		"number":           EncodeUint64(h.Number),
+		"hash":             EncodeHash(hash),
+		"parentHash":       EncodeHash(h.ParentHash),
+		"nonce":            "0x0000000000000000",
+		"sha3Uncles":       "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+		"logsBloom":        "0x" + strings.Repeat("0", 512),
+		"transactionsRoot": EncodeHash(h.TxRoot),
+		"stateRoot":        EncodeHash(h.StateRoot),
+		"receiptsRoot":     EncodeHash(h.ReceiptRoot),
+		"miner":            EncodeAddress(h.Proposer),
+		"difficulty":       "0x0",
+		"totalDifficulty":  "0x0",
+		"extraData":        EncodeBytes(h.ExtraData),
+		"size":             "0x0",
+		"gasLimit":         EncodeUint64(h.GasLimit),
+		"gasUsed":          EncodeUint64(h.GasUsed),
+		"timestamp":        EncodeUint64(h.Timestamp),
+		"uncles":           []string{},
+		"baseFeePerGas":    EncodeBig(h.BaseFee),
+		"mixHash":          "0x" + strings.Repeat("0", 64),
+	}
+}
+
 func (a *API) formatBlock(block *types.Block, fullTx bool) map[string]interface{} {
 	h := block.Header()
 	looks := a.n.TransactionsInBlock(h.Number)
@@ -596,29 +637,8 @@ func (a *API) formatBlock(block *types.Block, fullTx bool) map[string]interface{
 		}
 		txs = hashes
 	}
-	out := map[string]interface{}{
-		"number":           EncodeUint64(h.Number),
-		"hash":             EncodeHash(block.Hash()),
-		"parentHash":       EncodeHash(h.ParentHash),
-		"nonce":            "0x0000000000000000",
-		"sha3Uncles":       "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-		"logsBloom":        "0x" + strings.Repeat("0", 512),
-		"transactionsRoot": EncodeHash(h.TxRoot),
-		"stateRoot":        EncodeHash(h.StateRoot),
-		"receiptsRoot":     EncodeHash(h.ReceiptRoot),
-		"miner":            EncodeAddress(h.Proposer),
-		"difficulty":       "0x0",
-		"totalDifficulty":  "0x0",
-		"extraData":        EncodeBytes(h.ExtraData),
-		"size":             "0x0",
-		"gasLimit":         EncodeUint64(h.GasLimit),
-		"gasUsed":          EncodeUint64(h.GasUsed),
-		"timestamp":        EncodeUint64(h.Timestamp),
-		"uncles":           []string{},
-		"baseFeePerGas":    EncodeBig(h.BaseFee),
-		"transactions":     txs,
-		"mixHash":          "0x" + strings.Repeat("0", 64),
-	}
+	out := a.formatHeader(h, block.Hash())
+	out["transactions"] = txs
 	return out
 }
 

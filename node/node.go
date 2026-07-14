@@ -55,6 +55,11 @@ type Node struct {
 
 	// Dev auto-mine: seal a block of ready pending txs on admit (default true).
 	autoMine bool
+
+	// RPC subscription fan-out (WebSocket eth_subscribe). Separate from n.mu.
+	eventMu   sync.Mutex
+	eventSeq  uint64
+	eventSubs map[uint64]*chainSub
 }
 
 // TxLookup links a transaction hash to its block placement.

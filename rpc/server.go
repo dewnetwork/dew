@@ -10,6 +10,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gorilla/websocket"
+
+	"github.com/dewnetwork/dew/node"
 	"github.com/dewnetwork/dew/params"
 )
 
@@ -24,12 +27,16 @@ const (
 	MaxBatchItems = params.PublicTestnetMaxRPCBatch
 )
 
-// Server is a JSON-RPC 2.0 HTTP server.
+// Server is a JSON-RPC 2.0 HTTP server (WebSocket upgrade optional).
 type Server struct {
-	mu       sync.RWMutex
-	methods  map[string]Handler
-	listener net.Listener
-	httpSrv  *http.Server
+	mu        sync.RWMutex
+	methods   map[string]Handler
+	listener  net.Listener
+	httpSrv   *http.Server
+	wsEnabled bool
+	node      *node.Node // set via EnableSubscriptions
+	api       *API
+	wsConns   int32 // atomic active WebSocket connections
 }
 
 // NewServer creates an empty RPC server.
@@ -79,6 +86,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.WriteHeader(http.StatusNoContent)
 		return
+	}
+	// WebSocket upgrade (eth_subscribe) — same port as HTTP JSON-RPC.
+	if r.Header.Get("Upgrade") == "websocket" || strings.EqualFold(r.Header.Get("Connection"), "Upgrade") {
+		if websocket.IsWebSocketUpgrade(r) {
+			s.serveWS(w, r)
+			return
+		}
 	}
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

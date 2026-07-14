@@ -13,9 +13,9 @@ status: stable
 | Protocol | Default port | Status |
 | :--- | :--- | :--- |
 | HTTP | `8545` | **Implemented** (`rpc` package) |
-| WebSocket | — | **Not implemented** (docs historically mentioned `8546`; do not rely on WS) |
+| WebSocket | same as HTTP | **Implemented** — upgrade on the HTTP listener (`Upgrade: websocket`); no separate default port |
 
-Content-Type: `application/json`. JSON-RPC 2.0 over **HTTP only**.
+Content-Type: `application/json`. JSON-RPC 2.0 over **HTTP** and **WebSocket** (same bind address). Subscriptions require WebSocket.
 
 ### Public testnet RPC (live)
 
@@ -88,9 +88,18 @@ Oversized body/batch → JSON-RPC error `-32600`. Tx admission also enforces mem
 
 | Method | Notes |
 | :--- | :--- |
-| `eth_getLogs` | Address/topic filters |
-| `eth_newFilter` / `eth_getFilterChanges` | Optional Phase A stretch |
-| `eth_subscribe` (WS) | `newHeads`, `logs` — strongly recommended |
+| `eth_getLogs` | Address/topic filters; durable O(range) via secondary log index |
+| `eth_newFilter` / `eth_getFilterChanges` | Optional Phase A stretch (still HTTP poll style) |
+| `eth_subscribe` (WS) | **Implemented:** `newHeads`, `logs` (optional address/topics filter) |
+| `eth_unsubscribe` (WS) | **Implemented** |
+
+WebSocket: dial `ws://host:port/` (or `wss://` behind TLS). Notifications:
+
+```json
+{"jsonrpc":"2.0","method":"eth_subscription","params":{"subscription":"0x…","result":{…}}}
+```
+
+Limits: max **16** subscriptions per connection, max **256** concurrent WS connections (`rpc.MaxWSSubscriptionsPerConn` / `MaxWSConnections`). HTTP `eth_subscribe` returns an error (use WS).
 
 ## Block tags
 

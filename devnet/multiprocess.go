@@ -148,6 +148,7 @@ func StartMultiProcessBFT(cfg MultiProcessConfig) (*MultiProcessNet, error) {
 	handlers := api.Handlers()
 	handlers = wrapGossipHandlers(handlers, full)
 	srv.RegisterAll(handlers)
+	srv.EnableSubscriptions(fullNode, api)
 
 	ln, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {

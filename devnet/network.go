@@ -131,9 +131,11 @@ func Start(cfg NetworkConfig) (*Network, error) {
 		}
 	}
 
-	// RPC HTTP
+	// RPC HTTP (+ WebSocket upgrade for eth_subscribe)
 	srv := rpc.NewServer()
-	srv.RegisterAll(rpc.NewAPI(n).Handlers())
+	api := rpc.NewAPI(n)
+	srv.RegisterAll(api.Handlers())
+	srv.EnableSubscriptions(n, api)
 	netw.RPC = srv
 
 	ln, err := net.Listen("tcp", cfg.HTTPAddr)

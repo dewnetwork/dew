@@ -522,6 +522,7 @@ Detail: [upgrades Track 1](../product/upgrades.md#track-1--product-surface).
 - [x] Mempool / fee telemetry RPC (optional DX) — `dew_getMempoolStats` (2026-07-13)
 - [x] Lazy hydrate / log index at large tip — tip-only Open + on-demand block/tx/receipt/logs (2026-07-14)
 - [x] Secondary log-index keys for O(range) `eth_getLogs` (2026-07-14)
+- [x] WebSocket + `eth_subscribe` (`newHeads`, `logs`) (2026-07-14)
 - [ ] PE upgrade toward full Block-STM / lower conflict cost (serial-equivalent) — not justified by S2 simple-transfer matrix
 - [ ] Other core ergonomics only with docs + tests
 

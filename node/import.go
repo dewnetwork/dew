@@ -230,6 +230,7 @@ func (n *Node) commitBlockLocked(block *dewtypes.Block, results []txExecResult) 
 		n.baseFee = new(big.Int).Set(hdr.BaseFee)
 	}
 
+	var sealLogs []*IndexedLog
 	for i, res := range results {
 		res.receipt.BlockHash = blockHash
 		res.receipt.TransactionIndex = uint(i)
@@ -245,16 +246,25 @@ func (n *Node) commitBlockLocked(block *dewtypes.Block, results []txExecResult) 
 		n.receipts[res.txHash] = res.receipt
 		n.pool.Remove(res.txHash)
 		for j, lg := range res.logs {
-			n.allLogs = append(n.allLogs, &IndexedLog{
+			il := &IndexedLog{
 				Log:         lg,
 				BlockNumber: hdr.Number,
 				BlockHash:   blockHash,
 				TxHash:      res.txHash,
 				TxIndex:     uint(i),
 				Index:       uint(j),
-			})
+			}
+			n.allLogs = append(n.allLogs, il)
+			sealLogs = append(sealLogs, il)
 		}
 	}
+
+	// Fan-out for eth_subscribe (newHeads / logs). Non-blocking; safe under n.mu.
+	n.emitChainEventLocked(ChainEvent{
+		Header: hdr.Copy(),
+		Hash:   blockHash,
+		Logs:   sealLogs,
+	})
 }
 
 func ethTxToDew(tx *ethtypes.Transaction) (*dewtypes.Transaction, error) {

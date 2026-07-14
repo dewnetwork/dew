@@ -83,13 +83,14 @@ func serveHTTP(n *node.Node, stack *node.Stack, httpAddr string, httpPort int) e
 		handlers = wrapGossipHandlers(handlers, n, stack)
 	}
 	srv.RegisterAll(handlers)
+	srv.EnableSubscriptions(n, api)
 
 	addr := fmt.Sprintf("%s:%d", httpAddr, httpPort)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("  rpc:         http://%s\n", ln.Addr().String())
+	fmt.Printf("  rpc:         http://%s (ws upgrade)\n", ln.Addr().String())
 
 	httpSrv := &http.Server{Handler: srv}
 	errCh := make(chan error, 1)

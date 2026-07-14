@@ -152,47 +152,28 @@ go test ./node/ ./rpc/ -count=1
 
 ### Tasks
 
-#### Task 2.1 — Server upgrade + connection lifecycle
+#### Task 2.1–2.2 — Server upgrade + subscriptions
 
-**Files:**
-- Create: `rpc/ws.go`
-- Modify: `rpc/server.go` (route upgrade; keep POST JSON-RPC)
-- Test: `rpc/ws_test.go` (dial, ping, close)
+**Status:** **Done** 2026-07-14
 
-- [ ] **Step 1:** Accept WebSocket upgrade on the RPC HTTP handler (path `/` or `/ws` — pick one and document).
-- [ ] **Step 2:** Per-conn read loop: JSON-RPC request → dispatch → response; concurrent write mutex for notifications.
-- [ ] **Step 3:** CLI: optional `--http.ws` enable flag (default on for local, explicit for production if preferred).
-- [ ] **Step 4:** Commit: `feat(rpc): WebSocket upgrade for JSON-RPC`
+**Files:** `rpc/ws.go`, `rpc/server.go`, `rpc/api.go`, `rpc/ws_test.go`, `node/events.go`, `node/import.go`, `cmd/dew/bft.go`, `devnet/*`, nginx configs, `docs/api/json-rpc.md`
 
-#### Task 2.2 — Subscriptions
-
-**Files:**
-- Create: `rpc/subscription.go`
-- Modify: `rpc/api.go` (register subscribe handlers; hook node seal events)
-- Modify: `node/` — small callback/event bus on new head / new logs (minimal: channel or listener list on `Node`)
-- Test: subscribe `newHeads` → mine block → notification; `logs` filter match/miss
-
-- [ ] **Step 1:** `eth_subscribe` params: `["newHeads"]` | `["logs", filterObj]`.
-- [ ] **Step 2:** Return subscription hex id; store in conn map.
-- [ ] **Step 3:** On seal/import head: notify `newHeads` with header JSON (same shape as `eth_getBlockByNumber` header fields).
-- [ ] **Step 4:** On new logs: match filter → notify.
-- [ ] **Step 5:** `eth_unsubscribe` removes id; conn close cleans all.
-- [ ] **Step 6:** Docs: `docs/api/json-rpc.md` table Status = Implemented; port/notes; `docs/ops/public-testnet.md` if nginx changes.
-- [ ] **Step 7:** Commit: `feat(rpc): eth_subscribe newHeads and logs`
+- [x] WebSocket upgrade on same HTTP port (`/`)
+- [x] `eth_subscribe` / `eth_unsubscribe`: `newHeads`, `logs`
+- [x] Node `SubscribeChainEvents` on seal/import
+- [x] HTTP path returns clear error for subscribe
+- [x] nginx Upgrade headers + GET allowed
+- [x] Tests: HTTP rejected; WS newHeads notification
 
 **Verification:**
 ```bash
 go test ./rpc/ ./node/ -count=1
-# manual: wscat or websocat against local dew run, eth_subscribe newHeads
 ```
 
-**Dependencies:** Wave 1 recommended (logs sub benefits from fast historical getLogs; not hard-blocked)  
-**Estimated scope:** Large — keep split as 2.1 / 2.2 commits
-
 ### Checkpoint Wave 2
-- [ ] Explorer or a small script can replace head poll with `newHeads`
-- [ ] Docs no longer say WS “Not implemented”
+- [x] Docs no longer say WS “Not implemented”
 - [ ] Human review before Wave 3 or 4
+- [ ] Operator: reload nginx on Path B for public WS
 
 ---
 
