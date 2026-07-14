@@ -33,7 +33,8 @@ Operator samples for **private soak** and **controlled public RPC** after Phase 
 | ├── [setup-certbot-docker.sh](./scripts/setup-certbot-docker.sh) | **Optional** force LE issue + reload edge |
 | ├── [install-edge-nginx.sh](./scripts/install-edge-nginx.sh) | Host nginx site install |
 | └── [setup-certbot.sh](./scripts/setup-certbot.sh) | Host certbot (no Compose edge) |
-| [docker-compose.yml](./docker-compose.yml) | **Full stack** — node + faucet + explorer + edge + certbot |
+| [docker-compose.yml](./docker-compose.yml) | **Full stack** — node + **indexer** + faucet + explorer + edge + certbot |
+| **[indexer/](./indexer/)** | **History indexer (P1e)** — `Dockerfile` for `dewindex` |
 | [Launch checklist](../docs/ops/launch-checklist.md) | End-to-end ops checklist |
 
 ## Prerequisites

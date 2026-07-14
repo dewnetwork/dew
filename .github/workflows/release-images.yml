@@ -51,6 +51,9 @@ jobs:
           - image: dew-faucet
             dockerfile: deploy/faucet/Dockerfile
             build_args: ""
+          - image: dew-indexer
+            dockerfile: deploy/indexer/Dockerfile
+            build_args: ""
           # SPA PUBLIC_* bake path B hostnames (browser-facing; no secrets).
           # Captcha site key/provider are NOT listed here: environment-scoped
           # vars are empty inside strategy.matrix — inject at step level below.
@@ -65,6 +68,7 @@ jobs:
               PUBLIC_RPC_URL=https://rpc-dew.fadosoft.com
               PUBLIC_CHAIN_ID=2205
               PUBLIC_EXPLORER_BASE=https://explorer-dew.fadosoft.com
+              PUBLIC_INDEXER_URL=https://explorer-dew.fadosoft.com/indexer
               PUBLIC_KNOWN_TOKENS=USDT:0x43d08b71B0A5626a9D0eB607C2aE5277255cFbC8,USDC:0xacDd0BF26C96879b4c4CeE8F92928f1760F07119,DAI:0x9813B1738eb2982F3D0C1E22F9C7c4F07B670a1B,WETH:0x5b88b2ab38920197328f9D90BaAf29cb91F7E3CB,WBTC:0xdB6E09cb954Ae645C815Bc941bDfD85D4144166E
           - image: dew-guestbook
             dockerfile: deploy/guestbook/Dockerfile
@@ -223,7 +227,7 @@ jobs:
             echo "# Node image bakes genesis.public.json (path B)."
             echo "# SPA images bake path B PUBLIC_* URLs (see release-images.yml)."
             echo
-            for name in dew dew-faucet dew-faucet-web dew-explorer dew-guestbook; do
+            for name in dew dew-faucet dew-faucet-web dew-explorer dew-guestbook dew-indexer; do
               echo "ghcr.io/${OWNER}/${name}:${VERSION}"
               echo "ghcr.io/${OWNER}/${name}:${TAG}"
             done

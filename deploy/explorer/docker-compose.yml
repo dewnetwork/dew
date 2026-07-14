@@ -18,6 +18,7 @@ services:
         - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-https://rpc-dew.fadosoft.com}
         - PUBLIC_CHAIN_ID=${PUBLIC_CHAIN_ID:-2205}
         - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-https://explorer-dew.fadosoft.com}
+        - PUBLIC_INDEXER_URL=${PUBLIC_INDEXER_URL:-https://explorer-dew.fadosoft.com/indexer}
         - PUBLIC_DEW_PRICE_USD=${PUBLIC_DEW_PRICE_USD:-}
         - PUBLIC_DEW_PRICE_BTC=${PUBLIC_DEW_PRICE_BTC:-}
         - PUBLIC_DEW_PRICE_CHANGE_24H=${PUBLIC_DEW_PRICE_CHANGE_24H:-}

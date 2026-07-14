@@ -1,4 +1,4 @@
-# Combined public stack: Dew + faucet + explorer + nginx edge (:80/:443) + certbot.
+# Combined public stack: Dew + indexer + faucet + explorer + nginx edge (:80/:443) + certbot.
 #
 # From repo root (pull GHCR release images — default):
 #   cp deploy/.env.example deploy/.env   # edit keys / image tags / TLS
@@ -15,7 +15,7 @@
 # Public hostnames (DNS A/AAAA → this host):
 #   https://rpc-dew.fadosoft.com
 #   https://faucet-dew.fadosoft.com
-#   https://explorer-dew.fadosoft.com
+#   https://explorer-dew.fadosoft.com          (+ /indexer/ → dewindex P1e)
 #   https://guestbook-dew.fadosoft.com
 #
 # Only the edge service publishes host ports (80/443). Backends stay on dew_network.
@@ -48,6 +48,33 @@ services:
     # Debug from host: docker compose exec dew-node … or temporary ports: mapping.
     expose:
       - "8545"
+    restart: unless-stopped
+    networks:
+      - dew_network
+
+  # 1b. History indexer (P1e) — SQLite sidecar; browser via edge /indexer/
+  indexer:
+    image: ${INDEXER_IMAGE:-ghcr.io/dewnetwork/dew-indexer:latest}
+    pull_policy: ${PULL_POLICY:-always}
+    build:
+      context: ..
+      dockerfile: deploy/indexer/Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+    container_name: dew-indexer
+    command:
+      - -rpc
+      - http://dew-node:8545
+      - -db
+      - /var/lib/dewindex/indexer.db
+      - -http.addr
+      - "0.0.0.0:8550"
+    volumes:
+      - dew-indexer-data:/var/lib/dewindex
+    expose:
+      - "8550"
+    depends_on:
+      - dew-node
     restart: unless-stopped
     networks:
       - dew_network
@@ -106,7 +133,7 @@ services:
     networks:
       - dew_network
 
-  # 4. Block Explorer SPA (browser talks to PUBLIC_RPC_URL baked in image)
+  # 4. Block Explorer SPA (browser talks to PUBLIC_RPC_URL + optional PUBLIC_INDEXER_URL)
   explorer:
     image: ${EXPLORER_IMAGE:-ghcr.io/dewnetwork/dew-explorer:latest}
     pull_policy: ${PULL_POLICY:-always}
@@ -117,6 +144,7 @@ services:
         - PUBLIC_RPC_URL=${PUBLIC_RPC_URL:-https://rpc-dew.fadosoft.com}
         - PUBLIC_CHAIN_ID=${PUBLIC_CHAIN_ID:-2205}
         - PUBLIC_EXPLORER_BASE=${PUBLIC_EXPLORER_BASE:-https://explorer-dew.fadosoft.com}
+        - PUBLIC_INDEXER_URL=${PUBLIC_INDEXER_URL:-https://explorer-dew.fadosoft.com/indexer}
         - PUBLIC_DEW_PRICE_USD=${PUBLIC_DEW_PRICE_USD:-}
         - PUBLIC_DEW_PRICE_BTC=${PUBLIC_DEW_PRICE_BTC:-}
         - PUBLIC_DEW_PRICE_CHANGE_24H=${PUBLIC_DEW_PRICE_CHANGE_24H:-}
@@ -128,6 +156,7 @@ services:
       - "80"
     depends_on:
       - dew-node
+      - indexer
     restart: unless-stopped
     networks:
       - dew_network
@@ -157,6 +186,7 @@ services:
     container_name: dew-edge
     depends_on:
       - dew-node
+      - indexer
       - faucet-frontend
       - explorer
       - guestbook
@@ -214,5 +244,6 @@ networks:
 
 volumes:
   dew-node-data:
+  dew-indexer-data:
   dew_letsencrypt:
   dew_certbot_www:

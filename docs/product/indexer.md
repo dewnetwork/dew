@@ -59,21 +59,21 @@ docker run --rm -p 8550:8550 \
   dew-indexer:local
 ```
 
-Compose snippet (optional service beside `dew-node`):
+### Full stack Compose (path B)
 
-```yaml
-indexer:
-  build:
-    context: ..
-    dockerfile: deploy/indexer/Dockerfile
-  command: ["-rpc", "http://dew-node:8545", "-db", "/data/indexer.db", "-http.addr", "0.0.0.0:8550"]
-  volumes:
-    - indexer-data:/data
-  expose:
-    - "8550"
+`deploy/docker-compose.yml` includes service **`indexer`** (`dew-indexer` image / build from `deploy/indexer/Dockerfile`).
+
+- Ingest: `http://dew-node:8545`
+- Volume: `dew-indexer-data` → `/var/lib/dewindex`
+- Edge: `https://explorer-dew.fadosoft.com/indexer/` → `indexer:8550` (prefix stripped)
+- Explorer bake: `PUBLIC_INDEXER_URL=https://explorer-dew.fadosoft.com/indexer`
+
+```bash
+# from repo root — rebuild so SPA + nginx edge pick up indexer
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d indexer explorer edge
 ```
 
-Point explorer build arg / env `PUBLIC_INDEXER_URL` at the public or edge URL for the indexer (or same-origin proxy).
+GHCR image: `ghcr.io/dewnetwork/dew-indexer` (published on release with other deploy images).
 
 ## Related
 
