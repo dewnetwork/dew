@@ -4,7 +4,8 @@ import "math/big"
 
 // Staking parameters — frozen candidates for public-testnet-v1 (Phase C6).
 // Align with docs/consensus/validators.md and docs/ops/public-testnet.md.
-// Residual: delegation/commission; slash burn percentages; zero-value nested unbond actor.
+// Residual: delegation/commission; slash burn percentages (S4 deferred).
+// Nested zero-value unbond/withdraw = fail-closed tx.origin (S4 documented).
 
 const (
 	// StakingPrecompileGasBond is gas for bond / self-stake register.

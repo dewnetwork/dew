@@ -133,8 +133,39 @@ node scripts/devnet-erc20.mjs http://127.0.0.1:8545
 | :--------- | :------ | :-------- |
 | Native DewTx | on (`DefaultEnableNativePath`) | `Node.SetNativeEnabled(false)` |
 | Dew precompiles 0x100+ | on | `SetPrecompilesEnabled(false)` |
-| Staking 0x102 live methods | **off** | Keep off until ops opt in; `SetStakingEnabled(true)` to enable |
+| Staking 0x102 live methods | **off** | Keep off until ops opt in; `SetStakingEnabled(true)` / `dew run --staking` |
 | P2P encrypt | **on** | Cleartext only with `AllowCleartext` (dev) |
+
+### Staking lab (S5)
+
+**Public-testnet-v1 and Path B keep staking off** (`params.DefaultEnableStaking = false`, freeze table). Use this section only on **private / local** nets.
+
+**Enable**
+
+```bash
+# Single process
+go build -o bin/dew ./cmd/dew
+./bin/dew run --genesis genesis.json --staking --http.port 8545
+
+# Or in-process lab (recommended automated path)
+go test ./node/ -count=1 -run TestStakingLab_Scenario -v
+```
+
+Lab genesis knobs (see test helper `stakingLabGenesis`): short `epochLength`, `unbondingPeriodSeconds: 0` (or small), low `minValidatorStake`, small `activeValidatorCap`. Production freeze candidates stay at 86400 / 604800 / 100000 DEW / K=100.
+
+**Scenario notes** (also automated in `TestStakingLab_Scenario`)
+
+| Step | What to observe |
+| :--- | :--- |
+| 1. Bond | `CALL 0x102` method `0x00` with value ≥ min self-stake; `0x02` getSelfStake matches |
+| 2. Active set rank | `0x04` activeCount; `0x05` activeAt(0) = highest voting power |
+| 3. Epoch rotation | When staking on and height % epochLength == 0, `Node.TryRotateValidatorSet` returns BFT set from ActiveSet (address-sorted; powers match stake). Empty ActiveSet → keep genesis validators |
+| 4. Unbond → withdraw | `0x01` unbond amount; wait `unbondingPeriodSeconds`; `0x08` withdraw. Lab uses period **0** for same-block withdraw |
+| 5. Jail (optional) | `0x06` dual-vote evidence → `0x07` isJailed = 1; offender drops from ActiveSet power |
+
+**Actor reminder (S4):** unbond/withdraw act on **tx.origin**. Prefer top-level EOA calls. Nested bond still credits the immediate value-payer.
+
+**Do not** enable `--staking` on public Path B unless intentionally running a staking lab fork (document separately).
 
 ### Emergency stop
 

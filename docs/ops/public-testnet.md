@@ -95,7 +95,7 @@ Numbers formerly marked `_tentative_` that appear in this table are **frozen for
 | :------ | :------ | :---- |
 | Native DewTx / `dew_*` | **on** | Emergency: `Node.SetNativeEnabled(false)` |
 | Dew precompiles `0x100+` | **on** | Emergency: disable precompiles |
-| Staking `0x102` live methods | **off** | Operators opt in; unbonding enforced; BFT set rotation still residual |
+| Staking `0x102` live methods | **off** | Operators opt in (`--staking`); unbonding enforced; ActiveSet→BFT rotation when on. Lab path: [private-testnet — Staking lab](./private-testnet.md#staking-lab-s5) |
 | Parallel execution | available | Equivalence-tested; not required for freeze |
 | P2P encrypt | **on** | Cleartext only with explicit allow flag (dev) |
 

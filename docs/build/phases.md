@@ -462,7 +462,7 @@ Open work after the Phase D foundation. **One track per row** in the [summary ta
 - [x] PE: sequential vs parallel matrix (conflict rate, workers, rollback metrics) — `TestLoad_PE_Matrix_ConflictAndWorkers` (2026-07-13)
 - [ ] BFT: multiproc soak or chaos (commit latency / recovery notes)
 - [ ] State: SMT commit or tip-growth measurement vs flat hot path
-- [ ] Staking lab (optional): private net with `--staking` scenario notes
+- [x] Staking lab (optional): private net with `--staking` scenario notes — [Staking lab S5](../ops/private-testnet.md#staking-lab-s5) (2026-07-14)
 - [x] Results recorded under docs or lab notes; code changes keep serial-equivalent tests green — S1–S2 tables in [research-lab.md](../ops/research-lab.md)
 
 ### Track 1 — Product surface
@@ -640,20 +640,20 @@ flowchart LR
 
 **Acceptance:**
 
-- [ ] Private / multiproc or in-process path with `SetStakingEnabled(true)` documented
-- [ ] Scenario notes: bond → active set rank → unbond wait → withdraw; optional double-sign jail
-- [ ] Epoch rotation observed or tested when staking on
-- [ ] Public-testnet default remains staking **off** (freeze / launch checklist unchanged)
+- [x] Private / multiproc or in-process path with `SetStakingEnabled(true)` documented — [private-testnet — Staking lab](../ops/private-testnet.md#staking-lab-s5) + `TestStakingLab_Scenario` (2026-07-14)
+- [x] Scenario notes: bond → active set rank → unbond wait → withdraw; optional double-sign jail
+- [x] Epoch rotation observed or tested when staking on — `TryRotateValidatorSet` at even height in lab genesis
+- [x] Public-testnet default remains staking **off** (freeze / launch checklist unchanged) — asserted in test + `params.PublicTestnetStakingOn`
 
 **Packages:** `devnet/`, `docs/ops/private-testnet.md`, `docs/consensus/` · **Verify:** documented commands + tests · **Scope:** M  
 **Depends on:** S4
 
 ### Checkpoint B — after S3–S5
 
-- [ ] Telemetry usable under load (if S3 done)
-- [ ] `0x102` lab behavior documented and tested
-- [ ] No accidental enable of staking on public Path B
-- [ ] Human OK to proceed to Precompile slots formalization
+- [x] Telemetry usable under load (if S3 done) — `dew_getMempoolStats` (S3)
+- [x] `0x102` lab behavior documented and tested — S4 edges + S5 lab scenario (2026-07-14)
+- [x] No accidental enable of staking on public Path B — default off + freeze checks
+- [x] Human OK to proceed to Precompile slots formalization — S0–S5 closed; next **S6**
 
 ### S6 — Precompile slots (milestone)
 

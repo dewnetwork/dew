@@ -161,7 +161,17 @@ Notes:
 
 ---
 
-## Next (after S3)
+## Staking lab (S5)
 
-- **S4** — staking precompile edges (`0x102`) in lab
+In-process path with staking **on** (not public Path B default):
+
+```bash
+go test ./node/ -count=1 -run TestStakingLab_Scenario -v
+```
+
+Scenario: bond → ActiveSet rank → epoch rotation → unbond/withdraw → optional jail. Ops notes: [private-testnet — Staking lab](./private-testnet.md#staking-lab-s5). Actor rules: [precompiles 0x102](../execution/precompiles.md#0102--staking-entrypoint-phase-c4).
+
+## Next (after S5 / Checkpoint B)
+
+- **S6** — Precompile slots registry formalization
 - Optional: heavier PE fixtures only if product load needs it
