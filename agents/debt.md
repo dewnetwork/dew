@@ -64,7 +64,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] GitHub Release Please + cross-platform Go binaries (`release-please.yml` / `release-binaries.yml`) — July 2026
 - [x] GHCR multi-arch image push on release (`release-images.yml`: dew, faucet, explorer, guestbook) — July 2026
 - [x] Compose path B / full stack default to GHCR pull (`image:` + `pull_policy`; `build:` kept for `--build`) — July 2026
-- [x] `ldflags` version injection for `dew` / `dewcli` / `dewfaucet` / `web3_clientVersion` (`version` package; release CI + Docker `VERSION` arg) — July 2026
+- [x] `ldflags` version injection for `dew` / `dewcli` / `dewfaucet` / `dewindex` / `web3_clientVersion` (`version` package; release CI + Docker `VERSION` arg) — July 2026
 
 ## Deferred / mainnet
 
