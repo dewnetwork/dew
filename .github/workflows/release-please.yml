@@ -90,7 +90,8 @@ jobs:
           go build -trimpath -ldflags="$ldflags" -o "$out/dew" ./cmd/dew
           go build -trimpath -ldflags="$ldflags" -o "$out/dewcli" ./cmd/dewcli
           go build -trimpath -ldflags="$ldflags" -o "$out/dewfaucet" ./cmd/dewfaucet
-          tar -C "$out" -czf "${out}.tar.gz" dew dewcli dewfaucet
+          go build -trimpath -ldflags="$ldflags" -o "$out/dewindex" ./cmd/dewindex
+          tar -C "$out" -czf "${out}.tar.gz" dew dewcli dewfaucet dewindex
           rm -rf "$out"
           ls -la dist/
 

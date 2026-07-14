@@ -69,7 +69,7 @@ Fees, inflation, staking minimums, and slash percentages must live in **normativ
 
 ## 9. Operational model (Go node + Node docs/tooling)
 
-- Go binaries: `dew`, `dewcli`, `dewfaucet`
+- Go binaries: `dew`, `dewcli`, `dewfaucet`, `dewindex`
 - Node.js: VitePress docs, explorer, faucet-web, guestbook-web, smoke scripts
 - Config via files + flags; durable chaindata under `--datadir`
 - Tests as acceptance (Go unit/integration/devnet + optional Node RPC checks)

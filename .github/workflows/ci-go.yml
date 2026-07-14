@@ -56,6 +56,8 @@ jobs:
           go build -ldflags="$ldflags" -o bin/dew ./cmd/dew
           go build -ldflags="$ldflags" -o bin/dewcli ./cmd/dewcli
           go build -ldflags="$ldflags" -o bin/dewfaucet ./cmd/dewfaucet
+          go build -ldflags="$ldflags" -o bin/dewindex ./cmd/dewindex
           ./bin/dew version | grep -F 'dew ci'
           ./bin/dewcli version | grep -F 'dewcli ci'
           ./bin/dewfaucet version | grep -F 'dewfaucet ci'
+          ./bin/dewindex version | grep -F 'dewindex ci'

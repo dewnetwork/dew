@@ -16,13 +16,28 @@ import (
 )
 
 func main() {
+	// version before flag.Parse so `dewindex version` works without other flags.
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "version", "-version", "--version", "-v":
+			fmt.Println(version.Line("dewindex"))
+			return
+		}
+	}
+
 	rpcURL := flag.String("rpc", envOr("INDEXER_RPC_URL", "http://127.0.0.1:8545"), "Dew JSON-RPC HTTP URL")
 	dbPath := flag.String("db", envOr("INDEXER_DB", "indexer.db"), "SQLite database path")
 	listen := flag.String("http.addr", envOr("INDEXER_LISTEN", "127.0.0.1:8550"), "HTTP listen address")
 	start := flag.Uint64("start-block", 0, "first block when DB is empty")
 	poll := flag.Duration("poll", time.Second, "tip poll interval after catch-up")
 	batch := flag.Int("batch", 64, "max blocks per poll tick")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(version.Line("dewindex"))
+		return
+	}
 
 	cfg := indexer.Config{
 		RPCURL:           *rpcURL,

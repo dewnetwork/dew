@@ -179,7 +179,7 @@ jobs:
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
-          # VERSION injects software semver into Go images (dew, dew-faucet); SPA Dockerfiles ignore it.
+          # VERSION injects software semver into Go images (dew, dew-faucet, dew-indexer); SPA Dockerfiles ignore it.
           # Captcha PUBLIC_* for dew-faucet-web come from the step above (Environment testnet vars).
           build-args: ${{ steps.build_args.outputs.list }}
           cache-from: type=gha,scope=${{ matrix.image }}

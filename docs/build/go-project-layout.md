@@ -14,7 +14,7 @@ Dew is a **single monorepo**: one git repository, one product surface, shared do
 
 | Language | Responsibility | Package manager |
 | :--- | :--- | :--- |
-| **Go** | L1 node, consensus, P2P, state, EVM, RPC, `dewcli`, `dewfaucet` | `go.mod` / `go.sum` at repo root |
+| **Go** | L1 node, consensus, P2P, state, EVM, RPC, `dewcli`, `dewfaucet`, `dewindex` | `go.mod` / `go.sum` at repo root |
 | **Node.js** | Docs website (VitePress from `docs/`); landing (`web/`); explorer + faucet-web SPAs; scripts | `package.json` + `pnpm-lock.yaml` at repo root |
 
 ### Rules of ownership
@@ -31,7 +31,8 @@ dew/                            # monorepo root
 ├── cmd/
 │   ├── dew/                    # full node (run, init, devnet)
 │   ├── dewcli/                 # wallet CLI
-│   └── dewfaucet/              # production faucet process
+│   ├── dewfaucet/              # production faucet process
+│   └── dewindex/               # history indexer sidecar (P1e)
 ├── core/
 │   ├── types/                  # Header, block, tx, receipt, DewTx
 │   ├── state/                  # Flat state + SMT commit
@@ -122,13 +123,13 @@ Root scripts: `docs:dev` · `docs:build` · `docs:preview` · `site:build` (land
 
 | Workflow | Trigger | What it runs |
 | :--- | :--- | :--- |
-| [`ci-go.yml`](../../.github/workflows/ci-go.yml) | PR + push `main` | `go vet`, `go test ./...`, security/load/freeze/chaos gates, build `dew` / `dewcli` / `dewfaucet` |
+| [`ci-go.yml`](../../.github/workflows/ci-go.yml) | PR + push `main` | `go vet`, `go test ./...`, security/load/freeze/chaos gates, build `dew` / `dewcli` / `dewfaucet` / `dewindex` |
 | [`ci-web.yml`](../../.github/workflows/ci-web.yml) | PR + push `main` | typecheck + `site:build`; explorer + faucet-web builds |
 | [`security.yml`](../../.github/workflows/security.yml) | PR + push `main` + weekly | govulncheck, fuzz, pnpm audit, CodeQL, Trivy (HIGH/CRITICAL; SARIF limited to same severities) |
 | [`pages.yml`](../../.github/workflows/pages.yml) | push `main` | GitHub Pages deploy of `dist/` |
 | [`release-please.yml`](../../.github/workflows/release-please.yml) | push `main` | [Release Please](https://github.com/googleapis/release-please) PR + tag; attach Go binaries + GHCR images on release |
-| [`release-binaries.yml`](../../.github/workflows/release-binaries.yml) | tag `v*` / manual | Re-upload cross-built `dew` / `dewcli` / `dewfaucet` + checksums |
-| [`release-images.yml`](../../.github/workflows/release-images.yml) | tag `v*` / call / manual | Multi-arch Docker images → `ghcr.io/<owner>/dew*` |
+| [`release-binaries.yml`](../../.github/workflows/release-binaries.yml) | tag `v*` / manual | Re-upload cross-built `dew` / `dewcli` / `dewfaucet` / `dewindex` + checksums |
+| [`release-images.yml`](../../.github/workflows/release-images.yml) | tag `v*` / call / manual | Multi-arch Docker images → `ghcr.io/<owner>/dew*` (incl. `dew-indexer`) |
 
 Heavy multiproc soak (`DEW_HEAVY_INTEGRATION=1`) is not required on every PR.
 
@@ -145,7 +146,7 @@ Software versions are **semver** tags (`vX.Y.Z`), independent of the protocol fr
 
    **Binaries**
 
-   - `dew_vX.Y.Z_{linux,darwin}_{amd64,arm64}.tar.gz` (each archive: `dew`, `dewcli`, `dewfaucet`)
+   - `dew_vX.Y.Z_{linux,darwin}_{amd64,arm64}.tar.gz` (each archive: `dew`, `dewcli`, `dewfaucet`, `dewindex`)
    - `checksums.txt` (SHA-256)
 
    **Container images** (`linux/amd64` + `linux/arm64` → GHCR)
@@ -192,6 +193,7 @@ Local binary build (no release):
 go build -o bin/dew ./cmd/dew
 go build -o bin/dewcli ./cmd/dewcli
 go build -o bin/dewfaucet ./cmd/dewfaucet
+go build -o bin/dewindex ./cmd/dewindex
 # default: dew version → "dew dev (public-testnet-v1)"
 # inject software semver (also drives web3_clientVersion):
 # go build -ldflags="-X github.com/dewnetwork/dew/version.Version=0.2.0" -o bin/dew ./cmd/dew

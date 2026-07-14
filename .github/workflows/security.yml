@@ -152,6 +152,7 @@ jobs:
           go build -o /tmp/dew ./cmd/dew
           go build -o /tmp/dewcli ./cmd/dewcli
           go build -o /tmp/dewfaucet ./cmd/dewfaucet
+          go build -o /tmp/dewindex ./cmd/dewindex
 
       - name: Autobuild (JS)
         uses: github/codeql-action/autobuild@v3
