@@ -736,8 +736,8 @@ func (n *Node) EstimateGas(msg vm.Message) (uint64, error) {
 }
 
 // FilterLogs returns logs matching basic address/topic filters in a block range.
-// After lazy hydrate, historical logs are resolved from durable receipts (no full
-// allLogs preload on Open). Recent seals still feed allLogs for the in-process path.
+// Historical logs come from the secondary log index (O(range) by block prefix).
+// Recent seals still feed allLogs for the in-process path; results are deduped.
 func (n *Node) FilterLogs(fromBlock, toBlock uint64, addresses []dewcrypto.Address, topics [][]dewtypes.Hash) []*IndexedLog {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -745,25 +745,11 @@ func (n *Node) FilterLogs(fromBlock, toBlock uint64, addresses []dewcrypto.Addre
 	for _, a := range addresses {
 		addrSet[a] = struct{}{}
 	}
-	match := func(il *IndexedLog) bool {
-		if il == nil || il.Log == nil {
-			return false
-		}
-		if il.BlockNumber < fromBlock || il.BlockNumber > toBlock {
-			return false
-		}
-		if len(addrSet) > 0 {
-			if _, ok := addrSet[il.Log.Address]; !ok {
-				return false
-			}
-		}
-		return matchTopics(il.Log.Topics, topics)
-	}
 
 	var out []*IndexedLog
 	seen := make(map[string]struct{}) // txHash|logIndex
 	add := func(il *IndexedLog) {
-		if !match(il) {
+		if !logMatchesFilter(il, fromBlock, toBlock, addrSet, topics) {
 			return
 		}
 		key := il.TxHash.Hex() + "|" + fmt.Sprint(il.Index)
@@ -778,7 +764,13 @@ func (n *Node) FilterLogs(fromBlock, toBlock uint64, addresses []dewcrypto.Addre
 		add(il)
 	}
 
-	// Durable receipts cover history not held in allLogs after lazy Open.
+	// Durable secondary index (L|block|…) — not a full receipt prefix scan.
+	if n.hasLogIndexVersion() {
+		n.filterLogsFromIndexLocked(fromBlock, toBlock, add)
+		return out
+	}
+
+	// Fallback for databases that never ran ensureLogIndex (should be rare).
 	if it, ok := n.db.(db.IteratePrefix); ok {
 		_ = it.IteratePrefix([]byte{prefixReceipt}, func(key, value []byte) error {
 			if len(key) != 1+32 {

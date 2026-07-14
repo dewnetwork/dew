@@ -308,5 +308,5 @@ Scenario: bond → ActiveSet rank → epoch rotation → unbond/withdraw → opt
 
 Track R acceptance (PE + BFT + state) is **done** for the research harness. Optional follow-ups:
 
-- Track **4** residual: PE Block-STM only if product load contradicts H1; optional log-index keys; optional **dirty/incremental SMT** if tip growth becomes ops-painful (H3)
+- Track **4** residual: PE Block-STM only if product load contradicts H1; optional **dirty/incremental SMT** if tip growth becomes ops-painful (H3); log-index O(range) **done** 2026-07-14
 - Deferred: heavier PE fixtures, Path A, live `0x101`, delegation / slash %

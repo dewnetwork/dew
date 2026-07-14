@@ -12,7 +12,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`.
 
-**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate done** 2026-07-14. Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3), product P1e–f, optional log-index keys.
+**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate done** 2026-07-14. **Log index O(range) done** 2026-07-14. Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3), product P1e–f, optional WS/`eth_subscribe` (gap plan Wave 2).
 
 ## Durable chaindata
 
@@ -24,7 +24,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 - [x] **Not** merging peers into chaindata — keep `<datadir>/peers.json` (D3b)
 - [x] Pebble is the only DB backend; MemoryDB removed; `--datadir` defaults to `/var/lib/dew`
 - [x] Lazy hydrate: Open tip-only; blocks/tx/receipts/logs on demand — Track 4 (2026-07-14)
-- [ ] Optional residual: secondary log-index keys for O(range) `eth_getLogs` without full receipt prefix scan
+- [x] Secondary log-index keys (`L|block|tx|log`) for O(range) `eth_getLogs` + Open backfill — Track 4 residual (2026-07-14)
 
 ## C1 residuals
 

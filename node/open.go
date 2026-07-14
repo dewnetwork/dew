@@ -98,6 +98,10 @@ func openWithDatabase(g *config.Genesis, database db.Database) (*Node, error) {
 	if err := n.hydrateLocked(tipNum, tipHash); err != nil {
 		return nil, err
 	}
+	// Build secondary log index if this chaindata predates O(range) keys.
+	if err := n.ensureLogIndex(); err != nil {
+		return nil, fmt.Errorf("node: ensure log index: %w", err)
+	}
 	return n, nil
 }
 
@@ -135,6 +139,7 @@ func newNodeFromGenesisDB(g *config.Genesis, database db.Database) (*Node, error
 	if err := n.persistGenesisLocked(block); err != nil {
 		return nil, fmt.Errorf("node: persist genesis: %w", err)
 	}
+	// Genesis has no logs; marker is written in persistGenesisLocked.
 	return n, nil
 }
 

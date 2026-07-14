@@ -56,10 +56,10 @@ At large tip, preloading every height + full receipt/tx index into maps made res
 | :--- | :--- |
 | Tip header/body + tip maps | `GetBlockByNumber` / `GetBlockByHash` |
 | Flat state via Pebble (unchanged) | `GetTransaction` / `GetReceipt` |
-| — | `FilterLogs` scans durable receipts in range (plus in-memory `allLogs` for post-open seals) |
+| — | `FilterLogs` uses secondary **log index** keys `L\|block\|tx\|log` (O(range) by block); in-memory `allLogs` for post-open seals |
 | — | `TransactionsInBlock` uses body + durable tx-lookup scan |
 
-**Non-goal here:** secondary log-index keys for O(range) `eth_getLogs` without receipt iteration — still optional residual if public history queries dominate.
+**Log index (Track 4 residual, done):** on seal/import each receipt log is also written under prefix `L` ordered by block number. Open runs `ensureLogIndex` to backfill from receipts when `meta/logIndexVersion` is missing (upgrade path). Schema is independent of `meta/version` (chain schema).
 
 ## Packages
 
@@ -83,4 +83,4 @@ See [D3 scale](../scale/d3-scale.md) and [agents/debt.md](../../agents/debt.md).
 
 ## Non-goals
 
-Custom storage engine; peer data in Pebble; snap sync; pruning/freezer; PE multi-version store upgrade; dedicated log-index SST (lazy receipt scan is enough for public-testnet-v1).
+Custom storage engine; peer data in Pebble; snap sync; pruning/freezer; PE multi-version store upgrade; address-secondary log keys (`A\|addr\|…`) unless product load needs them.

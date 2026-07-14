@@ -101,6 +101,19 @@ func (n *Node) writeChainKeys(w kvWriter, block *dewtypes.Block, results []txExe
 			if err := w.Put(receiptKey(res.txHash), rb); err != nil {
 				return err
 			}
+			// Secondary log index for O(range) eth_getLogs (Track 4 residual).
+			for j, lg := range res.receipt.Logs {
+				if lg == nil {
+					continue
+				}
+				lb, err := encodeLogIndex(lg, res.txHash, blockHash)
+				if err != nil {
+					return err
+				}
+				if err := w.Put(logIndexKey(hdr.Number, uint(i), uint(j)), lb); err != nil {
+					return err
+				}
+			}
 		}
 		if i < len(lookups) {
 			tb, err := encodeTxLookup(lookups[i])
@@ -117,7 +130,11 @@ func (n *Node) writeChainKeys(w kvWriter, block *dewtypes.Block, results []txExe
 	if err != nil {
 		return err
 	}
-	return w.Put(metaTipKey, tip)
+	if err := w.Put(metaTipKey, tip); err != nil {
+		return err
+	}
+	// Keep log-index schema marker current whenever we seal (covers genesis→first block).
+	return putLogIndexVersion(w, logIndexSchemaVersion)
 }
 
 // persistGenesisLocked writes meta + genesis block chain keys after genesis state commit.
@@ -164,6 +181,9 @@ func (n *Node) persistGenesisLocked(block *dewtypes.Block) error {
 		return err
 	}
 	if err := w.Put(metaTipKey, tip); err != nil {
+		return err
+	}
+	if err := putLogIndexVersion(w, logIndexSchemaVersion); err != nil {
 		return err
 	}
 	if batch != nil {

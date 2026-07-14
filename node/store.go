@@ -23,13 +23,20 @@ const (
 	prefixCanonical byte = 'N'
 	prefixReceipt   byte = 'R'
 	prefixTxLookup  byte = 'T'
+	// prefixLogIndex secondary keys for O(range) eth_getLogs:
+	// L | blockNum u64 BE | txIndex u32 BE | logIndex u32 BE → RLP log payload.
+	prefixLogIndex byte = 'L'
 )
 
+// logIndexSchemaVersion is the secondary log-index layout (independent of chainSchemaVersion).
+const logIndexSchemaVersion uint32 = 1
+
 var (
-	metaVersionKey     = []byte("meta/version")
-	metaChainIDKey     = []byte("meta/chainId")
-	metaGenesisHashKey = []byte("meta/genesisHash")
-	metaTipKey         = []byte("meta/tip")
+	metaVersionKey         = []byte("meta/version")
+	metaChainIDKey         = []byte("meta/chainId")
+	metaGenesisHashKey     = []byte("meta/genesisHash")
+	metaTipKey             = []byte("meta/tip")
+	metaLogIndexVersionKey = []byte("meta/logIndexVersion")
 )
 
 const (
@@ -70,6 +77,98 @@ func txLookupKey(txHash dewtypes.Hash) []byte {
 	k[0] = prefixTxLookup
 	copy(k[1:], txHash[:])
 	return k
+}
+
+// logIndexKey is ordered by block number then tx/log index for range scans.
+func logIndexKey(blockNum uint64, txIndex, logIndex uint) []byte {
+	k := make([]byte, 1+8+4+4)
+	k[0] = prefixLogIndex
+	binary.BigEndian.PutUint64(k[1:], blockNum)
+	binary.BigEndian.PutUint32(k[9:], uint32(txIndex))
+	binary.BigEndian.PutUint32(k[13:], uint32(logIndex))
+	return k
+}
+
+// logIndexBlockPrefix matches all log-index keys for one block height.
+func logIndexBlockPrefix(blockNum uint64) []byte {
+	k := make([]byte, 1+8)
+	k[0] = prefixLogIndex
+	binary.BigEndian.PutUint64(k[1:], blockNum)
+	return k
+}
+
+func parseLogIndexKey(key []byte) (blockNum uint64, txIndex, logIndex uint, ok bool) {
+	if len(key) != 1+8+4+4 || key[0] != prefixLogIndex {
+		return 0, 0, 0, false
+	}
+	blockNum = binary.BigEndian.Uint64(key[1:9])
+	txIndex = uint(binary.BigEndian.Uint32(key[9:13]))
+	logIndex = uint(binary.BigEndian.Uint32(key[13:17]))
+	return blockNum, txIndex, logIndex, true
+}
+
+type logIndexStorage struct {
+	Address   []byte
+	Topics    [][]byte
+	Data      []byte
+	TxHash    []byte
+	BlockHash []byte
+}
+
+func encodeLogIndex(lg *dewtypes.Log, txHash, blockHash dewtypes.Hash) ([]byte, error) {
+	if lg == nil {
+		return nil, fmt.Errorf("node: nil log")
+	}
+	st := logIndexStorage{
+		Address:   lg.Address.Bytes(),
+		Data:      lg.Data,
+		TxHash:    txHash.Bytes(),
+		BlockHash: blockHash.Bytes(),
+	}
+	st.Topics = make([][]byte, len(lg.Topics))
+	for i, t := range lg.Topics {
+		st.Topics[i] = t.Bytes()
+	}
+	return rlp.EncodeToBytes(st)
+}
+
+func decodeLogIndex(blob []byte) (*dewtypes.Log, dewtypes.Hash, dewtypes.Hash, error) {
+	var st logIndexStorage
+	if err := rlp.DecodeBytes(blob, &st); err != nil {
+		return nil, dewtypes.Hash{}, dewtypes.Hash{}, err
+	}
+	var addr dewcrypto.Address
+	copy(addr[:], st.Address)
+	topics := make([]dewtypes.Hash, len(st.Topics))
+	for i, t := range st.Topics {
+		topics[i] = dewtypes.BytesToHash(t)
+	}
+	lg := &dewtypes.Log{
+		Address: addr,
+		Topics:  topics,
+		Data:    st.Data,
+	}
+	return lg, dewtypes.BytesToHash(st.TxHash), dewtypes.BytesToHash(st.BlockHash), nil
+}
+
+func putLogIndexVersion(w putWriter, ver uint32) error {
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, ver)
+	return w.Put(metaLogIndexVersionKey, b)
+}
+
+func readLogIndexVersion(database db.Database) (uint32, bool, error) {
+	blob, err := database.Get(metaLogIndexVersionKey)
+	if err == db.ErrNotFound {
+		return 0, false, nil
+	}
+	if err != nil {
+		return 0, false, err
+	}
+	if len(blob) < 4 {
+		return 0, false, fmt.Errorf("node: invalid meta/logIndexVersion")
+	}
+	return binary.BigEndian.Uint32(blob[:4]), true, nil
 }
 
 func encodeTip(height uint64, hash dewtypes.Hash) ([]byte, error) {
