@@ -113,14 +113,14 @@ See [Guestbook](./guestbook.md).
 - [x] App docs + product pages note product-v1 slices  
 - [x] product-v1.1: P1d known-token balances · P2c wallet paste · P3b `?author=` share  
 - [x] product-v1.2: P2d funder `balanceWei` on `/info` + UI  
-- [x] Deploy rebuild of live path B surfaces (operator) — verified live 2026-07-13: explorer P1a–d markers; faucet `/api/info` `balanceWei` + SPA P2c/P2d; Guestbook `URLSearchParams.get("author")` + Share/Mine/Burst (P3a–b). Acceptance is **public HTTPS smoke** only (no SSH). Optional residual: host operator may pin GHCR to a release that injects `version.Version` so live `web3_clientVersion` matches the tag.
+- [x] Deploy rebuild of live path B surfaces (operator) — verified live 2026-07-13: explorer P1a–d markers; faucet `/api/info` `balanceWei` + SPA P2c/P2d; Guestbook `URLSearchParams.get("author")` + Share/Mine/Burst (P3a–b). Acceptance is **public HTTPS smoke** only (no SSH). Host operator pinned GHCR / recreated stack for release version inject — **2026-07-14 (`v0.5.0`)**.
 
 ### Deferred product slices (post product-v1)
 
 - [x] P1e — indexer / full history / volume (`dewindex` + explorer) — 2026-07-14; internal txs deferred  
 - [ ] P1f — verified source / ABI  
 - [ ] P3c — Guestbook reactions / replies  
-- [ ] Optional: pin live GHCR so `web3_clientVersion` matches release tag (host console)
+- [x] Optional: pin live GHCR so `web3_clientVersion` matches release tag (host console) — operator deploy 2026-07-14 (`v0.5.0`)
 
 ---
 

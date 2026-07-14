@@ -83,7 +83,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] P1d known-token balances · P2c wallet paste · P3b share `?author=` (product-v1.1)
 - [x] P2d faucet funder `balanceWei` on `/info` + UI (product-v1.2)
 - [x] Deploy rebuild of live path B surfaces (operator) — live verify 2026-07-13 via public HTTPS only; **no SSH** to path B host from this workflow (see [upgrades.md](../docs/product/upgrades.md) product-v1 DoD)
-- [ ] Optional (host console only, not SSH from monorepo agents): pin GHCR to a release that includes ldflags inject (post–this change) + recreate stack so live `web3_clientVersion` matches the tag
+- [x] Optional (host console only, not SSH from monorepo agents): pin GHCR to a release that includes ldflags inject + recreate stack so live `web3_clientVersion` matches the tag — operator deploy 2026-07-14 (`v0.5.0`)
 - [x] P1e indexer history / volume (`dewindex` + explorer) — 2026-07-14
 - [ ] P1f verified source · P3c reactions (deferred)
 
