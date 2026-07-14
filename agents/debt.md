@@ -10,7 +10,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); deferred: P1e–f / P3c. Research-friendly default rows: Track **R** + Track **4**; Track **5** only before mainnet claims.
 
-**Active ordered plan (S0–S6 → Precompile slots):** [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots) — end milestone formalizes [Precompile slots](../docs/protocol/addresses.md#precompile-slots-evm-space) registry (`0x100`/`0x101` reserved/`0x102`), not Path A/mainnet. **S0–S5 + Checkpoint B done** 2026-07-14 (staking lab scenario + public default off); next **S6** Precompile slots registry.
+**Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`. Open work is **tracks** again (not a forced next step). Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, optional hydrate / PE / product P1e–f.
 
 ## Durable chaindata
 
@@ -68,6 +68,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [ ] PE uses fork+overlay, not full multi-version Block-STM — higher memory and re-exec cost under heavy conflicts (`core/vm/parallel.go`). Not required for first public testnet.
 - [ ] External security audit of consensus + VM bridge + crypto — required before mainnet (see `docs/security/phase-b-audit.md` and security principles stage table).
 - [ ] Tokenomics issuance / inflation numbers still draft (not part of wire freeze).
+- [ ] Live `0x101` native swap / orderbook — **reserved only** after S6 (2026-07-14); needs separate design + hardfork doc under public-testnet-v1 before activation.
 
 ## Product surface (product-v1)
 

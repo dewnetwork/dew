@@ -129,6 +129,145 @@ func TestStakingPrecompile_DisabledReverts(t *testing.T) {
 	}
 }
 
+// S6 registry: formal slots + fail-closed reserved 0x101.
+
+func TestDewPrecompileSlots_Registry(t *testing.T) {
+	slots := DewPrecompileSlots()
+	if len(slots) != 3 {
+		t.Fatalf("slots len %d want 3", len(slots))
+	}
+	want := []struct {
+		low    uint16
+		name   string
+		status PrecompileSlotStatus
+		live   bool
+	}{
+		{0x100, "native_transfer", SlotActive, true},
+		{0x101, "native_swap", SlotReserved, false},
+		{0x102, "staking", SlotFlagged, true},
+	}
+	for i, w := range want {
+		s := slots[i]
+		if s.LowAddr != w.low || s.Name != w.name || s.Status != w.status || s.LiveInMap != w.live {
+			t.Fatalf("slot[%d]=%+v want low=0x%x name=%s status=%s live=%v",
+				i, s, w.low, w.name, w.status, w.live)
+		}
+		// params freeze alignment
+		switch s.LowAddr {
+		case params.PrecompileNativeTransferAddr:
+			if s.Address != NativeTransferPrecompile {
+				t.Fatal("0x100 address mismatch")
+			}
+		case params.PrecompileNativeSwapReservedAddr:
+			if s.Address != ReservedNativeSwapPrecompile {
+				t.Fatal("0x101 address mismatch")
+			}
+		case params.PrecompileStakingAddr:
+			if s.Address != StakingPrecompile {
+				t.Fatal("0x102 address mismatch")
+			}
+		}
+	}
+	if NextFreeDewPrecompileSlot != 0x103 || params.PrecompileNextFreeAddr != 0x103 {
+		t.Fatalf("next free vm=0x%x params=0x%x", NextFreeDewPrecompileSlot, params.PrecompileNextFreeAddr)
+	}
+	live := DewPrecompileAddresses()
+	if len(live) != 2 {
+		t.Fatalf("live addresses %d want 2 (no reserved)", len(live))
+	}
+	for _, a := range live {
+		if a == ReservedNativeSwapPrecompile {
+			t.Fatal("0x101 must not appear in DewPrecompileAddresses")
+		}
+	}
+	if NativeTransferGas != params.NativeTransferPrecompileGas {
+		t.Fatalf("0x100 gas %d != params %d", NativeTransferGas, params.NativeTransferPrecompileGas)
+	}
+}
+
+func TestReservedPrecompile_0x101_NotInLiveMap(t *testing.T) {
+	mdb := db.OpenTest(t)
+	statedb := state.New(mdb)
+	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	statedb.SetBalance(caller, uint256.NewInt(1_000_000_000_000_000_000))
+
+	exec := NewExecutor(statedb, BlockContext{
+		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
+		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
+		ChainID:  big.NewInt(2205),
+	})
+	exec.EnableDewPrecompiles(true)
+
+	var reserved crypto.Address
+	copy(reserved[:], ReservedNativeSwapPrecompile[:])
+	// Fake "swap" calldata must not execute — reserved is empty account.
+	swapish := make([]byte, 64)
+	amount := uint256.NewInt(5000)
+	res, err := exec.ApplyMessage(Message{
+		From: caller, To: &reserved,
+		Value: amount, GasLimit: 100_000, GasPrice: big.NewInt(0),
+		Data: swapish,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Failed {
+		t.Fatalf("empty-account CALL should succeed (no precompile), err=%v", res.Err)
+	}
+	if statedb.GetBalance(reserved).Cmp(amount) != 0 {
+		t.Fatalf("value should sit at reserved 0x101, got %s", statedb.GetBalance(reserved))
+	}
+}
+
+func TestDewPrecompiles_Off_AllSlotsEmptyAccounts(t *testing.T) {
+	mdb := db.OpenTest(t)
+	statedb := state.New(mdb)
+	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	recipient := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	statedb.SetBalance(caller, uint256.NewInt(1_000_000_000_000_000_000))
+
+	exec := NewExecutor(statedb, BlockContext{
+		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
+		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
+		ChainID:  big.NewInt(2205),
+	})
+	exec.EnableDewPrecompiles(false)
+
+	for _, slot := range []struct {
+		raw  [20]byte
+		name string
+		data []byte
+	}{
+		{NativeTransferPrecompile, "0x100", recipient[:]},
+		{ReservedNativeSwapPrecompile, "0x101", make([]byte, 32)},
+		{StakingPrecompile, "0x102", []byte{StakeMethodBond}},
+	} {
+		var to crypto.Address
+		copy(to[:], slot.raw[:])
+		amt := uint256.NewInt(100)
+		balBefore := new(uint256.Int).Set(statedb.GetBalance(to))
+		res, err := exec.ApplyMessage(Message{
+			From: caller, To: &to,
+			Value: amt, GasLimit: 100_000, GasPrice: big.NewInt(0),
+			Data: slot.data,
+		})
+		if err != nil {
+			t.Fatalf("%s: %v", slot.name, err)
+		}
+		if res.Failed {
+			t.Fatalf("%s: expected empty-account success, failed: %v", slot.name, res.Err)
+		}
+		want := new(uint256.Int).Add(balBefore, amt)
+		if statedb.GetBalance(to).Cmp(want) != 0 {
+			t.Fatalf("%s: value should remain at slot (not precompile), got %s want %s",
+				slot.name, statedb.GetBalance(to), want)
+		}
+		if slot.name == "0x100" && statedb.GetBalance(recipient).Sign() != 0 {
+			t.Fatal("0x100 must not forward when precompiles off")
+		}
+	}
+}
+
 func TestStakingPrecompile_BondUnbondActiveSet(t *testing.T) {
 	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
@@ -311,7 +450,7 @@ func stakingForwarderRuntime() []byte {
 		0x3d, 0x5f, 0x5f, 0x3e, // returndatacopy(0,0,returndatasize)
 		0x15,       // ISZERO
 		0x60, 0x2b, // PUSH1 JUMPDEST
-		0x57,       // JUMPI → revert path
+		0x57,             // JUMPI → revert path
 		0x3d, 0x5f, 0xf3, // RETURN
 		0x5b,             // JUMPDEST
 		0x3d, 0x5f, 0xfd, // REVERT

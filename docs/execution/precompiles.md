@@ -32,11 +32,16 @@ Gas costs: match Cancun unless a documented exception exists.
 Reserved starting at `0x100`. Enabled when the executor feature flag is on
 (`Executor.EnableDewPrecompiles(true)`, default on; matches `params.DefaultEnableDewPrecompiles`).
 
-| Address | Name | Gas (fixed) | Status |
-| :--- | :--- | ---: | :--- |
-| `0x100` | Native transfer | 3_000 | **Active** — forward CALLVALUE to recipient |
-| `0x101` | Native swap / book | TBD | Reserved |
-| `0x102` | Staking entrypoint | method-based | **C4** — bond/unbond/queries/jail; feature-flagged |
+Formal registry (addresses, status, live-map flags): `vm.DewPrecompileSlots()` · slot policy: [Addresses — Precompile slots](../protocol/addresses.md#precompile-slots-evm-space).
+
+| Address | Name | Gas | Status | Live map |
+| :--- | :--- | ---: | :--- | :--- |
+| `0x100` | Native transfer | 3_000 fixed | **Active** — forward CALLVALUE to recipient | Yes |
+| `0x101` | Native swap / book | — (none live) | **Reserved** — not implemented under public-testnet-v1 | **No** |
+| `0x102` | Staking entrypoint | method-based | **Flagged** — bond/unbond/queries/jail when staking on | Yes |
+| `0x103+` | (unallocated) | — | Free — next assignable is `0x103` | — |
+
+**Status meanings:** *Active* = full methods when Dew precompiles on · *Reserved* = address held, empty account (CALL does not run native code) · *Flagged* = in the live map but methods gated (`EnableStaking`).
 
 ### `0x100` — Native transfer
 
@@ -55,6 +60,18 @@ Useful bridge from Solidity into native DEW movement without an ERC-20 hop.
 3. Returns `uint256` amount forwarded (ABI left-padded 32 bytes).
 
 **Rules:** fixed gas; deterministic; reverts on malformed input (not 20 bytes). Feature flag off → address is a normal empty account (value sits at `0x100`, not forwarded).
+
+### System contracts (lab / DX)
+
+For operators and demos, treat the live/flagged Dew slots as **system contracts**:
+
+| Address | Label | Default public-testnet-v1 |
+| :--- | :--- | :--- |
+| `0x100` | Native transfer | On (with Dew precompiles) |
+| `0x101` | Reserved | Not a contract implementation |
+| `0x102` | Staking | Methods **off** unless `--staking` |
+
+Explorer/RPC may list these as known system addresses without an indexer (optional badge). Full slot policy: [Addresses](../protocol/addresses.md#precompile-slots-evm-space).
 
 ### `0x102` — Staking entrypoint (Phase C4)
 
@@ -91,13 +108,18 @@ Implication: a contract that nested-bonds to itself **cannot** unbond/withdraw t
 
 Module state: `core/native/staking.go` storage under address `0x102`.
 
+### `0x101` — Reserved (swap / orderbook)
+
+**Not** registered in the live precompile map. CALL to `0x101` behaves like a normal empty account (value sits at the address; no swap logic). Activating a live implementation requires a hardfork doc under freeze `public-testnet-v1` — see [allocation rules](../protocol/addresses.md#allocation-rules).
+
 ### Design rules for custom precompiles
 
 1. Fixed gas schedule (no unbounded native work free of gas)
 2. Deterministic output for given input + state
 3. Document ABI / byte layout before any testnet uses them
 4. Prefer fail-safe reverts over panics in Go
+5. Assign next free slot; do not reuse retired addresses; reserved slots stay out of the live map until hardfork activation
 
 ## Implementation
 
-`core/vm/precompiles.go` clones Cancun precompiles and registers Dew addresses via `evm.SetPrecompiles` when the flag is enabled. Keep inactive addresses out of the map when the flag is off.
+`core/vm/precompiles.go` clones Cancun precompiles and registers **live-map only** Dew addresses (`0x100`, `0x102`) via `evm.SetPrecompiles` when the flag is enabled. `DewPrecompileAddresses()` / `DewPrecompileSlots()` are the single registry used for access-list warming and docs alignment. Keep reserved (`0x101`) and flag-off addresses out of the map (empty account semantics).

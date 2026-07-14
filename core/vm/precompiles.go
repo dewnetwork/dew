@@ -6,8 +6,8 @@ import (
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
-	ethparams "github.com/ethereum/go-ethereum/params"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 
 	"github.com/dewnetwork/dew/consensus"
@@ -17,16 +17,79 @@ import (
 	"github.com/dewnetwork/dew/params"
 )
 
-// Dew system precompile addresses (reserved from 0x100).
+// Dew system precompile addresses (low slots from 0x100).
+// Formal registry: DewPrecompileSlots(); params freeze numbers match these lows.
 var (
-	// NativeTransferPrecompile is 0x100 — forward CALLVALUE to a recipient.
+	// NativeTransferPrecompile is 0x100 — forward CALLVALUE to a recipient (active).
 	NativeTransferPrecompile = ethcommon.BytesToAddress([]byte{0x01, 0x00})
-	// StakingPrecompile is 0x102 — staking entrypoint (Phase C4).
+	// ReservedNativeSwapPrecompile is 0x101 — swap/orderbook **reserved**.
+	// Not registered in the live precompile map under public-testnet-v1 (fail-closed empty account).
+	ReservedNativeSwapPrecompile = ethcommon.BytesToAddress([]byte{0x01, 0x01})
+	// StakingPrecompile is 0x102 — staking entrypoint (flagged; methods need EnableStaking).
 	StakingPrecompile = ethcommon.BytesToAddress([]byte{0x01, 0x02})
 )
 
-// NativeTransferGas is the fixed gas schedule for 0x100.
-const NativeTransferGas uint64 = 3_000
+// NativeTransferGas is the fixed gas schedule for 0x100 (active only).
+// Reserved slots have no live gas schedule.
+const NativeTransferGas uint64 = params.NativeTransferPrecompileGas
+
+// PrecompileSlotStatus is the public-testnet-v1 registry status for a Dew slot.
+type PrecompileSlotStatus string
+
+const (
+	// SlotActive is registered and live when Dew precompiles are on.
+	SlotActive PrecompileSlotStatus = "active"
+	// SlotReserved is allocated in docs/params but not in the live map.
+	SlotReserved PrecompileSlotStatus = "reserved"
+	// SlotFlagged is in the live map; methods are gated by a feature flag.
+	SlotFlagged PrecompileSlotStatus = "flagged"
+)
+
+// DewPrecompileSlot describes one Dew system precompile address (S6 registry).
+type DewPrecompileSlot struct {
+	// Address is the 20-byte EVM address.
+	Address ethcommon.Address
+	// Name is a stable identifier for docs and tooling.
+	Name string
+	// Status is active, reserved, or flagged.
+	Status PrecompileSlotStatus
+	// LiveInMap is true when installDewPrecompiles registers an implementation.
+	LiveInMap bool
+	// LowAddr is the uint16 slot number (0x100, 0x101, …).
+	LowAddr uint16
+}
+
+// DewPrecompileSlots returns the formal Dew precompile registry (ascending by address).
+// Only slots with LiveInMap are installed when EnableDewPrecompiles is on.
+func DewPrecompileSlots() []DewPrecompileSlot {
+	return []DewPrecompileSlot{
+		{
+			Address:   NativeTransferPrecompile,
+			Name:      "native_transfer",
+			Status:    SlotActive,
+			LiveInMap: true,
+			LowAddr:   params.PrecompileNativeTransferAddr,
+		},
+		{
+			Address:   ReservedNativeSwapPrecompile,
+			Name:      "native_swap",
+			Status:    SlotReserved,
+			LiveInMap: false,
+			LowAddr:   params.PrecompileNativeSwapReservedAddr,
+		},
+		{
+			Address:   StakingPrecompile,
+			Name:      "staking",
+			Status:    SlotFlagged,
+			LiveInMap: true,
+			LowAddr:   params.PrecompileStakingAddr,
+		},
+	}
+}
+
+// NextFreeDewPrecompileSlot is the next unallocated low address for a new Dew precompile.
+// Under public-testnet-v1, activating it on a live network requires a hardfork doc.
+const NextFreeDewPrecompileSlot uint16 = params.PrecompileNextFreeAddr
 
 // Staking method bytes (fail-closed fixed layout; not full Solidity ABI).
 const (
@@ -295,12 +358,21 @@ func u256Pad(v *uint256.Int) []byte {
 	return ethcommon.LeftPadBytes(v.ToBig().Bytes(), 32)
 }
 
-// DewPrecompileAddresses returns addresses to warm in the access list when enabled.
+// DewPrecompileAddresses returns live-map Dew precompile addresses to warm in the
+// access list when enabled. Reserved slots (e.g. 0x101) are intentionally omitted.
 func DewPrecompileAddresses() []ethcommon.Address {
-	return []ethcommon.Address{NativeTransferPrecompile, StakingPrecompile}
+	slots := DewPrecompileSlots()
+	out := make([]ethcommon.Address, 0, len(slots))
+	for _, s := range slots {
+		if s.LiveInMap {
+			out = append(out, s.Address)
+		}
+	}
+	return out
 }
 
-// installDewPrecompiles copies the active fork precompiles and adds Dew system contracts.
+// installDewPrecompiles copies the active fork precompiles and adds live Dew system
+// contracts from DewPrecompileSlots (LiveInMap only). Reserved slots stay empty accounts.
 // valueCtx is shared with the BlockContext.Transfer hook for nested bond attribution.
 func installDewPrecompiles(
 	evm *ethvm.EVM,
@@ -316,10 +388,12 @@ func installDewPrecompiles(
 	}
 	rules := evm.ChainConfig().Rules(evm.Context.BlockNumber, evm.Context.Random != nil, evm.Context.Time)
 	base := ethvm.ActivePrecompiledContracts(rules)
-	merged := make(ethvm.PrecompiledContracts, len(base)+2)
+	live := DewPrecompileAddresses()
+	merged := make(ethvm.PrecompiledContracts, len(base)+len(live))
 	for k, v := range base {
 		merged[k] = v
 	}
+	// Register only LiveInMap slots — never ReservedNativeSwapPrecompile (0x101).
 	var selfNative crypto.Address
 	copy(selfNative[:], NativeTransferPrecompile[:])
 	merged[NativeTransferPrecompile] = &nativeTransferPrecompile{

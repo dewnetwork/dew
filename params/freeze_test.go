@@ -21,8 +21,14 @@ func TestPublicTestnetFreezeConsistency(t *testing.T) {
 	if NativeTransferPrecompileGas != 3_000 {
 		t.Fatalf("0x100 gas %d", NativeTransferPrecompileGas)
 	}
-	if PrecompileNativeTransferAddr != 0x100 || PrecompileStakingAddr != 0x102 {
-		t.Fatalf("precompile addresses 0x%x 0x%x", PrecompileNativeTransferAddr, PrecompileStakingAddr)
+	if PrecompileNativeTransferAddr != 0x100 ||
+		PrecompileNativeSwapReservedAddr != 0x101 ||
+		PrecompileStakingAddr != 0x102 {
+		t.Fatalf("precompile addresses 0x%x 0x%x 0x%x",
+			PrecompileNativeTransferAddr, PrecompileNativeSwapReservedAddr, PrecompileStakingAddr)
+	}
+	if PrecompileNextFreeAddr != 0x103 {
+		t.Fatalf("next free precompile slot 0x%x want 0x103", PrecompileNextFreeAddr)
 	}
 	if DewTxVersion != 1 || DewTxDomainTag != "DewTx:v1" {
 		t.Fatalf("DewTx wire: version=%d domain=%q", DewTxVersion, DewTxDomainTag)

@@ -32,7 +32,7 @@ All phases land in the **same monorepo** (Go core + Node for **web docs**, explo
 | **3 — Ops (D3d)** | Optional | Path A multi-host public |
 | **4 — Core node** | Partial | Mempool telemetry done; hydrate / PE upgrade open |
 | **5 — Mainnet (D3e)** | Optional | Audit pack before production claims |
-| **Plan S0–S6** | **Active** | Ordered path → [Precompile slots](./phases.md#recommended-sequence--research-lab--precompile-slots) |
+| **Plan S0–S6** | **Done** (Checkpoint C 2026-07-14) | Ordered path → [Precompile slots](./phases.md#recommended-sequence--research-lab--precompile-slots) |
 
 **Shipped baseline:** A–C freeze, D1–D2, D3a/b + chaindata, product-v1. Open work is **tracks** (not a forced mainnet march). Checklists: [Phases — Tracks](./phases.md#tracks).
 
@@ -105,7 +105,7 @@ Phase D foundation is done. Remaining work is **tracks** under freeze `public-te
 | S3 | Mempool / fee telemetry RPC — **done** 2026-07-13 (`dew_getMempoolStats`) | 4 |
 | S4 | `0x102` staking edges — **done** 2026-07-14 (fail-closed actor + deferred slash %) | 2 |
 | S5 | Staking lab scenarios — **done** 2026-07-14 (Checkpoint B) | R · 2 |
-| **S6** | **Precompile slots registry** | protocol docs + `core/vm` |
+| S6 | Precompile slots registry — **done** 2026-07-14 (Checkpoint C) | protocol docs + `core/vm` |
 
 Full checkboxes: [Phases — Recommended sequence](./phases.md#recommended-sequence--research-lab--precompile-slots).
 

@@ -32,10 +32,16 @@ const (
 	PublicTestnetMaxRPCBodyBytes = 1 << 20 // 1 MiB
 	PublicTestnetMaxRPCBatch     = 100
 
-	// Precompile addresses (20-byte, low addresses).
-	// 0x100 = native transfer; 0x102 = staking entrypoint.
-	PrecompileNativeTransferAddr = 0x100
-	PrecompileStakingAddr        = 0x102
+	// Precompile addresses (20-byte low slots in EVM space).
+	// Full registry: docs/protocol/addresses.md + core/vm.DewPrecompileSlots (S6).
+	// 0x100 = native transfer (active); 0x101 = reserved swap/book (not live);
+	// 0x102 = staking entrypoint (flagged; methods default off).
+	PrecompileNativeTransferAddr     = 0x100
+	PrecompileNativeSwapReservedAddr = 0x101
+	PrecompileStakingAddr            = 0x102
+	// PrecompileNextFreeAddr is the next unallocated Dew slot (not yet assigned).
+	// Activating any new live address under public-testnet-v1 requires a hardfork doc.
+	PrecompileNextFreeAddr = 0x103
 )
 
 // Feature flags expected on public-testnet-v1 operators (documented defaults).

@@ -27,7 +27,7 @@ This page is the **single map** of upgrade options. Implement **one track (or on
 | **3 — Ops scale (D3d)** | Path A multi-host public | When leaving single-host Path B for public multi-validator | [d3-scale § D3d](../scale/d3-scale.md#d3d--path-a-multi-host-public) |
 | **4 — Core node** | PE upgrade, chaindata hydrate; mempool telemetry **done** | **Research-friendly default** for performance features | [durable-chaindata](../ops/durable-chaindata.md), [debt](../../agents/debt.md), [PE](../execution/parallel-execution.md), [dew_getMempoolStats](../api/dew-extensions.md#dew_getmempoolstats) |
 | **5 — Mainnet gate (D3e)** | External audit pack | **Only** before mainnet / production claims | [d3-scale § D3e](../scale/d3-scale.md#d3e--external-audit-prep) |
-| **Plan S0–S6** | Ordered path → Precompile slots | Active research plan | [phases S0–S6](../build/phases.md#recommended-sequence--research-lab--precompile-slots) |
+| **Plan S0–S6** | Ordered path → Precompile slots | **Done** (Checkpoint C 2026-07-14) | [phases S0–S6](../build/phases.md#recommended-sequence--research-lab--precompile-slots) |
 
 ```mermaid
 flowchart TB

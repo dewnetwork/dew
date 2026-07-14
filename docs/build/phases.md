@@ -33,7 +33,7 @@ Not a Phase E. Pick **one track row** (or the ordered plan). Same freeze (`publi
 | **3 — Ops (D3d)** | Optional | Path A multi-host public | [Track 3](#track-3--ops--d3d-path-a) |
 | **4 — Core node** | Partial | Mempool telemetry (S3) done; hydrate / PE upgrade open | [Track 4](#track-4--core-node) |
 | **5 — Mainnet (D3e)** | Optional | Audit pack only before production claims | [Track 5](#track-5--mainnet-gate-d3e) |
-| **Plan S0–S6** | **Active** | Ordered path research → **Precompile slots** | [Recommended sequence](#recommended-sequence--research-lab--precompile-slots) |
+| **Plan S0–S6** | **Done** (Checkpoint C 2026-07-14) | Ordered path research → Precompile slots | [Recommended sequence](#recommended-sequence--research-lab--precompile-slots) |
 
 High-level order: [Roadmap](./roadmap.md) · track map: [upgrades](../product/upgrades.md).
 
@@ -544,7 +544,7 @@ Detail: [upgrades Track 1](../product/upgrades.md#track-1--product-surface).
 
 ## Recommended sequence — research lab → Precompile slots
 
-**Active ordered plan** (crosses Track R + Track 4 + Track 2, ends at Precompile slots). Work **top to bottom**; do not start a later step until the previous checkpoint is green. Track 3 (Path A), Track 5 (audit), and Track 1 indexer (P1e) are **out of scope** for this sequence.
+**Ordered plan (complete through Checkpoint C, 2026-07-14)** — crossed Track R + Track 4 + Track 2, ended at Precompile slots. Track 3 (Path A), Track 5 (audit), and Track 1 indexer (P1e) remain **out of scope** for this sequence.
 
 **End state:** Dew has a documented, test-backed **Precompile slots** registry (`0x01–0x0a` ETH + `0x100+` Dew), active `0x100` / `0x102` correct under lab staking, reserved `0x101` fail-closed, and research notes for PE/BFT/state — still under freeze `public-testnet-v1` (no new live precompile address without hardfork doc).
 
@@ -663,34 +663,34 @@ flowchart LR
 
 #### S6a — Spec / docs
 
-- [ ] Expand precompile slot table in [addresses.md](../protocol/addresses.md) (ETH `0x01–0x0a` + Dew range policy)
-- [ ] Align [precompiles.md](../execution/precompiles.md) status table (`0x100` active, `0x101` reserved, `0x102` flagged)
-- [ ] Document **allocation rules**: next free slot, no reuse of retired slots, hardfork required to activate a reserved address
-- [ ] Cross-link freeze table in [public-testnet.md](../ops/public-testnet.md) (addresses frozen; new live module = hardfork)
-- [ ] Note Dew-native space `0xe0…` vs EVM precompile slots (when to use which)
+- [x] Expand precompile slot table in [addresses.md](../protocol/addresses.md) (ETH `0x01–0x0a` + Dew range policy) — 2026-07-14
+- [x] Align [precompiles.md](../execution/precompiles.md) status table (`0x100` active, `0x101` reserved, `0x102` flagged) — 2026-07-14
+- [x] Document **allocation rules**: next free slot, no reuse of retired slots, hardfork required to activate a reserved address — 2026-07-14
+- [x] Cross-link freeze table in [public-testnet.md](../ops/public-testnet.md) (addresses frozen; new live module = hardfork) — 2026-07-14
+- [x] Note Dew-native space `0xe0…` vs EVM precompile slots (when to use which) — 2026-07-14
 
 #### S6b — Code registry
 
-- [ ] Named constants for all Dew slots in use/reserved (`0x100`, `0x101`, `0x102`) in `core/vm` and/or `params`
-- [ ] `0x101` **not** registered in the live precompile map (empty account / fail-closed)
-- [ ] Optional: single `DewPrecompileSlots` registry helper used by executor enablement
-- [ ] Gas constants only for **active** methods; reserved slots have no live gas schedule (or documented TBD only in docs)
+- [x] Named constants for all Dew slots in use/reserved (`0x100`, `0x101`, `0x102`) in `core/vm` and/or `params` — 2026-07-14
+- [x] `0x101` **not** registered in the live precompile map (empty account / fail-closed) — 2026-07-14
+- [x] Optional: single `DewPrecompileSlots` registry helper used by executor enablement — 2026-07-14
+- [x] Gas constants only for **active** methods; reserved slots have no live gas schedule (or documented TBD only in docs) — 2026-07-14
 
 #### S6c — Tests + DX
 
-- [ ] Tests: with Dew precompiles on, `0x100` forwards; `0x101` does not implement swap; `0x102` reverts or no-ops methods when staking off
-- [ ] Tests: with Dew precompiles off, `0x100+` behave as empty accounts (value not forwarded)
-- [ ] Optional lab: explorer or docs list “system contracts” addresses (RPC-only badge OK; no indexer required)
-- [ ] `agents/debt.md` updated if residuals remain (e.g. implement `0x101` later)
+- [x] Tests: with Dew precompiles on, `0x100` forwards; `0x101` does not implement swap; `0x102` reverts or no-ops methods when staking off — 2026-07-14
+- [x] Tests: with Dew precompiles off, `0x100+` behave as empty accounts (value not forwarded) — 2026-07-14
+- [x] Optional lab: explorer or docs list “system contracts” addresses (RPC-only badge OK; no indexer required) — table in [precompiles.md](../execution/precompiles.md) (2026-07-14)
+- [x] `agents/debt.md` updated if residuals remain (e.g. implement `0x101` later) — 2026-07-14
 
 **Packages:** `core/vm/precompiles.go`, `params/`, `docs/protocol/addresses.md`, `docs/execution/precompiles.md`, `docs/ops/public-testnet.md`, tests under `core/vm/`, `tests/security/` · **Verify:** `go test ./core/vm/ ./params/ ./tests/security/` + docs review · **Scope:** M  
 **Depends on:** Checkpoint B
 
 ### Checkpoint C — Precompile slots done
 
-- [ ] All S6a–S6c boxes checked
-- [ ] Freeze still holds: no new **active** precompile address on public-testnet-v1 without hardfork doc
-- [ ] Track R + Track 4 telemetry + `0x102` edges + Precompile slots registry complete for this sequence
+- [x] All S6a–S6c boxes checked — 2026-07-14
+- [x] Freeze still holds: no new **active** precompile address on public-testnet-v1 without hardfork doc — `0x101` reserved only
+- [x] Track R + Track 4 telemetry + `0x102` edges + Precompile slots registry complete for this sequence — 2026-07-14
 - [ ] Next work (optional, **new** plan): full Block-STM, delegation, `0x101` orderbook design, or Path A — each needs its own approval
 
 ### Out of scope (this sequence)
