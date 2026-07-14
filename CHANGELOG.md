@@ -7,6 +7,32 @@ Software releases use **semver** tags (`vX.Y.Z`) managed by
 The protocol freeze tag **`public-testnet-v1`** is independent of package versions
 (see [Public testnet freeze](./docs/ops/public-testnet.md)).
 
+## [0.5.0](https://github.com/dewnetwork/dew/compare/v0.4.1...v0.5.0) (2026-07-14)
+
+
+### Features
+
+* **indexer:** P1e history sidecar and explorer integration ([40627da](https://github.com/dewnetwork/dew/commit/40627da31acb0105bcd65c0ddfea33c461c96e9b))
+* **load:** S2 PE conflict×workers matrix and lab results ([cdc2e5e](https://github.com/dewnetwork/dew/commit/cdc2e5e456f86a455714a1314b3d93b0991e90a4))
+* **node:** O(range) eth_getLogs via secondary log index ([0e72472](https://github.com/dewnetwork/dew/commit/0e72472adac182203c85b152831c37d6f2a1555d))
+* **node:** Track 4 lazy hydrate for large-tip chaindata ([63c88a4](https://github.com/dewnetwork/dew/commit/63c88a45abc3fb071c924db121473d4a43d47736))
+* **rpc:** add dew_getMempoolStats for lab fee/pool telemetry ([b76a61b](https://github.com/dewnetwork/dew/commit/b76a61ba8bb25fb976b1caa85ac57663b521e970))
+* **rpc:** WebSocket eth_subscribe for newHeads and logs ([ff505ca](https://github.com/dewnetwork/dew/commit/ff505cae52538f008b24884cf2cc13c5a565ee9a))
+* **vm:** S6 precompile slots registry and Checkpoint C ([817af4f](https://github.com/dewnetwork/dew/commit/817af4f5c79494e2cdc309a1cfc323ba58ecb4d3))
+
+
+### Bug Fixes
+
+* resolve empty captcha environment variables by migrating injection from strategy matrix to job step ([6f5c838](https://github.com/dewnetwork/dew/commit/6f5c838fc1ba13897e452ea84112436661607c45))
+* **staking:** S4 document fail-closed 0x102 actor and cover edges ([dbb7b81](https://github.com/dewnetwork/dew/commit/dbb7b81a6c2391310acd21af37c0a9dbd28dcb7e))
+
+
+### Documentation
+
+* close S0–S1 with research lab harness and PE baseline ([52d51cc](https://github.com/dewnetwork/dew/commit/52d51cc7d3bdd926c0de323f39bf851a3308f911))
+* **debt:** note dewindex in ldflags version inject list ([2a54496](https://github.com/dewnetwork/dew/commit/2a54496a6f5ff84c4b90bad705ba9d332dac33c5))
+* reframe post-D work as track rows and plan S0–S6 ([ff61efa](https://github.com/dewnetwork/dew/commit/ff61efacd70c8e61295301a0de3388e5107fec29))
+
 ## [0.4.1](https://github.com/dewnetwork/dew/compare/v0.4.0...v0.4.1) (2026-07-13)
 
 
