@@ -162,7 +162,7 @@ Detail: [phases D3d](../build/phases.md#d3d--path-a-multi-host-public-optional-o
 **Acceptance:**
 
 - [x] Mempool / fee telemetry RPC (optional DX; keep C6 abuse limits) — `dew_getMempoolStats` (2026-07-13)
-- [ ] Lazy hydrate / log index at large tip
+- [x] Lazy hydrate / log index at large tip — tip-only Open + on-demand reads (2026-07-14); optional residual: secondary log-index keys
 - [ ] PE upgrade toward full Block-STM / lower conflict cost (serial-equivalent)
 - [ ] Tokenomics issuance numbers frozen only if mainnet economics are claimed — otherwise [tokenomics.md](../economics/tokenomics.md) stays draft
 

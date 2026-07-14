@@ -30,7 +30,7 @@ All phases land in the **same monorepo** (Go core + Node for **web docs**, explo
 | **1 — Product** | Partial | v1 done; P1e–f / P3c deferred |
 | **2 — Protocol (D3c)** | Partial | MVP + S4 actor docs; slash % / delegation open |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public |
-| **4 — Core node** | Partial | Mempool telemetry done; hydrate / PE upgrade open |
+| **4 — Core node** | Partial | Mempool telemetry + lazy hydrate done; PE upgrade open |
 | **5 — Mainnet (D3e)** | Optional | Audit pack before production claims |
 | **Plan S0–S6** | **Done** (Checkpoint C 2026-07-14) | Ordered path → [Precompile slots](./phases.md#recommended-sequence--research-lab--precompile-slots) |
 

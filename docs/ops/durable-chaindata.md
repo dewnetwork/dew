@@ -46,13 +46,27 @@ Before this work the node used **in-memory** state and chain indexes (`db.Memory
 2. Genesis hash / chain ID mismatch on open → **refuse** start (no silent re-genesis).
 3. `go test ./...` uses temp Pebble (`db.OpenTest` / `node.OpenTest`); no in-memory DB backend.
 4. Compose Path B / multi volume-mount `/var/lib/dew` (default datadir — no `--datadir` flag required).
+5. **Lazy hydrate (Track 4):** Open loads **tip only** into RAM; historical blocks / tx index / receipts / logs load on demand (`go test ./node/ -run LazyHydrateLargeTip`).
+
+## Lazy hydrate (Track 4)
+
+At large tip, preloading every height + full receipt/tx index into maps made restart RAM and open latency grow with chain length.
+
+| On Open | On demand |
+| :--- | :--- |
+| Tip header/body + tip maps | `GetBlockByNumber` / `GetBlockByHash` |
+| Flat state via Pebble (unchanged) | `GetTransaction` / `GetReceipt` |
+| — | `FilterLogs` scans durable receipts in range (plus in-memory `allLogs` for post-open seals) |
+| — | `TransactionsInBlock` uses body + durable tx-lookup scan |
+
+**Non-goal here:** secondary log-index keys for O(range) `eth_getLogs` without receipt iteration — still optional residual if public history queries dominate.
 
 ## Packages
 
 | Package | Role |
 | :--- | :--- |
 | `db/pebble.go` | Pebble backend |
-| `node/open.go` | `Open`, hydrate, `Close`, `ChainDataDir` |
+| `node/open.go` | `Open`, lazy tip hydrate, on-demand load helpers, `Close`, `ChainDataDir` |
 | `node/store.go` / `persist.go` | Key schema + atomic batch on seal/import |
 | `core/state` | `FlushDirtyTo` / `ClearDirty` for batch commit |
 | `cmd/dew` | `--datadir` → `chaindata/` + `peers.json` |
@@ -69,4 +83,4 @@ See [D3 scale](../scale/d3-scale.md) and [agents/debt.md](../../agents/debt.md).
 
 ## Non-goals
 
-Custom storage engine; peer data in Pebble; snap sync; pruning/freezer; PE multi-version store upgrade.
+Custom storage engine; peer data in Pebble; snap sync; pruning/freezer; PE multi-version store upgrade; dedicated log-index SST (lazy receipt scan is enough for public-testnet-v1).

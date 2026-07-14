@@ -31,7 +31,7 @@ Not a Phase E. Pick **one track row** (or the ordered plan). Same freeze (`publi
 | **1 — Product** | Partial | v1–v1.2 done; P1e–f / P3c deferred | [Track 1](#track-1--product-surface) |
 | **2 — Protocol (D3c)** | Partial | MVP + S4 actor docs; slash % / delegation open | [Track 2](#track-2--protocol--d3c-staking) |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public | [Track 3](#track-3--ops--d3d-path-a) |
-| **4 — Core node** | Partial | Mempool telemetry (S3) done; hydrate / PE upgrade open | [Track 4](#track-4--core-node) |
+| **4 — Core node** | Partial | Mempool telemetry + lazy hydrate done; PE upgrade open | [Track 4](#track-4--core-node) |
 | **5 — Mainnet (D3e)** | Optional | Audit pack only before production claims | [Track 5](#track-5--mainnet-gate-d3e) |
 | **Plan S0–S6** | **Done** (Checkpoint C 2026-07-14) | Ordered path research → Precompile slots | [Recommended sequence](#recommended-sequence--research-lab--precompile-slots) |
 
@@ -513,14 +513,14 @@ Detail: [upgrades Track 1](../product/upgrades.md#track-1--product-surface).
 
 | | |
 | :--- | :--- |
-| **Status** | Partial — `dew_getMempoolStats` **done** (S3); hydrate / PE upgrade open |
+| **Status** | Partial — `dew_getMempoolStats` (S3) + **lazy hydrate** done; PE upgrade open |
 | **Goals** | PE, chaindata, mempool/fee telemetry |
 | **Packages** | `core/vm/`, `mempool/`, `rpc/`, `node/`, `db/` |
 
 **Acceptance:**
 
 - [x] Mempool / fee telemetry RPC (optional DX) — `dew_getMempoolStats` (2026-07-13)
-- [ ] Lazy hydrate / log index at large tip
+- [x] Lazy hydrate / log index at large tip — tip-only Open + on-demand block/tx/receipt/logs; optional residual secondary log-index keys (2026-07-14)
 - [ ] PE upgrade toward full Block-STM / lower conflict cost (serial-equivalent) — not justified by S2 simple-transfer matrix
 - [ ] Other core ergonomics only with docs + tests
 

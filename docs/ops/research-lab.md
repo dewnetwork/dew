@@ -243,8 +243,8 @@ go test ./node/ -count=1 -run TestStakingLab_Scenario -v
 
 Scenario: bond → ActiveSet rank → epoch rotation → unbond/withdraw → optional jail. Ops notes: [private-testnet — Staking lab](./private-testnet.md#staking-lab-s5). Actor rules: [precompiles 0x102](../execution/precompiles.md#0102--staking-entrypoint-phase-c4).
 
-## Next (after Checkpoint C / H2)
+## Next (after Checkpoint C / H2 / Track 4 hydrate)
 
 - Optional Track R: **state** — SMT commit or tip-growth vs flat hot path
-- Track **4**: lazy hydrate at large tip (core ergonomics)
+- Track **4** residual: PE Block-STM only if product load contradicts H1; optional log-index keys
 - Deferred: heavier PE fixtures, Path A, live `0x101`, delegation / slash %

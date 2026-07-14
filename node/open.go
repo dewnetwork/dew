@@ -166,93 +166,140 @@ func newEmptyNode(g *config.Genesis, database db.Database, statedb *state.StateD
 	return n
 }
 
-// hydrateLocked loads canonical chain 0..tip into memory maps. No lock required during Open construction.
+// hydrateLocked loads only the tip into memory (Track 4 lazy hydrate).
+// Historical blocks, tx lookups, receipts, and logs load on demand from chaindata.
+// No lock required during Open construction.
 func (n *Node) hydrateLocked(tipNum uint64, tipHash dewtypes.Hash) error {
-	for i := uint64(0); i <= tipNum; i++ {
-		hashBlob, err := n.db.Get(canonicalKey(i))
-		if err != nil {
-			return fmt.Errorf("node: canonical %d: %w", i, err)
-		}
-		hash := dewtypes.BytesToHash(hashBlob)
-		hdrBlob, err := n.db.Get(headerKey(hash))
-		if err != nil {
-			return fmt.Errorf("node: header %s: %w", hash.Hex(), err)
-		}
-		hdr, err := decodeHeader(hdrBlob)
-		if err != nil {
-			return fmt.Errorf("node: decode header %s: %w", hash.Hex(), err)
-		}
-		bodyBlob, err := n.db.Get(bodyKey(hash))
-		if err != nil {
-			return fmt.Errorf("node: body %s: %w", hash.Hex(), err)
-		}
-		txs, err := decodeBody(bodyBlob)
-		if err != nil {
-			return fmt.Errorf("node: decode body %s: %w", hash.Hex(), err)
-		}
-		block := dewtypes.NewBlock(hdr, txs)
-		if block.Hash() != hash {
-			return fmt.Errorf("node: block hash mismatch at %d: got %s want %s", i, block.Hash().Hex(), hash.Hex())
-		}
-		n.blocks[hash] = block
-		n.blockNum[i] = hash
+	tipBlock, err := n.readBlockFromDB(tipHash)
+	if err != nil {
+		return fmt.Errorf("node: hydrate tip %s: %w", tipHash.Hex(), err)
 	}
-
-	if it, ok := n.db.(db.IteratePrefix); ok {
-		err := it.IteratePrefix([]byte{prefixTxLookup}, func(key, value []byte) error {
-			if len(key) != 1+32 {
-				return nil
-			}
-			txHash := dewtypes.BytesToHash(key[1:])
-			look, err := decodeTxLookup(value, txHash)
-			if err != nil {
-				return err
-			}
-			n.txIndex[txHash] = look
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("node: hydrate tx index: %w", err)
-		}
-		err = it.IteratePrefix([]byte{prefixReceipt}, func(key, value []byte) error {
-			if len(key) != 1+32 {
-				return nil
-			}
-			txHash := dewtypes.BytesToHash(key[1:])
-			rcpt, err := decodeReceipt(value)
-			if err != nil {
-				return err
-			}
-			n.receipts[txHash] = rcpt
-			for j, lg := range rcpt.Logs {
-				n.allLogs = append(n.allLogs, &IndexedLog{
-					Log:         lg,
-					BlockNumber: rcpt.BlockNumber,
-					BlockHash:   rcpt.BlockHash,
-					TxHash:      txHash,
-					TxIndex:     rcpt.TransactionIndex,
-					Index:       uint(j),
-				})
-			}
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("node: hydrate receipts: %w", err)
-		}
+	if tipBlock.Header().Number != tipNum {
+		return fmt.Errorf("node: tip height mismatch meta=%d header=%d", tipNum, tipBlock.Header().Number)
 	}
-
-	tipBlock := n.blocks[tipHash]
-	if tipBlock == nil {
-		return fmt.Errorf("node: tip block %s missing after hydrate", tipHash.Hex())
-	}
+	n.blocks[tipHash] = tipBlock
+	n.blockNum[tipNum] = tipHash
+	// Tip only — do not preload 0..tip-1, tx index, receipts, or allLogs.
 	n.header = tipBlock.Header().Copy()
 	if n.header.BaseFee != nil {
 		n.baseFee = new(big.Int).Set(n.header.BaseFee)
 	}
-	if tipNum != n.header.Number {
-		return fmt.Errorf("node: tip height mismatch meta=%d header=%d", tipNum, n.header.Number)
-	}
 	return nil
+}
+
+// readBlockFromDB loads header+body for hash without touching caches.
+func (n *Node) readBlockFromDB(hash dewtypes.Hash) (*dewtypes.Block, error) {
+	hdrBlob, err := n.db.Get(headerKey(hash))
+	if err != nil {
+		return nil, fmt.Errorf("header: %w", err)
+	}
+	hdr, err := decodeHeader(hdrBlob)
+	if err != nil {
+		return nil, fmt.Errorf("decode header: %w", err)
+	}
+	bodyBlob, err := n.db.Get(bodyKey(hash))
+	if err != nil {
+		return nil, fmt.Errorf("body: %w", err)
+	}
+	txs, err := decodeBody(bodyBlob)
+	if err != nil {
+		return nil, fmt.Errorf("decode body: %w", err)
+	}
+	block := dewtypes.NewBlock(hdr, txs)
+	if block.Hash() != hash {
+		return nil, fmt.Errorf("block hash mismatch: got %s want %s", block.Hash().Hex(), hash.Hex())
+	}
+	return block, nil
+}
+
+// loadBlockByHashLocked returns a cached block or loads it from chaindata into the cache.
+// Caller must hold n.mu (write).
+func (n *Node) loadBlockByHashLocked(hash dewtypes.Hash) *dewtypes.Block {
+	if b := n.blocks[hash]; b != nil {
+		return b
+	}
+	if n.db == nil {
+		return nil
+	}
+	block, err := n.readBlockFromDB(hash)
+	if err != nil {
+		return nil
+	}
+	n.blocks[hash] = block
+	num := block.Header().Number
+	if existing, ok := n.blockNum[num]; !ok || existing == hash {
+		n.blockNum[num] = hash
+	}
+	return block
+}
+
+// loadBlockByNumberLocked returns a cached block or loads canonical height from chaindata.
+// Caller must hold n.mu (write).
+func (n *Node) loadBlockByNumberLocked(num uint64) *dewtypes.Block {
+	if h, ok := n.blockNum[num]; ok {
+		if b := n.blocks[h]; b != nil {
+			return b
+		}
+	}
+	if n.db == nil {
+		return nil
+	}
+	hashBlob, err := n.db.Get(canonicalKey(num))
+	if err != nil {
+		return nil
+	}
+	hash := dewtypes.BytesToHash(hashBlob)
+	n.blockNum[num] = hash
+	return n.loadBlockByHashLocked(hash)
+}
+
+// loadTxLookupLocked returns a cached tx lookup or loads from chaindata.
+// Caller must hold n.mu (write).
+func (n *Node) loadTxLookupLocked(hash dewtypes.Hash) *TxLookup {
+	if look := n.txIndex[hash]; look != nil {
+		return look
+	}
+	if n.db == nil {
+		return nil
+	}
+	blob, err := n.db.Get(txLookupKey(hash))
+	if err != nil {
+		return nil
+	}
+	look, err := decodeTxLookup(blob, hash)
+	if err != nil {
+		return nil
+	}
+	n.txIndex[hash] = look
+	return look
+}
+
+// loadReceiptLocked returns a cached receipt or loads from chaindata.
+// Caller must hold n.mu (write).
+func (n *Node) loadReceiptLocked(hash dewtypes.Hash) *dewtypes.Receipt {
+	if r := n.receipts[hash]; r != nil {
+		return r
+	}
+	if n.db == nil {
+		return nil
+	}
+	blob, err := n.db.Get(receiptKey(hash))
+	if err != nil {
+		return nil
+	}
+	r, err := decodeReceipt(blob)
+	if err != nil {
+		return nil
+	}
+	n.receipts[hash] = r
+	return r
+}
+
+// cachedBlockCount reports how many blocks are currently in the RAM cache (tests / metrics).
+func (n *Node) cachedBlockCount() int {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return len(n.blocks)
 }
 
 // Close releases the underlying database.

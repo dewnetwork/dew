@@ -27,11 +27,11 @@ import (
 type Node struct {
 	mu sync.RWMutex
 
-	genesis  *config.Genesis
-	chainID  *big.Int
-	db       db.Database
-	statedb  *state.StateDB
-	header   *dewtypes.Header
+	genesis *config.Genesis
+	chainID *big.Int
+	db      db.Database
+	statedb *state.StateDB
+	header  *dewtypes.Header
 
 	blocks   map[dewtypes.Hash]*dewtypes.Block
 	blockNum map[uint64]dewtypes.Hash
@@ -254,21 +254,35 @@ func (n *Node) CurrentHeader() *dewtypes.Header {
 }
 
 // GetBlockByNumber returns the block at height (nil if missing).
+// Historical heights load on demand from chaindata after lazy hydrate.
 func (n *Node) GetBlockByNumber(num uint64) *dewtypes.Block {
 	n.mu.RLock()
-	defer n.mu.RUnlock()
-	h, ok := n.blockNum[num]
-	if !ok {
-		return nil
+	if h, ok := n.blockNum[num]; ok {
+		if b := n.blocks[h]; b != nil {
+			n.mu.RUnlock()
+			return b
+		}
 	}
-	return n.blocks[h]
+	n.mu.RUnlock()
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return n.loadBlockByNumberLocked(num)
 }
 
 // GetBlockByHash returns the block with the given hash.
+// Misses load on demand from chaindata after lazy hydrate.
 func (n *Node) GetBlockByHash(hash dewtypes.Hash) *dewtypes.Block {
 	n.mu.RLock()
-	defer n.mu.RUnlock()
-	return n.blocks[hash]
+	if b := n.blocks[hash]; b != nil {
+		n.mu.RUnlock()
+		return b
+	}
+	n.mu.RUnlock()
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return n.loadBlockByHashLocked(hash)
 }
 
 // GetBalance returns the balance at latest state.
@@ -313,18 +327,32 @@ func (n *Node) BaseFee() *big.Int {
 	return new(big.Int).Set(n.baseFee)
 }
 
-// GetTransaction returns indexed tx metadata.
+// GetTransaction returns indexed tx metadata (RAM cache or chaindata).
 func (n *Node) GetTransaction(hash dewtypes.Hash) *TxLookup {
 	n.mu.RLock()
-	defer n.mu.RUnlock()
-	return n.txIndex[hash]
+	if look := n.txIndex[hash]; look != nil {
+		n.mu.RUnlock()
+		return look
+	}
+	n.mu.RUnlock()
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return n.loadTxLookupLocked(hash)
 }
 
-// GetReceipt returns a receipt by tx hash.
+// GetReceipt returns a receipt by tx hash (RAM cache or chaindata).
 func (n *Node) GetReceipt(hash dewtypes.Hash) *dewtypes.Receipt {
 	n.mu.RLock()
-	defer n.mu.RUnlock()
-	return n.receipts[hash]
+	if r := n.receipts[hash]; r != nil {
+		n.mu.RUnlock()
+		return r
+	}
+	n.mu.RUnlock()
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return n.loadReceiptLocked(hash)
 }
 
 // SendDewRawTransaction decodes a signed DewTx, admits via mempool, and optionally auto-mines.
@@ -523,14 +551,60 @@ func (n *Node) sealReadyFromPoolLocked() error {
 }
 
 // TransactionsInBlock returns tx lookups for a block number.
+// Uses the RAM cache plus an on-demand scan of durable tx lookups when needed.
 func (n *Node) TransactionsInBlock(num uint64) []*TxLookup {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return n.lookupsForBlockLocked(num)
+}
+
+// lookupsForBlockLocked collects tx lookups for a height (cache + chaindata scan).
+// Caller must hold n.mu (write).
+func (n *Node) lookupsForBlockLocked(num uint64) []*TxLookup {
+	seen := make(map[dewtypes.Hash]struct{})
 	var out []*TxLookup
-	for _, look := range n.txIndex {
-		if look.BlockNumber == num {
-			out = append(out, look)
+	add := func(look *TxLookup) {
+		if look == nil {
+			return
 		}
+		if _, ok := seen[look.TxHash]; ok {
+			return
+		}
+		seen[look.TxHash] = struct{}{}
+		out = append(out, look)
+	}
+	for _, look := range n.txIndex {
+		if look != nil && look.BlockNumber == num {
+			add(look)
+		}
+	}
+	// EVM body txs (fast path when block is loadable).
+	if blk := n.loadBlockByNumberLocked(num); blk != nil {
+		for _, tx := range blk.Transactions() {
+			if tx == nil {
+				continue
+			}
+			add(n.loadTxLookupLocked(tx.Hash()))
+		}
+	}
+	// DewTx (and any missed EVM) via durable index — needed after lazy open.
+	if it, ok := n.db.(db.IteratePrefix); ok {
+		_ = it.IteratePrefix([]byte{prefixTxLookup}, func(key, value []byte) error {
+			if len(key) != 1+32 {
+				return nil
+			}
+			txHash := dewtypes.BytesToHash(key[1:])
+			if _, ok := seen[txHash]; ok {
+				return nil
+			}
+			look, err := decodeTxLookup(value, txHash)
+			if err != nil || look.BlockNumber != num {
+				return nil
+			}
+			n.txIndex[txHash] = look
+			add(look)
+			return nil
+		})
 	}
 	return out
 }
@@ -662,27 +736,75 @@ func (n *Node) EstimateGas(msg vm.Message) (uint64, error) {
 }
 
 // FilterLogs returns logs matching basic address/topic filters in a block range.
+// After lazy hydrate, historical logs are resolved from durable receipts (no full
+// allLogs preload on Open). Recent seals still feed allLogs for the in-process path.
 func (n *Node) FilterLogs(fromBlock, toBlock uint64, addresses []dewcrypto.Address, topics [][]dewtypes.Hash) []*IndexedLog {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
-	var out []*IndexedLog
+	n.mu.Lock()
+	defer n.mu.Unlock()
 	addrSet := map[dewcrypto.Address]struct{}{}
 	for _, a := range addresses {
 		addrSet[a] = struct{}{}
 	}
-	for _, il := range n.allLogs {
+	match := func(il *IndexedLog) bool {
+		if il == nil || il.Log == nil {
+			return false
+		}
 		if il.BlockNumber < fromBlock || il.BlockNumber > toBlock {
-			continue
+			return false
 		}
 		if len(addrSet) > 0 {
 			if _, ok := addrSet[il.Log.Address]; !ok {
-				continue
+				return false
 			}
 		}
-		if !matchTopics(il.Log.Topics, topics) {
-			continue
+		return matchTopics(il.Log.Topics, topics)
+	}
+
+	var out []*IndexedLog
+	seen := make(map[string]struct{}) // txHash|logIndex
+	add := func(il *IndexedLog) {
+		if !match(il) {
+			return
 		}
+		key := il.TxHash.Hex() + "|" + fmt.Sprint(il.Index)
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
 		out = append(out, il)
+	}
+
+	for _, il := range n.allLogs {
+		add(il)
+	}
+
+	// Durable receipts cover history not held in allLogs after lazy Open.
+	if it, ok := n.db.(db.IteratePrefix); ok {
+		_ = it.IteratePrefix([]byte{prefixReceipt}, func(key, value []byte) error {
+			if len(key) != 1+32 {
+				return nil
+			}
+			txHash := dewtypes.BytesToHash(key[1:])
+			rcpt, err := decodeReceipt(value)
+			if err != nil {
+				return nil
+			}
+			if rcpt.BlockNumber < fromBlock || rcpt.BlockNumber > toBlock {
+				return nil
+			}
+			n.receipts[txHash] = rcpt
+			for j, lg := range rcpt.Logs {
+				add(&IndexedLog{
+					Log:         lg,
+					BlockNumber: rcpt.BlockNumber,
+					BlockHash:   rcpt.BlockHash,
+					TxHash:      txHash,
+					TxIndex:     rcpt.TransactionIndex,
+					Index:       uint(j),
+				})
+			}
+			return nil
+		})
 	}
 	return out
 }

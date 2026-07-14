@@ -94,4 +94,4 @@ See [Parallel execution](../execution/parallel-execution.md).
 
 ## Pruning and archive
 
-Pruning policies are out of scope for public-testnet-v1. Full nodes may retain all heights; large-tip lazy hydrate remains optional ops work.
+Pruning policies are out of scope for public-testnet-v1. Full nodes may retain all heights; large-tip **lazy hydrate** (tip-only Open, on-demand history) is implemented — [durable-chaindata](../ops/durable-chaindata.md#lazy-hydrate-track-4).

@@ -109,6 +109,108 @@ func TestNode_RestartRecoversTip(t *testing.T) {
 	}
 }
 
+// TestNode_LazyHydrateLargeTip ensures Open loads only the tip into RAM and still
+// serves historical blocks / receipts / tx index on demand (Track 4).
+func TestNode_LazyHydrateLargeTip(t *testing.T) {
+	g := testGenesis()
+	dir := filepath.Join(t.TempDir(), "chaindata")
+
+	n1, err := Open(g, dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyBytes, err := hex.DecodeString("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+	if err != nil {
+		t.Fatal(err)
+	}
+	priv, err := dewcrypto.ToECDSA(keyBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	from := dewcrypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	to := dewcrypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+
+	const nBlocks = 24
+	var firstHash, midHash, lastHash dewtypes.Hash
+	for i := 0; i < nBlocks; i++ {
+		tx := dewtypes.NewDewTx(big.NewInt(2205), uint64(i), from, to, uint256.NewInt(1), params.DefaultDewTxFeeWei, nil, nil)
+		if err := dewtypes.SignDewTx(tx, priv); err != nil {
+			t.Fatal(err)
+		}
+		raw, err := tx.MarshalBinary()
+		if err != nil {
+			t.Fatal(err)
+		}
+		h, err := n1.SendDewRawTransaction(raw)
+		if err != nil {
+			t.Fatalf("tx %d: %v", i, err)
+		}
+		switch i {
+		case 0:
+			firstHash = h
+		case nBlocks / 2:
+			midHash = h
+		case nBlocks - 1:
+			lastHash = h
+		}
+	}
+	if n1.BlockNumber() != uint64(nBlocks) {
+		t.Fatalf("height=%d want %d", n1.BlockNumber(), nBlocks)
+	}
+	tipHash := n1.CurrentHeader().Hash()
+	if err := n1.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	n2, err := Open(g, dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = n2.Close() })
+
+	if n2.BlockNumber() != uint64(nBlocks) {
+		t.Fatalf("reopen height=%d want %d", n2.BlockNumber(), nBlocks)
+	}
+	if n2.CurrentHeader().Hash() != tipHash {
+		t.Fatal("tip hash mismatch after lazy open")
+	}
+	// Lazy: only tip block cached at open (not full 0..tip).
+	if c := n2.cachedBlockCount(); c != 1 {
+		t.Fatalf("cached blocks after open=%d want 1 (tip only)", c)
+	}
+
+	// Historical heights load on demand.
+	if n2.GetBlockByNumber(1) == nil {
+		t.Fatal("block 1 missing after lazy load")
+	}
+	if n2.GetBlockByNumber(uint64(nBlocks/2)) == nil {
+		t.Fatal("mid block missing")
+	}
+	if n2.GetBlockByNumber(0) == nil {
+		t.Fatal("genesis block missing")
+	}
+	if c := n2.cachedBlockCount(); c < 3 {
+		t.Fatalf("expected cache growth after historical loads, got %d", c)
+	}
+
+	if n2.GetReceipt(firstHash) == nil || n2.GetTransaction(firstHash) == nil {
+		t.Fatal("first tx receipt/index missing on demand")
+	}
+	if n2.GetReceipt(midHash) == nil || n2.GetTransaction(midHash) == nil {
+		t.Fatal("mid tx receipt/index missing on demand")
+	}
+	if n2.GetReceipt(lastHash) == nil || n2.GetTransaction(lastHash) == nil {
+		t.Fatal("last tx receipt/index missing on demand")
+	}
+
+	looks := n2.TransactionsInBlock(1)
+	if len(looks) == 0 {
+		t.Fatal("TransactionsInBlock(1) empty after lazy open")
+	}
+	// DewTx receipts may carry empty Logs; FilterLogs must still succeed without panic.
+	_ = n2.FilterLogs(0, uint64(nBlocks), nil, nil)
+}
+
 func TestNode_GenesisMismatchRefusesOpen(t *testing.T) {
 	g1 := testGenesis()
 	dir := filepath.Join(t.TempDir(), "chaindata")

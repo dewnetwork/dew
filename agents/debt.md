@@ -12,7 +12,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`.
 
-**Track R (post-S6):** H2 multiproc BFT commit latency + chaos recovery **done** 2026-07-14 ([research-lab.md](../docs/ops/research-lab.md)); open optional: state/SMT tip-growth. Research-friendly next: Track **4** lazy hydrate, or Track R state. Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, product P1e–f.
+**Track R (post-S6):** H2 multiproc BFT commit latency + chaos recovery **done** 2026-07-14 ([research-lab.md](../docs/ops/research-lab.md)); open optional: state/SMT tip-growth. **Track 4 lazy hydrate done** 2026-07-14 (tip-only Open + on-demand chain reads). Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, product P1e–f, optional log-index keys.
 
 ## Durable chaindata
 
@@ -23,7 +23,8 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 - [x] `dew run --datadir` opens chaindata; compose volumes for Path B / multi
 - [x] **Not** merging peers into chaindata — keep `<datadir>/peers.json` (D3b)
 - [x] Pebble is the only DB backend; MemoryDB removed; `--datadir` defaults to `/var/lib/dew`
-- [ ] Optional: lazy hydrate / log index keys when tip is very large
+- [x] Lazy hydrate: Open tip-only; blocks/tx/receipts/logs on demand — Track 4 (2026-07-14)
+- [ ] Optional residual: secondary log-index keys for O(range) `eth_getLogs` without full receipt prefix scan
 
 ## C1 residuals
 
