@@ -83,6 +83,7 @@
   path: product
   items:
     - block-explorer.md
+    - indexer.md
     - faucet.md
     - guestbook.md
     - upgrades.md

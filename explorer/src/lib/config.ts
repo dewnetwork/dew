@@ -6,6 +6,7 @@ const rawRpc = import.meta.env.PUBLIC_RPC_URL as string | undefined;
 const rawChain = import.meta.env.PUBLIC_CHAIN_ID as string | undefined;
 const rawBase = import.meta.env.PUBLIC_EXPLORER_BASE as string | undefined;
 const rawKnown = import.meta.env.PUBLIC_KNOWN_TOKENS as string | undefined;
+const rawIndexer = import.meta.env.PUBLIC_INDEXER_URL as string | undefined;
 
 function optNum(v: string | undefined): number | null {
   if (v == null || v.trim() === "") return null;
@@ -47,6 +48,8 @@ export const config = {
   rpcUrl: (rawRpc?.trim() || "http://127.0.0.1:8545").replace(/\/$/, ""),
   expectedChainId: Number.parseInt(rawChain || "2205", 10) || 2205,
   explorerBase: rawBase?.trim().replace(/\/$/, "") || "",
+  /** Optional P1e sidecar base URL (e.g. http://127.0.0.1:8550). Empty = RPC-only MVP. */
+  indexerUrl: (rawIndexer?.trim() || "").replace(/\/$/, ""),
   freezeTag: "public-testnet-v1",
   networkName: "Dew",
   symbol: "DEW",

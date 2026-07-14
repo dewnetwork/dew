@@ -19,4 +19,10 @@ export const qk = {
   recent: (head: number, n: number, rpc = config.rpcUrl) =>
     ["recent", rpc, head, n] as const,
   networkStats: (rpc = config.rpcUrl) => ["networkStats", rpc] as const,
+  indexerStatus: (base = config.indexerUrl) => ["indexerStatus", base] as const,
+  indexerVolume: (base = config.indexerUrl) => ["indexerVolume", base] as const,
+  addressTxs: (addr: string, base = config.indexerUrl) =>
+    ["addressTxs", base, addr.toLowerCase()] as const,
+  addressTransfers: (addr: string, base = config.indexerUrl) =>
+    ["addressTransfers", base, addr.toLowerCase()] as const,
 };

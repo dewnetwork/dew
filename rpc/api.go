@@ -464,12 +464,16 @@ func (a *API) ethGetTransactionReceipt(params json.RawMessage) (interface{}, err
 			"removed":          false,
 		}
 	}
+	from := crypto.Address{}
+	if look != nil {
+		from = look.From
+	}
 	out := map[string]interface{}{
 		"transactionHash":   EncodeHash(rcpt.TxHash),
 		"transactionIndex":  EncodeUint64(uint64(rcpt.TransactionIndex)),
 		"blockHash":         EncodeHash(rcpt.BlockHash),
 		"blockNumber":       EncodeUint64(rcpt.BlockNumber),
-		"from":              EncodeAddress(look.From),
+		"from":              EncodeAddress(from),
 		"cumulativeGasUsed": EncodeUint64(rcpt.CumulativeGasUsed),
 		"gasUsed":           EncodeUint64(rcpt.GasUsed),
 		"effectiveGasPrice": EncodeBig(rcpt.EffectiveGasPrice),
@@ -478,9 +482,12 @@ func (a *API) ethGetTransactionReceipt(params json.RawMessage) (interface{}, err
 		"logsBloom":         "0x" + strings.Repeat("0", 512),
 		"type":              EncodeUint64(uint64(rcpt.Type)),
 	}
-	if look.Tx.To() != nil {
+	switch {
+	case look != nil && look.Tx != nil && look.Tx.To() != nil:
 		out["to"] = look.Tx.To().Hex()
-	} else {
+	case look != nil && look.DewTx != nil:
+		out["to"] = EncodeAddress(look.DewTx.Receiver)
+	default:
 		out["to"] = nil
 	}
 	if rcpt.ContractAddress != nil {

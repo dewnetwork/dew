@@ -1,8 +1,15 @@
-import { useParams } from "@tanstack/react-router";
-import { useAddress, useErc20Meta, useKnownTokenBalances } from "@/hooks/use-chain";
+import { Link, useParams } from "@tanstack/react-router";
+import {
+  useAddress,
+  useAddressTransfers,
+  useAddressTxs,
+  useErc20Meta,
+  useKnownTokenBalances,
+} from "@/hooks/use-chain";
 import { formatDew, hexToBigInt, hexToNumber, isHexAddress } from "@/lib/format";
 import { formatTokenAmount } from "@/lib/erc20";
 import { config } from "@/lib/config";
+import { indexerEnabled } from "@/lib/indexer";
 import { Identicon } from "@/components/identicon";
 import {
   AddressLink,
@@ -73,6 +80,9 @@ function AddressBody({
   const token = erc20.data;
   const knownBal = useKnownTokenBalances(addr);
   const hasKnown = config.knownTokens.length > 0;
+  const hasIndexer = indexerEnabled();
+  const histTxs = useAddressTxs(addr);
+  const histXfer = useAddressTransfers(addr);
 
   return (
     <div>
@@ -114,10 +124,12 @@ function AddressBody({
       </div>
 
       <WarningBanner>
-        Full address history needs an indexer. Showing on-chain balance, nonce, and code from
-        JSON-RPC
-        {token ? "; ERC-20 metadata via eth_call" : ""}
-        {hasKnown ? "; known-token balances via balanceOf" : ""}.
+        {hasIndexer
+          ? "History and token transfers load from the optional indexer sidecar when caught up."
+          : "Full address history needs an indexer (set PUBLIC_INDEXER_URL). Showing on-chain balance, nonce, and code from JSON-RPC"}
+        {!hasIndexer && token ? "; ERC-20 metadata via eth_call" : ""}
+        {!hasIndexer && hasKnown ? "; known-token balances via balanceOf" : ""}
+        {!hasIndexer ? "." : null}
       </WarningBanner>
 
       <Tabs.Root defaultValue="overview">
@@ -125,6 +137,18 @@ function AddressBody({
           <Tabs.Trigger value="overview" className="tab-trigger">
             Overview
           </Tabs.Trigger>
+          {hasIndexer ? (
+            <Tabs.Trigger value="history" className="tab-trigger">
+              Transactions
+              {histTxs.data ? ` (${histTxs.data.length})` : ""}
+            </Tabs.Trigger>
+          ) : null}
+          {hasIndexer ? (
+            <Tabs.Trigger value="transfers" className="tab-trigger">
+              Token transfers
+              {histXfer.data ? ` (${histXfer.data.length})` : ""}
+            </Tabs.Trigger>
+          ) : null}
           {hasKnown ? (
             <Tabs.Trigger value="tokens" className="tab-trigger">
               Token balances
@@ -167,6 +191,130 @@ function AddressBody({
             ) : null}
           </FieldList>
         </Tabs.Content>
+
+        {hasIndexer ? (
+          <Tabs.Content value="history">
+            {histTxs.isLoading ? (
+              <LoadingBlock label="Loading transaction history…" />
+            ) : histTxs.isError ? (
+              <EmptyState title="Indexer unavailable" detail={String(histTxs.error)} />
+            ) : !histTxs.data?.length ? (
+              <EmptyState
+                title="No indexed transactions"
+                detail="Indexer may still be catching up, or this address has no txs yet."
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[32rem] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-line)] text-xs text-muted">
+                      <th className="pb-2 pr-3 font-medium">Tx</th>
+                      <th className="pb-2 pr-3 font-medium">Block</th>
+                      <th className="pb-2 pr-3 font-medium">From / To</th>
+                      <th className="pb-2 text-right font-medium">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {histTxs.data.map((tx) => (
+                      <tr
+                        key={tx.hash}
+                        className="border-b border-[var(--color-line)]/60 last:border-0"
+                      >
+                        <td className="py-2.5 pr-3 mono">
+                          <Link
+                            to="/tx/$hash"
+                            params={{ hash: tx.hash }}
+                            className="text-cyan no-underline hover:underline"
+                          >
+                            {tx.hash.slice(0, 10)}…
+                          </Link>
+                        </td>
+                        <td className="py-2.5 pr-3 mono">
+                          <Link
+                            to="/block/$id"
+                            params={{ id: String(tx.blockNumber) }}
+                            className="no-underline hover:underline"
+                          >
+                            {tx.blockNumber}
+                          </Link>
+                        </td>
+                        <td className="py-2.5 pr-3 text-xs">
+                          <div>
+                            <span className="text-muted">from </span>
+                            <AddressLink address={tx.from} />
+                          </div>
+                          {tx.to ? (
+                            <div>
+                              <span className="text-muted">to </span>
+                              <AddressLink address={tx.to} />
+                            </div>
+                          ) : (
+                            <span className="text-muted">contract create</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 text-right mono text-xs">
+                          {formatDew(hexToBigInt(tx.value || "0x0"))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Tabs.Content>
+        ) : null}
+
+        {hasIndexer ? (
+          <Tabs.Content value="transfers">
+            {histXfer.isLoading ? (
+              <LoadingBlock label="Loading token transfers…" />
+            ) : histXfer.isError ? (
+              <EmptyState title="Indexer unavailable" detail={String(histXfer.error)} />
+            ) : !histXfer.data?.length ? (
+              <EmptyState title="No ERC-20 transfers" detail="No Transfer events for this address." />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[32rem] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-line)] text-xs text-muted">
+                      <th className="pb-2 pr-3 font-medium">Tx</th>
+                      <th className="pb-2 pr-3 font-medium">Token</th>
+                      <th className="pb-2 pr-3 font-medium">From → To</th>
+                      <th className="pb-2 text-right font-medium">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {histXfer.data.map((xf) => (
+                      <tr
+                        key={`${xf.txHash}-${xf.logIndex}`}
+                        className="border-b border-[var(--color-line)]/60 last:border-0"
+                      >
+                        <td className="py-2.5 pr-3 mono">
+                          <Link
+                            to="/tx/$hash"
+                            params={{ hash: xf.txHash }}
+                            className="text-cyan no-underline hover:underline"
+                          >
+                            {xf.txHash.slice(0, 10)}…
+                          </Link>
+                        </td>
+                        <td className="py-2.5 pr-3">
+                          <AddressLink address={xf.token} />
+                        </td>
+                        <td className="py-2.5 pr-3 text-xs">
+                          <AddressLink address={xf.from} /> → <AddressLink address={xf.to} />
+                        </td>
+                        <td className="py-2.5 text-right mono text-xs">
+                          {hexToBigInt(xf.amount || "0x0").toString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Tabs.Content>
+        ) : null}
 
         {hasKnown ? (
           <Tabs.Content value="tokens">

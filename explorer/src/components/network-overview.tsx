@@ -2,10 +2,11 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { config } from "@/lib/config";
 import { formatGwei, formatNumber } from "@/lib/format";
-import { useNetworkStats } from "@/hooks/use-chain";
+import { useIndexerVolume, useNetworkStats } from "@/hooks/use-chain";
 import { LoadingBlock } from "./ui";
 import { TxHistoryChart } from "./tx-history-chart";
 import { HISTORY_DAYS } from "@/lib/network-stats";
+import { indexerEnabled } from "@/lib/indexer";
 
 function formatUsd(n: number, digits = 2): string {
   return n.toLocaleString("en-US", {
@@ -121,6 +122,7 @@ function StatCell({
 
 export function NetworkOverview() {
   const stats = useNetworkStats();
+  const idxVol = useIndexerVolume();
 
   if (stats.isLoading) {
     return <LoadingBlock label="Loading network overview…" />;
@@ -135,6 +137,16 @@ export function NetworkOverview() {
   }
 
   const s = stats.data;
+  const history =
+    indexerEnabled() && idxVol.data && idxVol.data.length > 0 ? idxVol.data : s.history;
+  const historyLabel =
+    indexerEnabled() && idxVol.data && idxVol.data.length > 0
+      ? "Transaction History (indexed)"
+      : `Transaction History in ${HISTORY_DAYS} days`;
+  const txs14d =
+    indexerEnabled() && idxVol.data && idxVol.data.length > 0
+      ? idxVol.data.reduce((a, p) => a + p.txs, 0)
+      : s.txs14d;
   const price = config.priceUsd;
   const change = config.priceChange24h;
   const mcap =
@@ -198,7 +210,7 @@ export function NetworkOverview() {
           className="border-b border-[var(--color-line)] lg:border-r"
         >
           <span className="font-semibold tracking-tight">
-            {formatCompact(s.txs14d)}
+            {formatCompact(txs14d)}
             <span className="font-normal text-muted">
               {" "}
               ({s.tps.toFixed(1)} TPS)
@@ -230,10 +242,10 @@ export function NetworkOverview() {
         <div className="order-last col-span-2 border-t border-[var(--color-line)] bg-panel-raised/50 px-3 py-3 sm:px-4 lg:order-none lg:col-span-1 lg:row-span-2 lg:border-l lg:border-t-0">
           <div className="mb-2">
             <span className="inline-block rounded-md bg-cyan/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-cyan">
-              Transaction History in {HISTORY_DAYS} days
+              {historyLabel}
             </span>
           </div>
-          <TxHistoryChart data={s.history} variant="panel" />
+          <TxHistoryChart data={history} variant="panel" />
         </div>
 
         <StatCell

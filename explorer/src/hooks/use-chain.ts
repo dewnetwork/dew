@@ -20,6 +20,13 @@ import {
 import { hexToNumber, isHexHash } from "@/lib/format";
 import { fetchNetworkStats } from "@/lib/network-stats";
 import { fetchErc20Meta, fetchKnownTokenBalances } from "@/lib/erc20";
+import {
+  fetchAddressTransfers,
+  fetchAddressTxs,
+  fetchIndexerStatus,
+  fetchIndexerVolumeHistory,
+  indexerEnabled,
+} from "@/lib/indexer";
 
 const HEAD_MS = 4000;
 
@@ -138,6 +145,49 @@ export function useNetworkStats() {
     staleTime: 60_000,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
+  });
+}
+
+/** P1e: full-history volume from sidecar when PUBLIC_INDEXER_URL is set. */
+export function useIndexerVolume() {
+  return useQuery({
+    queryKey: qk.indexerVolume(),
+    queryFn: () => fetchIndexerVolumeHistory(),
+    enabled: indexerEnabled(),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    retry: 1,
+  });
+}
+
+export function useIndexerStatus() {
+  return useQuery({
+    queryKey: qk.indexerStatus(),
+    queryFn: () => fetchIndexerStatus(),
+    enabled: indexerEnabled(),
+    staleTime: 10_000,
+    refetchInterval: 10_000,
+    retry: 1,
+  });
+}
+
+export function useAddressTxs(addr: string) {
+  return useQuery({
+    queryKey: qk.addressTxs(addr),
+    queryFn: () => fetchAddressTxs(addr, 50, 0),
+    enabled: indexerEnabled() && Boolean(addr),
+    staleTime: 10_000,
+    retry: 1,
+  });
+}
+
+export function useAddressTransfers(addr: string) {
+  return useQuery({
+    queryKey: qk.addressTransfers(addr),
+    queryFn: () => fetchAddressTransfers(addr, 50, 0),
+    enabled: indexerEnabled() && Boolean(addr),
+    staleTime: 10_000,
+    retry: 1,
   });
 }
 

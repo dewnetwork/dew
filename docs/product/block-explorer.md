@@ -78,6 +78,7 @@ Consumers should use the explorer **base URL** only (MetaMask “Block explorer 
 | :--- | :--- |
 | `PUBLIC_RPC_URL` | `https://rpc-dew.fadosoft.com` or `http://127.0.0.1:8545` |
 | `PUBLIC_CHAIN_ID` | `2205` |
+| `PUBLIC_INDEXER_URL` | Optional P1e sidecar base (e.g. `http://127.0.0.1:8550`) — address history + indexed volume chart |
 | `PUBLIC_EXPLORER_BASE` | optional public base URL |
 | `PUBLIC_KNOWN_TOKENS` | path B mock basket (see above) — optional for local dev |
 

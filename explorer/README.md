@@ -1,6 +1,6 @@
 # Dew Explorer
 
-Read-only block explorer SPA for Dew (`public-testnet-v1`, chain ID **2205**). Consumes JSON-RPC only — no indexer, no keys.
+Read-only block explorer SPA for Dew (`public-testnet-v1`, chain ID **2205**). Consumes JSON-RPC (and optional P1e indexer). No keys.
 
 Spec: [`docs/product/block-explorer.md`](../docs/product/block-explorer.md) · Phase **D1**: [`docs/build/phases.md`](../docs/build/phases.md).
 
@@ -31,6 +31,7 @@ pnpm explorer:dev
 | `PUBLIC_CHAIN_ID` | `2205` | Must match network |
 | `PUBLIC_EXPLORER_BASE` | _(empty)_ | Canonical origin for share links |
 | `PUBLIC_KNOWN_TOKENS` | _(empty)_ | Optional `SYMBOL:0xaddr` list for address balance tab |
+| `PUBLIC_INDEXER_URL` | _(empty)_ | Optional `dewindex` base URL for address history + volume chart |
 
 Path B mock basket (bake into production image):
 

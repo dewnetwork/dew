@@ -217,39 +217,25 @@ go test ./rpc/ ./node/ -count=1
 
 ### Tasks
 
-#### Task 4.1 — Indexer MVP service
+#### Task 4.1–4.2 — Indexer MVP + explorer
 
-**Files (proposed):**
-- Create: `indexer/` (Go module package under monorepo) or `cmd/dewindex`
-- Schema: blocks, txs, logs (addr, topic0), optional ERC-20 transfers table
-- Config: `RPC_URL`, `DATABASE_URL`/`SQLITE_PATH`, start block
+**Status:** **Done** 2026-07-14
 
-- [ ] **Step 1:** Spec API: `GET /v1/address/:addr/txs`, `GET /v1/stats/volume?from&to`, `GET /v1/tokens/:addr/transfers`.
-- [ ] **Step 2:** Ingest loop: head subscription or poll; decode receipts/logs into SQLite.
-- [ ] **Step 3:** Backfill from genesis or configured height; checkpoint cursor.
-- [ ] **Step 4:** Integration test against `devnet` or `node.OpenTest` + local RPC.
-- [ ] **Step 5:** Compose service + docs.
+**Files:** `indexer/`, `cmd/dewindex`, `deploy/indexer/Dockerfile`, `docs/product/indexer.md`, `explorer/src/**`, receipt DewTx nil-fix in `rpc/api.go`
 
-#### Task 4.2 — Explorer P1e consumption
-
-**Files:** `explorer/src/**`, `docs/product/block-explorer.md`, `upgrades.md`
-
-- [ ] Address page: paginated tx/transfer history from indexer.
-- [ ] Home/chart: volume over time from indexer (replace or extend recent-only `tx-history-chart`).
-- [ ] Env: `PUBLIC_INDEXER_URL` optional; graceful degrade if unset.
-- [ ] Mark P1e shipped in upgrades + debt when DoD met.
+- [x] SQLite store + poll ingest + HTTP API
+- [x] Integration test against local RPC
+- [x] Explorer `PUBLIC_INDEXER_URL` history tabs + volume chart
+- [x] Docs / debt / upgrades
 
 **Acceptance (P1e):**
-- [ ] Address with many historical txs shows more than “recent tip poll” window
-- [ ] Volume chart uses multi-day (or multi-block) series when indexer caught up
-- [ ] No wire/consensus change
-
-**Dependencies:** Wave 1 required for scale; Wave 2 strongly recommended  
-**Estimated scope:** Large — own mini-plan if scope expands to leaderboard + internal txs
+- [x] Address history from indexer when configured
+- [x] Volume chart prefers indexer series when available
+- [x] No wire/consensus change
 
 ### Checkpoint Wave 4
-- [ ] Live Path B can run indexer beside RPC (operator)
-- [ ] Product docs updated; debt P1e checkbox progress
+- [x] Product docs updated; debt P1e progress
+- [ ] Operator: deploy dewindex on Path B if desired
 - [ ] Stop here for Goal A unless Goal B requested
 
 ---

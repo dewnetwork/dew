@@ -8,11 +8,11 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Phase D foundation complete** — D1 explorer + D2 faucet; D3a + D3b + D3a residual; **durable chaindata**; product-v1. Open work is **tracks** (one row each): R research, 1 product, 2 protocol, 3 ops, 4 core, 5 mainnet — not forced mainnet. [roadmap — Tracks](../docs/build/roadmap.md#tracks) · [phases — Tracks](../docs/build/phases.md#tracks). Optional scale: D3c / D3d / D3e on demand — [d3-scale.md](../docs/scale/d3-scale.md), [durable-chaindata.md](../docs/ops/durable-chaindata.md).
 
-**Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); deferred: P1e–f / P3c. Research-friendly default rows: Track **R** + Track **4**; Track **5** only before mainnet claims.
+**Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); **P1e indexer shipped** 2026-07-14; deferred: P1f / P3c / internal txs. Research-friendly default rows: Track **R** + Track **4**; Track **5** only before mainnet claims.
 
 **Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`.
 
-**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3), product P1e–f, optional Filter API (gap plan Wave 3).
+**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. **P1e dewindex sidecar done** 2026-07-14. Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3), product P1f / P3c, optional Filter API (gap plan Wave 3).
 
 ## Durable chaindata
 
@@ -84,7 +84,8 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] P2d faucet funder `balanceWei` on `/info` + UI (product-v1.2)
 - [x] Deploy rebuild of live path B surfaces (operator) — live verify 2026-07-13 via public HTTPS only; **no SSH** to path B host from this workflow (see [upgrades.md](../docs/product/upgrades.md) product-v1 DoD)
 - [ ] Optional (host console only, not SSH from monorepo agents): pin GHCR to a release that includes ldflags inject (post–this change) + recreate stack so live `web3_clientVersion` matches the tag
-- [ ] P1e indexer history · P1f verified source · P3c reactions (deferred)
+- [x] P1e indexer history / volume (`dewindex` + explorer) — 2026-07-14
+- [ ] P1f verified source · P3c reactions (deferred)
 
 ## Docs
 

@@ -72,7 +72,7 @@ Ops / DX web only. Freeze tag and chain ID stay **public-testnet-v1** / **2205**
 | **P1b — Tx method & token transfers** | Human method labels (selector table); decode `Transfer` / `Approval` logs into readable rows | No | **Shipped** (product-v1) |
 | **P1c — Search UX** | Recent searches chips; keep address / tx / block resolution | No | **Shipped** (product-v1) |
 | **P1d — Token balance tab** | Optional known-token list + `balanceOf` for an address (`PUBLIC_KNOWN_TOKENS`) | No | **Shipped** (product-v1.1) |
-| **P1e — Internal txs / full history** | Requires log/tx indexer — **out of no-indexer MVP** | Yes | Deferred |
+| **P1e — Full history / volume** | Optional `dewindex` SQLite sidecar + `PUBLIC_INDEXER_URL` | Yes | **Shipped** (2026-07-14); internal txs still out of scope |
 | **P1f — Verified source / ABI** | Source upload or IPFS — product phase after indexer | Optional | Deferred |
 
 Acceptance (P1a–c):
@@ -117,7 +117,7 @@ See [Guestbook](./guestbook.md).
 
 ### Deferred product slices (post product-v1)
 
-- [ ] P1e — indexer / full history / internal txs  
+- [x] P1e — indexer / full history / volume (`dewindex` + explorer) — 2026-07-14; internal txs deferred  
 - [ ] P1f — verified source / ABI  
 - [ ] P3c — Guestbook reactions / replies  
 - [ ] Optional: pin live GHCR so `web3_clientVersion` matches release tag (host console)
