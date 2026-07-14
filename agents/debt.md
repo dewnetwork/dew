@@ -12,7 +12,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`.
 
-**Track R (post-S6):** H2 multiproc BFT commit latency + chaos recovery **done** 2026-07-14 ([research-lab.md](../docs/ops/research-lab.md)); open optional: state/SMT tip-growth. **Track 4 lazy hydrate done** 2026-07-14 (tip-only Open + on-demand chain reads). Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, product P1e–f, optional log-index keys.
+**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate done** 2026-07-14. Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3), product P1e–f, optional log-index keys.
 
 ## Durable chaindata
 
@@ -69,6 +69,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 ## Deferred / mainnet
 
 - [ ] PE uses fork+overlay, not full multi-version Block-STM — higher memory and re-exec cost under heavy conflicts (`core/vm/parallel.go`). Not required for first public testnet.
+- [ ] Optional: dirty / incremental SMT commit — H3 shows IntermediateRoot walks full durable state; only if tip growth becomes ops-painful (not freeze-required).
 - [ ] External security audit of consensus + VM bridge + crypto — required before mainnet (see `docs/security/phase-b-audit.md` and security principles stage table).
 - [ ] Tokenomics issuance / inflation numbers still draft (not part of wire freeze).
 - [ ] Live `0x101` native swap / orderbook — **reserved only** after S6 (2026-07-14); needs separate design + hardfork doc under public-testnet-v1 before activation.

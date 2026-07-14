@@ -255,6 +255,101 @@ func TestLoad_ReportFeeComparison(t *testing.T) {
 	_ = fmt.Sprintf
 }
 
+// TestLoad_State_SMT_GrowthMatrix — Track R H3: flat hot path vs SMT IntermediateRoot
+// as durable account leaves grow. Logs STATE_ROW for research-lab baselines.
+//
+// IntermediateRoot currently walks full durable state (IteratePrefix) + overlay, so
+// cost tracks total tip state size, not only the block's dirty set.
+func TestLoad_State_SMT_GrowthMatrix(t *testing.T) {
+	sizes := []int{32, 128, 512, 2048}
+	mdb := db.OpenTest(t)
+	s := state.New(mdb)
+
+	prev := 0
+	var prevCleanSMT time.Duration
+	for _, n := range sizes {
+		// Grow durable state by (n - prev) simple account leaves.
+		tFlat := time.Now()
+		for i := prev; i < n; i++ {
+			addr := loadStateAddr(i)
+			s.AddBalance(addr, uint256.NewInt(uint64(i)+1))
+		}
+		flatDur := time.Since(tFlat)
+		delta := n - prev
+
+		tCommit := time.Now()
+		root, err := s.Commit()
+		commitDur := time.Since(tCommit)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if root.IsZero() {
+			t.Fatal("zero root after commit")
+		}
+
+		// Clean IntermediateRoot: dirty sets empty; still full state walk + SMT.
+		tSMT := time.Now()
+		root2, err := s.IntermediateRoot()
+		cleanSMT := time.Since(tSMT)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if root2 != root {
+			t.Fatalf("clean IntermediateRoot drifted at leaves=%d", n)
+		}
+
+		// One-account dirty should not make SMT cheaper — full rescan.
+		s.AddBalance(loadStateAddr(0), uint256.NewInt(1))
+		tDirty := time.Now()
+		if _, err := s.IntermediateRoot(); err != nil {
+			t.Fatal(err)
+		}
+		oneDirtySMT := time.Since(tDirty)
+		if _, err := s.Commit(); err != nil {
+			t.Fatal(err)
+		}
+
+		t.Logf("STATE_ROW leaves=%d delta=%d flat_ms=%.3f commit_ms=%.3f clean_smt_ms=%.3f one_dirty_smt_ms=%.3f",
+			n, delta,
+			float64(flatDur)/float64(time.Millisecond),
+			float64(commitDur)/float64(time.Millisecond),
+			float64(cleanSMT)/float64(time.Millisecond),
+			float64(oneDirtySMT)/float64(time.Millisecond),
+		)
+
+		// Hard gates (correctness + non-pathological scaling).
+		if flatDur > 2*time.Second {
+			t.Fatalf("flat write path too slow at n=%d: %v", n, flatDur)
+		}
+		if cleanSMT > 30*time.Second {
+			t.Fatalf("clean SMT pathologically slow at n=%d: %v", n, cleanSMT)
+		}
+		// one-dirty SMT should be same order as clean SMT (not O(1) dirty-only).
+		// Allow 10× slack for noise; fail if one-dirty is mysteriously 50× cheaper (would
+		// mean we accidentally switched to dirty-only SMT without documenting it).
+		if oneDirtySMT*50 < cleanSMT && cleanSMT > 5*time.Millisecond {
+			t.Fatalf("one_dirty_smt unexpectedly << clean_smt (dirty-only?): dirty=%v clean=%v", oneDirtySMT, cleanSMT)
+		}
+		if prevCleanSMT > 0 && cleanSMT+time.Millisecond < prevCleanSMT/20 && n >= prev*4 {
+			// Allow some noise; flag only if larger tip is wildly faster than smaller tip.
+			t.Fatalf("SMT time shrank pathologically: leaves %d→%d %v→%v", prev, n, prevCleanSMT, cleanSMT)
+		}
+		prevCleanSMT = cleanSMT
+		prev = n
+	}
+}
+
+func loadStateAddr(i int) crypto.Address {
+	var a crypto.Address
+	// Deterministic non-zero addresses for lab matrix (not EIP-55).
+	a[0] = 0x10
+	a[16] = byte(i >> 24)
+	a[17] = byte(i >> 16)
+	a[18] = byte(i >> 8)
+	a[19] = byte(i)
+	return a
+}
+
 func makeDisjointTransfers(t *testing.T, n int) ([]vm.Message, *state.StateDB) {
 	t.Helper()
 	return makeConflictWorkload(t, n, 0)

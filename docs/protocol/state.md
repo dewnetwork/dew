@@ -79,6 +79,10 @@ Early prototypes used a sorted-leaf provisional root. That commitment is **obsol
 
 Background construction is allowed **only as an optimization inside one process**. The root in the proposed header must match what validators recompute before precommit. Consensus never finalizes a block with a deferred root.
 
+### Lab note (Track R H3)
+
+`IntermediateRoot` currently rebuilds from the full durable flat snapshot (not dirty-only). Wall-clock therefore grows with tip state size; flat KV execution stays cheap. Measured matrix: [research-lab — H3](../ops/research-lab.md#hypothesis-h3--smt-commit-cost-vs-tip-state-size). Dirty/incremental SMT is an optional residual, not part of public-testnet-v1.
+
 ## Journaling and reverts
 
 EVM calls need snapshot/revert (gas OOG, `REVERT`, failed subcalls). Journal / copy-on-write on the cache layer matches Ethereum semantics.

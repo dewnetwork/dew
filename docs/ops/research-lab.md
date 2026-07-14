@@ -74,6 +74,13 @@ go test ./devnet/ -count=1 -timeout 60s -run TestPrivateNet_ChaosRestartAndSync 
 DEW_HEAVY_INTEGRATION=1 go test ./devnet/ -count=1 -timeout 10m -run TestMultiProcessBFT_LongEmpty -v
 ```
 
+### State / SMT growth (Track R H3)
+
+```bash
+# Flat hot path vs IntermediateRoot / Commit as durable leaves grow (logs STATE_ROW)
+go test ./tests/load/ -count=1 -timeout 120s -run TestLoad_State_SMT_GrowthMatrix -v
+```
+
 Optional RPC stats after a local node has run PE blocks or admitted txs:
 
 ```bash
@@ -233,6 +240,60 @@ Supports H2.3 on loopback. Operator Path A / WAN will be slower; this is a harne
 
 ---
 
+## Hypothesis H3 — SMT commit cost vs tip state size
+
+**H3 — flat hot path stays cheap; SMT IntermediateRoot tracks total durable leaves**
+
+On the current state model (`core/state`: flat KV hot path, commit-time SMT in `smt.go`):
+
+1. **Flat writes** (balance/account dirties) stay **cheap** and roughly linear in the number of new leaves in a batch (sub-millisecond to low-ms for thousands of accounts in-process).
+2. **`IntermediateRoot` / SMT** cost grows with **total durable state leaves**, not only the block’s dirty set — because `collectLeaves` walks durable state via `IteratePrefix` and rebuilds the sparse tree every time.
+3. A **single dirty account** on a large tip has **similar SMT wall-clock** to a clean recompute (not O(dirty-only)).
+4. **`Commit`** (flush dirty KV + IntermediateRoot) is dominated by flush + full SMT; it also grows with tip size.
+
+Falsifiers:
+
+- Clean SMT time stays flat while leaves grow 32→2048 → measurement bug or incomplete walk.
+- One-dirty SMT consistently ≪ clean SMT by orders of magnitude at large N → dirty-only optimization landed undocumented.
+- Flat write batch for 2k accounts regularly multi-second → hot-path regression.
+
+### Baseline run (H3)
+
+| | |
+| :--- | :--- |
+| **Date** | 2026-07-14 |
+| **Host** | macOS (local developer machine) |
+| **Command** | `go test ./tests/load/ -count=1 -run TestLoad_State_SMT_GrowthMatrix -v` |
+| **Fixture** | cumulative simple account leaves (balance only); Pebble temp DB |
+| **Result** | all PASS |
+
+#### Growth table (`STATE_ROW`)
+
+| Leaves | Δ | flat_ms | commit_ms | clean_smt_ms | one_dirty_smt_ms |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 32 | 32 | 0.38 | 142 | **4.7** | 4.4 |
+| 128 | 96 | 0.08 | 468 | **20.2** | 17.5 |
+| 512 | 384 | 0.44 | 1740 | **64.6** | 64.4 |
+| 2048 | 1536 | 1.00 | 6047 | **253.6** | 251.6 |
+
+Notes:
+
+- clean_smt ≈ one_dirty_smt at each size → supports H3.2–3 (full rescan, not dirty-only).
+- clean_smt scales ~linearly with leaves (~4.7→253 ≈ ×54 for ×64 leaves).
+- flat_ms stays ~1 ms at 1536 new accounts → supports H3.1.
+- Implication for ops: long-lived tips pay **growing commit-time SMT** even for tiny blocks; incremental/dirty SMT would be a future core optimization (not required for public-testnet-v1 freeze).
+
+### Reading vs H3
+
+| Claim | Outcome |
+| :--- | :--- |
+| Flat hot path cheap | Supported |
+| SMT grows with tip leaves | Supported (~linear in matrix) |
+| One dirty ≈ full clean SMT | Supported |
+| Need Block-STM for state | **No** — separate from PE; optional dirty SMT residual |
+
+---
+
 ## Staking lab (S5)
 
 In-process path with staking **on** (not public Path B default):
@@ -243,8 +304,9 @@ go test ./node/ -count=1 -run TestStakingLab_Scenario -v
 
 Scenario: bond → ActiveSet rank → epoch rotation → unbond/withdraw → optional jail. Ops notes: [private-testnet — Staking lab](./private-testnet.md#staking-lab-s5). Actor rules: [precompiles 0x102](../execution/precompiles.md#0102--staking-entrypoint-phase-c4).
 
-## Next (after Checkpoint C / H2 / Track 4 hydrate)
+## Next (Track R lab surface largely filled)
 
-- Optional Track R: **state** — SMT commit or tip-growth vs flat hot path
-- Track **4** residual: PE Block-STM only if product load contradicts H1; optional log-index keys
+Track R acceptance (PE + BFT + state) is **done** for the research harness. Optional follow-ups:
+
+- Track **4** residual: PE Block-STM only if product load contradicts H1; optional log-index keys; optional **dirty/incremental SMT** if tip growth becomes ops-painful (H3)
 - Deferred: heavier PE fixtures, Path A, live `0x101`, delegation / slash %

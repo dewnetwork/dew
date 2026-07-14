@@ -27,7 +27,7 @@ Not a Phase E. Pick **one track row** (or the ordered plan). Same freeze (`publi
 
 | Track | Status | Theme | Detail |
 | :--- | :----- | :---- | :--- |
-| **R — Research lab** | Partial | H1 PE + H2 multiproc BFT done; state optional | [Track R](#track-r--research-lab) · [research-lab](../ops/research-lab.md) |
+| **R — Research lab** | **Done** (lab surface) | H1 PE + H2 BFT + H3 SMT growth | [Track R](#track-r--research-lab) · [research-lab](../ops/research-lab.md) |
 | **1 — Product** | Partial | v1–v1.2 done; P1e–f / P3c deferred | [Track 1](#track-1--product-surface) |
 | **2 — Protocol (D3c)** | Partial | MVP + S4 actor docs; slash % / delegation open | [Track 2](#track-2--protocol--d3c-staking) |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public | [Track 3](#track-3--ops--d3d-path-a) |
@@ -451,19 +451,19 @@ Open work after the Phase D foundation. **One track per row** in the [summary ta
 
 | | |
 | :--- | :--- |
-| **Status** | Partial — H1 PE + H2 multiproc BFT **done** ([research-lab](../ops/research-lab.md)); state optional |
+| **Status** | **Done** (lab surface) — H1 PE + H2 multiproc BFT + H3 SMT growth ([research-lab](../ops/research-lab.md)) |
 | **Goals** | Measure and explain PE, BFT, state, or staking economics without real mainnet users |
 | **Packages** | `tests/load/`, `tests/security/`, `core/vm/`, `devnet/`, `docs/` |
 
 **Acceptance (pick a focus; not all required):**
 
 - [x] At least one written hypothesis (throughput, finality, storage, or staking) — PE wall-clock vs conflict structure ([research-lab.md](../ops/research-lab.md)) (2026-07-13)
-- [x] Reproducible harness (load / multiproc / soak command documented) — `tests/load` + `core/vm` Parallel + multiproc BFT ([research-lab.md](../ops/research-lab.md)) (2026-07-13 / 2026-07-14)
+- [x] Reproducible harness (load / multiproc / soak command documented) — `tests/load` + `core/vm` Parallel + multiproc BFT + SMT matrix ([research-lab.md](../ops/research-lab.md)) (2026-07-13 / 2026-07-14)
 - [x] PE: sequential vs parallel matrix (conflict rate, workers, rollback metrics) — `TestLoad_PE_Matrix_ConflictAndWorkers` (2026-07-13)
 - [x] BFT: multiproc soak or chaos (commit latency / recovery notes) — H2 + `TestMultiProcessBFT_CommitLatencyLab` / chaos `BFT_CHAOS_ROW` (2026-07-14)
-- [ ] State: SMT commit or tip-growth measurement vs flat hot path
+- [x] State: SMT commit or tip-growth measurement vs flat hot path — H3 + `TestLoad_State_SMT_GrowthMatrix` (2026-07-14)
 - [x] Staking lab (optional): private net with `--staking` scenario notes — [Staking lab S5](../ops/private-testnet.md#staking-lab-s5) (2026-07-14)
-- [x] Results recorded under docs or lab notes; code changes keep serial-equivalent tests green — S1–S2 + H2 tables in [research-lab.md](../ops/research-lab.md)
+- [x] Results recorded under docs or lab notes; code changes keep serial-equivalent tests green — S1–S2 + H2 + H3 tables in [research-lab.md](../ops/research-lab.md)
 
 ### Track 1 — Product surface
 
