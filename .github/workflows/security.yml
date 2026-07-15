@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Use 1.25.x (not go.mod's language line alone) so CI gets patched stdlib
       # for govulncheck. Module also sets toolchain go1.25.12.
@@ -50,7 +50,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -99,7 +99,7 @@ jobs:
             lock: faucet-web/pnpm-lock.yaml
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Version from root package.json "packageManager" (do not also set version:).
       - name: Setup pnpm
@@ -131,7 +131,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -171,7 +171,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run Trivy (fs)
         # Use v-prefixed tags only: unprefixed tags (e.g. 0.28.0) were removed after
