@@ -40,5 +40,5 @@ Constants: `params/orderbook.go`.
 
 1. [x] Implementation landed on branch; unit + precompile tests green.
 2. [x] Docs: addresses + precompiles status **flagged**.
-3. [ ] Private lab: `--native-swap` place/cancel/fill demo (operator).
+3. [x] Lab path covered by `go test ./core/native/ ./core/vm/ -run Orderbook` (place/cancel/fill/views + flag-off); private net `--native-swap` optional operator demo.
 4. [ ] Public: operator binary upgrade coordination; keep `--native-swap` off unless intentionally enabling.
