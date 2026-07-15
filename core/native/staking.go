@@ -26,11 +26,15 @@ var StakingModuleAddr = crypto.MustHexToAddress("0x00000000000000000000000000000
 //	keccak256("dew/stake/v1/candi" || uint64)    → candidate address at index
 //	keccak256("dew/stake/v1/unbondAmt" || addr)  → pending unbond amount (escrowed)
 //	keccak256("dew/stake/v1/unbondAt" || addr)   → unlock unix timestamp (seconds)
-//	keccak256("dew/stake/v1/del" || val || del)  → live delegation amount
-//	keccak256("dew/stake/v1/delTot" || val)      → total delegated to validator
+//	keccak256("dew/stake/v1/del" || val || del)  → live delegation **shares**
+//	keccak256("dew/stake/v1/delTot" || val)      → total delegated **shares**
 //	keccak256("dew/stake/v1/comm" || val)        → commission bps (0–10000)
-//	keccak256("dew/stake/v1/delUnbondAmt" || val || del) → pending undelegation
+//	keccak256("dew/stake/v1/delUnbondAmt" || val || del) → pending undelegation (wei)
 //	keccak256("dew/stake/v1/delUnbondAt" || val || del)  → unlock unix
+//	keccak256("dew/stake/v1/delRate" || val)     → del exchange rate (0 ⇒ 1e18)
+//	keccak256("dew/stake/v1/rewIdx" || val)      → reward per share × 1e18
+//	keccak256("dew/stake/v1/rewDebt" || val || del) → reward debt
+//	keccak256("dew/stake/v1/rewPend" || val || del) → settled unclaimed rewards (wei)
 const (
 	stakeDomainSelf         = "dew/stake/v1/self"
 	stakeDomainJailed       = "dew/stake/v1/jailed"
@@ -44,6 +48,10 @@ const (
 	stakeDomainComm         = "dew/stake/v1/comm"
 	stakeDomainDelUnbondAmt = "dew/stake/v1/delUnbondAmt"
 	stakeDomainDelUnbondAt  = "dew/stake/v1/delUnbondAt"
+	stakeDomainDelRate      = "dew/stake/v1/delRate"
+	stakeDomainRewIdx       = "dew/stake/v1/rewIdx"
+	stakeDomainRewDebt      = "dew/stake/v1/rewDebt"
+	stakeDomainRewPend      = "dew/stake/v1/rewPend"
 
 	// MaxCommissionBps is 100% in basis points.
 	MaxCommissionBps uint64 = 10_000
@@ -128,6 +136,22 @@ func (m *StakingModule) delUnbondAmtSlot(val, del crypto.Address) types.Hash {
 func (m *StakingModule) delUnbondAtSlot(val, del crypto.Address) types.Hash {
 	return slotHash([]byte(stakeDomainDelUnbondAt), val.Bytes(), del.Bytes())
 }
+func (m *StakingModule) delRateSlot(val crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainDelRate), val.Bytes())
+}
+func (m *StakingModule) rewIdxSlot(val crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainRewIdx), val.Bytes())
+}
+func (m *StakingModule) rewDebtSlot(val, del crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainRewDebt), val.Bytes(), del.Bytes())
+}
+func (m *StakingModule) rewPendSlot(val, del crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainRewPend), val.Bytes(), del.Bytes())
+}
+
+func stakePrecision() *uint256.Int {
+	return uint256.NewInt(params.StakeRatePrecision)
+}
 
 func hashToU256(h types.Hash) *uint256.Int {
 	return new(uint256.Int).SetBytes(h.Bytes())
@@ -156,14 +180,52 @@ func (m *StakingModule) IsCandidate(addr crypto.Address) bool {
 	return !m.db.GetState(StakingModuleAddr, m.candSlot(addr)).IsZero()
 }
 
-// Delegation returns live delegated amount from delegator to validator.
-func (m *StakingModule) Delegation(validator, delegator crypto.Address) *uint256.Int {
+// DelRate returns the delegated-stake exchange rate (shares → wei). Zero storage ⇒ 1e18.
+func (m *StakingModule) DelRate(validator crypto.Address) *uint256.Int {
+	r := hashToU256(m.db.GetState(StakingModuleAddr, m.delRateSlot(validator)))
+	if r.IsZero() {
+		return stakePrecision()
+	}
+	return r
+}
+
+// DelegationShares returns raw share balance (pre-rate).
+func (m *StakingModule) DelegationShares(validator, delegator crypto.Address) *uint256.Int {
 	return hashToU256(m.db.GetState(StakingModuleAddr, m.delSlot(validator, delegator)))
 }
 
-// DelegatedTotal returns sum of live delegations to validator.
-func (m *StakingModule) DelegatedTotal(validator crypto.Address) *uint256.Int {
+// DelegatedTotalShares returns sum of live delegation shares.
+func (m *StakingModule) DelegatedTotalShares(validator crypto.Address) *uint256.Int {
 	return hashToU256(m.db.GetState(StakingModuleAddr, m.delTotSlot(validator)))
+}
+
+// sharesToWei converts shares to effective wei at validator rate.
+func (m *StakingModule) sharesToWei(validator crypto.Address, shares *uint256.Int) *uint256.Int {
+	if shares == nil || shares.IsZero() {
+		return uint256.NewInt(0)
+	}
+	// wei = shares * rate / 1e18
+	return new(uint256.Int).Div(new(uint256.Int).Mul(shares, m.DelRate(validator)), stakePrecision())
+}
+
+// weiToShares converts effective wei to shares at validator rate (floor).
+func (m *StakingModule) weiToShares(validator crypto.Address, wei *uint256.Int) *uint256.Int {
+	if wei == nil || wei.IsZero() {
+		return uint256.NewInt(0)
+	}
+	rate := m.DelRate(validator)
+	// shares = wei * 1e18 / rate
+	return new(uint256.Int).Div(new(uint256.Int).Mul(wei, stakePrecision()), rate)
+}
+
+// Delegation returns effective live delegated wei (shares × rate).
+func (m *StakingModule) Delegation(validator, delegator crypto.Address) *uint256.Int {
+	return m.sharesToWei(validator, m.DelegationShares(validator, delegator))
+}
+
+// DelegatedTotal returns effective sum of live delegations (wei).
+func (m *StakingModule) DelegatedTotal(validator crypto.Address) *uint256.Int {
+	return m.sharesToWei(validator, m.DelegatedTotalShares(validator))
 }
 
 // CommissionBps returns commission rate in basis points (0–10000).
@@ -273,15 +335,67 @@ func (m *StakingModule) Withdraw(addr crypto.Address, now uint64) (*uint256.Int,
 	return pending, nil
 }
 
-// Jail marks a validator jailed (double-sign / evidence path). Voting power becomes 0.
-// Fail closed: no-op error if already jailed; always sets jail bit when called.
+// Jail marks a validator jailed without burning stake (legacy helper / tests).
+// Production double-sign path uses SlashAndJail.
 func (m *StakingModule) Jail(addr crypto.Address) {
 	m.db.SetState(StakingModuleAddr, m.jailedSlot(addr), types.BytesToHash([]byte{1}))
 	// candidate flag cleared so active set drops them immediately
 	m.db.SetState(StakingModuleAddr, m.candSlot(addr), types.Hash{})
 }
 
-// Delegate credits CALLVALUE amount from delegator to validator's delegated total.
+// SlashAndJail applies double-sign burn percentages then jails.
+// Idempotent: if already jailed, returns zero burn and leaves state unchanged.
+// Burned wei is subtracted from the module escrow balance (true burn).
+func (m *StakingModule) SlashAndJail(addr crypto.Address) *uint256.Int {
+	if m.IsJailed(addr) {
+		return uint256.NewInt(0)
+	}
+	selfBps := params.DoubleSignSelfBurnBps
+	delBps := params.DoubleSignDelegatorBurnBps
+	if selfBps > MaxCommissionBps {
+		selfBps = MaxCommissionBps
+	}
+	if delBps > MaxCommissionBps {
+		delBps = MaxCommissionBps
+	}
+
+	self := m.SelfStake(addr)
+	selfBurn := new(uint256.Int).Div(new(uint256.Int).Mul(self, uint256.NewInt(selfBps)), uint256.NewInt(MaxCommissionBps))
+	if !selfBurn.IsZero() {
+		nextSelf := new(uint256.Int).Sub(self, selfBurn)
+		m.db.SetState(StakingModuleAddr, m.selfSlot(addr), u256ToHash(nextSelf))
+	}
+
+	delEff := m.DelegatedTotal(addr)
+	delBurn := new(uint256.Int).Div(new(uint256.Int).Mul(delEff, uint256.NewInt(delBps)), uint256.NewInt(MaxCommissionBps))
+	if !delBurn.IsZero() && !delEff.IsZero() {
+		// rate' = rate * (10000 - delBps) / 10000
+		rate := m.DelRate(addr)
+		remainBps := MaxCommissionBps - delBps
+		newRate := new(uint256.Int).Div(new(uint256.Int).Mul(rate, uint256.NewInt(remainBps)), uint256.NewInt(MaxCommissionBps))
+		if newRate.IsZero() && remainBps > 0 {
+			newRate = uint256.NewInt(1) // avoid zero rate trapping funds
+		}
+		m.db.SetState(StakingModuleAddr, m.delRateSlot(addr), u256ToHash(newRate))
+	}
+
+	totalBurn := new(uint256.Int).Add(selfBurn, delBurn)
+	if !totalBurn.IsZero() {
+		bal := m.db.GetBalance(StakingModuleAddr)
+		if bal.Cmp(totalBurn) < 0 {
+			// Fail-closed: burn only what the module holds (should not happen if escrow matches).
+			totalBurn = new(uint256.Int).Set(bal)
+		}
+		if !totalBurn.IsZero() {
+			m.db.SubBalance(StakingModuleAddr, totalBurn)
+		}
+	}
+
+	m.Jail(addr)
+	return totalBurn
+}
+
+// Delegate credits CALLVALUE amount (wei) from delegator as shares at current rate.
 // Self-delegation is forbidden (use Bond for self-stake).
 func (m *StakingModule) Delegate(validator, delegator crypto.Address, amount *uint256.Int) error {
 	if amount == nil || amount.IsZero() {
@@ -290,30 +404,46 @@ func (m *StakingModule) Delegate(validator, delegator crypto.Address, amount *ui
 	if validator == delegator {
 		return fmt.Errorf("staking: self-delegate forbidden (use bond)")
 	}
-	cur := m.Delegation(validator, delegator)
-	next := new(uint256.Int).Add(cur, amount)
+	m.settleRewards(validator, delegator)
+	sharesAdd := m.weiToShares(validator, amount)
+	if sharesAdd.IsZero() {
+		return fmt.Errorf("staking: delegate amount too small for rate")
+	}
+	cur := m.DelegationShares(validator, delegator)
+	next := new(uint256.Int).Add(cur, sharesAdd)
 	m.db.SetState(StakingModuleAddr, m.delSlot(validator, delegator), u256ToHash(next))
-	tot := new(uint256.Int).Add(m.DelegatedTotal(validator), amount)
+	tot := new(uint256.Int).Add(m.DelegatedTotalShares(validator), sharesAdd)
 	m.db.SetState(StakingModuleAddr, m.delTotSlot(validator), u256ToHash(tot))
+	m.setRewardDebt(validator, delegator, m.rewardDebtForShares(validator, next))
 	return nil
 }
 
-// Undelegate reduces live delegation and queues amount until now+UnbondSeconds.
+// Undelegate reduces live effective wei and queues that wei until now+UnbondSeconds.
 func (m *StakingModule) Undelegate(validator, delegator crypto.Address, amount *uint256.Int, now uint64) error {
 	if amount == nil || amount.IsZero() {
 		return fmt.Errorf("staking: zero undelegate")
 	}
-	cur := m.Delegation(validator, delegator)
-	if cur.Cmp(amount) < 0 {
+	m.settleRewards(validator, delegator)
+	curEff := m.Delegation(validator, delegator)
+	if curEff.Cmp(amount) < 0 {
 		return fmt.Errorf("staking: insufficient delegation")
 	}
-	next := new(uint256.Int).Sub(cur, amount)
-	m.db.SetState(StakingModuleAddr, m.delSlot(validator, delegator), u256ToHash(next))
-	tot := m.DelegatedTotal(validator)
-	if tot.Cmp(amount) < 0 {
+	sharesSub := m.weiToShares(validator, amount)
+	if sharesSub.IsZero() {
+		return fmt.Errorf("staking: undelegate amount too small for rate")
+	}
+	curShares := m.DelegationShares(validator, delegator)
+	if curShares.Cmp(sharesSub) < 0 {
+		sharesSub = new(uint256.Int).Set(curShares) // floor dust: burn remaining shares
+	}
+	nextShares := new(uint256.Int).Sub(curShares, sharesSub)
+	m.db.SetState(StakingModuleAddr, m.delSlot(validator, delegator), u256ToHash(nextShares))
+	totShares := m.DelegatedTotalShares(validator)
+	if totShares.Cmp(sharesSub) < 0 {
 		return fmt.Errorf("staking: delegated total underflow")
 	}
-	m.db.SetState(StakingModuleAddr, m.delTotSlot(validator), u256ToHash(new(uint256.Int).Sub(tot, amount)))
+	m.db.SetState(StakingModuleAddr, m.delTotSlot(validator), u256ToHash(new(uint256.Int).Sub(totShares, sharesSub)))
+	m.setRewardDebt(validator, delegator, m.rewardDebtForShares(validator, nextShares))
 
 	period := m.cfg.UnbondSeconds
 	unlock := now + period
@@ -348,6 +478,128 @@ func (m *StakingModule) SetCommission(validator crypto.Address, bps uint64) erro
 	}
 	m.db.SetState(StakingModuleAddr, m.commSlot(validator), u256ToHash(uint256.NewInt(bps)))
 	return nil
+}
+
+// RewardIndex returns cumulative reward-per-share × 1e18.
+func (m *StakingModule) RewardIndex(validator crypto.Address) *uint256.Int {
+	return hashToU256(m.db.GetState(StakingModuleAddr, m.rewIdxSlot(validator)))
+}
+
+func (m *StakingModule) rewardDebt(validator, delegator crypto.Address) *uint256.Int {
+	return hashToU256(m.db.GetState(StakingModuleAddr, m.rewDebtSlot(validator, delegator)))
+}
+
+func (m *StakingModule) setRewardDebt(validator, delegator crypto.Address, debt *uint256.Int) {
+	m.db.SetState(StakingModuleAddr, m.rewDebtSlot(validator, delegator), u256ToHash(debt))
+}
+
+func (m *StakingModule) pendingStored(validator, delegator crypto.Address) *uint256.Int {
+	return hashToU256(m.db.GetState(StakingModuleAddr, m.rewPendSlot(validator, delegator)))
+}
+
+func (m *StakingModule) setPendingStored(validator, delegator crypto.Address, v *uint256.Int) {
+	m.db.SetState(StakingModuleAddr, m.rewPendSlot(validator, delegator), u256ToHash(v))
+}
+
+// rewardDebtForShares = shares * idx / 1e18
+func (m *StakingModule) rewardDebtForShares(validator crypto.Address, shares *uint256.Int) *uint256.Int {
+	if shares == nil || shares.IsZero() {
+		return uint256.NewInt(0)
+	}
+	idx := m.RewardIndex(validator)
+	return new(uint256.Int).Div(new(uint256.Int).Mul(shares, idx), stakePrecision())
+}
+
+// settleRewards moves newly accrued index rewards into rewPend and refreshes debt.
+func (m *StakingModule) settleRewards(validator, delegator crypto.Address) {
+	shares := m.DelegationShares(validator, delegator)
+	owed := m.rewardDebtForShares(validator, shares)
+	debt := m.rewardDebt(validator, delegator)
+	if owed.Cmp(debt) > 0 {
+		delta := new(uint256.Int).Sub(owed, debt)
+		pend := new(uint256.Int).Add(m.pendingStored(validator, delegator), delta)
+		m.setPendingStored(validator, delegator, pend)
+	}
+	m.setRewardDebt(validator, delegator, owed)
+}
+
+// PendingRewards returns claimable rewards (settles index into pending first).
+func (m *StakingModule) PendingRewards(validator, delegator crypto.Address) *uint256.Int {
+	m.settleRewards(validator, delegator)
+	return m.pendingStored(validator, delegator)
+}
+
+// ClaimRewards settles and returns wei to transfer from module to delegator; clears pending.
+func (m *StakingModule) ClaimRewards(validator, delegator crypto.Address) (*uint256.Int, error) {
+	m.settleRewards(validator, delegator)
+	pend := m.pendingStored(validator, delegator)
+	if pend == nil || pend.IsZero() {
+		return nil, fmt.Errorf("staking: no rewards")
+	}
+	m.setPendingStored(validator, delegator, uint256.NewInt(0))
+	return pend, nil
+}
+
+// IncreaseRewardIndex credits delPart wei into the per-share index (shares > 0).
+// Caller must have already escrowed delPart at the module address.
+func (m *StakingModule) IncreaseRewardIndex(validator crypto.Address, delPart, shares *uint256.Int) {
+	if delPart == nil || delPart.IsZero() || shares == nil || shares.IsZero() {
+		return
+	}
+	// idx += delPart * 1e18 / shares
+	inc := new(uint256.Int).Div(new(uint256.Int).Mul(delPart, stakePrecision()), shares)
+	if inc.IsZero() {
+		return
+	}
+	next := new(uint256.Int).Add(m.RewardIndex(validator), inc)
+	m.db.SetState(StakingModuleAddr, m.rewIdxSlot(validator), u256ToHash(next))
+}
+
+// DistributeProposerIncome splits tip/fee T when staking is enabled.
+// Formula: V = T * (S*10000 + D*c) / (P*10000); R = T - V.
+// V → proposer; R → module + reward index (or proposer if no shares).
+func DistributeProposerIncome(db *state.StateDB, cfg StakingConfig, proposer crypto.Address, amount *uint256.Int, stakingEnabled bool) {
+	if amount == nil || amount.IsZero() {
+		return
+	}
+	if !stakingEnabled {
+		db.AddBalancePrev(proposer, amount)
+		return
+	}
+	mod := NewStakingModule(db, cfg)
+	S := mod.SelfStake(proposer)
+	D := mod.DelegatedTotal(proposer) // effective wei
+	P := new(uint256.Int).Add(S, D)
+	if P.IsZero() {
+		db.AddBalancePrev(proposer, amount)
+		return
+	}
+	c := mod.CommissionBps(proposer)
+	// num = S*10000 + D*c ; den = P*10000
+	num := new(uint256.Int).Add(
+		new(uint256.Int).Mul(S, uint256.NewInt(MaxCommissionBps)),
+		new(uint256.Int).Mul(D, uint256.NewInt(c)),
+	)
+	den := new(uint256.Int).Mul(P, uint256.NewInt(MaxCommissionBps))
+	valGets := new(uint256.Int).Div(new(uint256.Int).Mul(amount, num), den)
+	if valGets.Cmp(amount) > 0 {
+		valGets = new(uint256.Int).Set(amount)
+	}
+	delPart := new(uint256.Int).Sub(amount, valGets)
+	if !valGets.IsZero() {
+		db.AddBalancePrev(proposer, valGets)
+	}
+	if delPart.IsZero() {
+		return
+	}
+	shares := mod.DelegatedTotalShares(proposer)
+	if shares.IsZero() {
+		db.AddBalancePrev(proposer, delPart)
+		return
+	}
+	// Escrow delegator pool at module; index accrues claim rights.
+	db.AddBalancePrev(StakingModuleAddr, delPart)
+	mod.IncreaseRewardIndex(proposer, delPart, shares)
 }
 
 // Candidate is one staked account entry for ranking.

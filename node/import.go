@@ -190,6 +190,9 @@ func (n *Node) executeDewTxLocked(hdr *dewtypes.Header, tx *dewtypes.DewTx, txIn
 
 	feeSink := hdr.Proposer
 	exec := native.NewExecutor(n.statedb, feeSink)
+	if n.enableStaking {
+		exec.EnableStaking(true, n.stakingConfigFromGenesis())
+	}
 	result, err := exec.ApplyDewTx(tx)
 	if err != nil {
 		return txExecResult{}, err

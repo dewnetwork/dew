@@ -67,8 +67,8 @@ flowchart LR
 | :----------------------- | :------------ | :----------------------------------------------------- |
 | Min validator self-stake | 100,000 DEW   | Frozen candidate public-testnet-v1                     |
 | Unbonding                | 7 days        | Prefer seconds or fixed block delta — one unit in code |
-| Commission               | Validator-set | **Stored on-chain** (0–10000 bps via `0x102` `setCommission`); reward/tip **split not applied** until issuance freeze |
-| Slash burn %             | _tentative_   | **Not on-chain (S4 deferred)** — jail only until numbers freeze; see [slashing](../consensus/slashing.md) |
+| Commission               | Validator-set | **Stored + applied** (0–10000 bps); tip/DewTx fee pro-rata when `--staking` — see [reward-slash design](../superpowers/specs/2026-07-15-0x102-reward-slash-design.md) |
+| Slash burn % (double-sign) | **testnet provisional** | Self **100%** + delegated **5%** on verified evidence (`params.DoubleSign*BurnBps`); downtime still design-only — [slashing](../consensus/slashing.md) |
 
 ## Design goals vs Ethereum
 
@@ -79,9 +79,19 @@ flowchart LR
 | Bonded BFT        | Capital at risk for safety                 |
 | Later micro-fees  | Cheap native actions without full EVM cost |
 
+### Tip / fee split when staking on (_testnet provisional_)
+
+With `EnableStaking` / `--staking`:
+
+- Proposer tip (EVM priority fee) and DewTx flat fee split by self-stake \(S\) and **effective** delegated \(D\), commission \(c\) bps on the delegator pool.
+- Validator immediate share \(V = T \cdot (S\cdot 10000 + D\cdot c) / ((S+D)\cdot 10000)\); remainder accrues to delegators via reward index + `claimRewards` (`0x12`).
+- Staking **off**: 100% tip/fee to proposer (unchanged).
+- **Block issuance / inflation mint** still not on-chain; same split helper can be reused when issuance freezes.
+
 ## Open items before mainnet
 
-- Exact per-block reward formula
+- Exact per-block reward / issuance formula + treasury 10% cut
 - Treasury address / multisig policy
-- Whether tips are proposer-only or shared with prevoters
+- Whether non-proposer voters share tips (today: proposer stake set only)
 - Max supply vs perpetual inflation floor narrative
+- Re-freeze slash bps after economics review

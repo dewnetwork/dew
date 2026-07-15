@@ -229,3 +229,107 @@ func TestStakingModule_SetCommission(t *testing.T) {
 		t.Fatal("over max")
 	}
 }
+
+func TestStakingModule_DistributeTipAndClaim(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	cfg := DefaultStakingConfig()
+	cfg.MinSelfStake = big.NewInt(100)
+	m := NewStakingModule(s, cfg)
+
+	val := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	del := crypto.MustHexToAddress("0x00000000000000000000000000000000000000bb")
+	_ = m.Bond(val, uint256.NewInt(100))
+	_ = m.Delegate(val, del, uint256.NewInt(100))
+	if err := m.SetCommission(val, 1000); err != nil { // 10%
+		t.Fatal(err)
+	}
+
+	// T=1000: V = 1000 * (100*10000 + 100*1000) / (200*10000) = 1000 * 1.1e6 / 2e6 = 550
+	// R = 450 to del pool
+	tip := uint256.NewInt(1000)
+	beforeVal := s.GetBalance(val)
+	DistributeProposerIncome(s, cfg, val, tip, true)
+	gotVal := new(uint256.Int).Sub(s.GetBalance(val), beforeVal)
+	if gotVal.Uint64() != 550 {
+		t.Fatalf("validator tip share got %s want 550", gotVal)
+	}
+	pend := m.PendingRewards(val, del)
+	if pend.Uint64() != 450 {
+		t.Fatalf("pending rewards got %s want 450", pend)
+	}
+	claimed, err := m.ClaimRewards(val, del)
+	if err != nil || claimed.Uint64() != 450 {
+		t.Fatalf("claim %v %v", claimed, err)
+	}
+	// Module held 450 for rewards; claim returns amount — transfer is caller's job.
+	if !m.PendingRewards(val, del).IsZero() {
+		t.Fatal("pending should clear after claim")
+	}
+}
+
+func TestStakingModule_DistributeStakingOff(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	val := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	DistributeProposerIncome(s, DefaultStakingConfig(), val, uint256.NewInt(42), false)
+	if s.GetBalance(val).Uint64() != 42 {
+		t.Fatalf("want full tip to proposer, got %s", s.GetBalance(val))
+	}
+}
+
+func TestStakingModule_SlashAndJailBurns(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	cfg := DefaultStakingConfig()
+	cfg.MinSelfStake = big.NewInt(100)
+	m := NewStakingModule(s, cfg)
+	val := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	del := crypto.MustHexToAddress("0x00000000000000000000000000000000000000bb")
+
+	_ = m.Bond(val, uint256.NewInt(1000))
+	_ = m.Delegate(val, del, uint256.NewInt(1000))
+	// Escrow matches live stake.
+	s.AddBalance(StakingModuleAddr, uint256.NewInt(2000))
+	beforeMod := s.GetBalance(StakingModuleAddr)
+
+	burned := m.SlashAndJail(val)
+	// self 100% of 1000 + del 5% of 1000 = 1000 + 50 = 1050
+	if burned.Uint64() != 1050 {
+		t.Fatalf("burned %s want 1050", burned)
+	}
+	if !m.IsJailed(val) {
+		t.Fatal("jailed")
+	}
+	if !m.SelfStake(val).IsZero() {
+		t.Fatalf("self after 100%% slash: %s", m.SelfStake(val))
+	}
+	// effective del = 950
+	if m.DelegatedTotal(val).Uint64() != 950 {
+		t.Fatalf("del effective %s want 950", m.DelegatedTotal(val))
+	}
+	if m.Delegation(val, del).Uint64() != 950 {
+		t.Fatalf("del pair %s want 950", m.Delegation(val, del))
+	}
+	modDrop := new(uint256.Int).Sub(beforeMod, s.GetBalance(StakingModuleAddr))
+	if modDrop.Uint64() != 1050 {
+		t.Fatalf("module burned %s", modDrop)
+	}
+	// Second slash: no extra burn
+	if !m.SlashAndJail(val).IsZero() {
+		t.Fatal("second slash must be zero")
+	}
+	if !m.VotingPower(val).IsZero() {
+		t.Fatal("VP")
+	}
+}
+
+func TestStakingModule_SelfOnlyTip(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	cfg := DefaultStakingConfig()
+	cfg.MinSelfStake = big.NewInt(1)
+	m := NewStakingModule(s, cfg)
+	val := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	_ = m.Bond(val, uint256.NewInt(500))
+	DistributeProposerIncome(s, cfg, val, uint256.NewInt(100), true)
+	if s.GetBalance(val).Uint64() != 100 {
+		t.Fatalf("self-only should take full tip, got %s", s.GetBalance(val))
+	}
+}

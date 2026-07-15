@@ -65,10 +65,12 @@ Exact algorithm should be one pure function in `consensus/` with unit tests for 
 | :--- | :--- |
 | Delegate / undelegate / withdrawDelegation | **Live** methods `0x0a`–`0x0c` (when staking on) |
 | ActiveSet min | **Self-stake ≥ min** (pure-delegation cannot enter) |
-| Commission rate | **Stored** `0x0d` / `0x0f` as bps 0–10000; **no** reward/tip split in v1 |
-| Design | [0x102 delegation design](../superpowers/specs/2026-07-15-0x102-delegation-design.md) |
+| Commission rate | **Stored + applied** `0x0d` / `0x0f` bps 0–10000 on tip/fee when staking on |
+| Tip / fee split | Pro-rata \(S+D\) + commission; delegator claim `0x12` / query `0x13` |
+| Slash (double-sign) | Self 100% + del 5% burn then jail (`0x06`) — provisional bps |
+| Design | [delegation](../superpowers/specs/2026-07-15-0x102-delegation-design.md) · [reward+slash](../superpowers/specs/2026-07-15-0x102-reward-slash-design.md) |
 
-Reward pro-rata by commission remains deferred until issuance/tip policy freezes — [Tokenomics](../economics/tokenomics.md).
+Issuance mint still draft — [Tokenomics](../economics/tokenomics.md).
 
 ## Unbonding
 

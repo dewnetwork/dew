@@ -239,11 +239,12 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 		e.statedb.AddBalancePrev(msg.From, refundVal)
 	}
 
-	// Coinbase tip: for simplicity GasPrice is effective tip when BaseFee=0
+	// Coinbase tip: GasPrice is effective tip when BaseFee=0.
+	// With staking on, split by self-stake + delegation × commission (reward index for del pool).
 	if msg.GasPrice.Sign() > 0 && usedGas > 0 {
 		tip := new(uint256.Int)
 		_ = tip.SetFromBig(new(big.Int).Mul(new(big.Int).SetUint64(usedGas), msg.GasPrice))
-		e.statedb.AddBalancePrev(e.block.Coinbase, tip)
+		native.DistributeProposerIncome(e.statedb, e.stakingCfg, e.block.Coinbase, tip, e.stakingEnabled)
 	}
 
 	failed := err != nil

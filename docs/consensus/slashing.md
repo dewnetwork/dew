@@ -8,9 +8,9 @@ status: stable
 
 # Slashing
 
-Slashing aligns security with stake. **Penalty percentages below remain tentative** (economics review / mainnet). On-chain today: **double-sign evidence is verified** (dual signed prevote/precommit at same height/round, distinct hashes) then jail via `0x102` method `0x06`. Stake burn percentages still not applied on-chain.
+Slashing aligns security with stake. **Double-sign burn percentages are testnet provisional** in `params` (economics may re-freeze before mainnet). On-chain today: **double-sign evidence is verified** (dual signed prevote/precommit at same height/round, distinct hashes) then **`SlashAndJail`** via `0x102` method `0x06` — burns stake then jails.
 
-**S4 decision:** do **not** invent on-chain slash burn percentages until [tokenomics](../economics/tokenomics.md) freezes numbers. Residual tracked in [agents/debt.md](../../agents/debt.md) and [D3c](../scale/d3-scale.md#d3c--staking-residuals-c4).
+Design: [0x102 reward + slash](../superpowers/specs/2026-07-15-0x102-reward-slash-design.md).
 
 ## Offenses
 
@@ -20,11 +20,11 @@ Signing two different proposals or votes for the same `(height, round, vote-type
 
 **Severity: critical**
 
-| Action               | Tentative penalty                                                        |
+| Action               | On-chain (testnet provisional)                                           |
 | :------------------- | :----------------------------------------------------------------------- |
-| Validator self-stake | Up to **100% burn** + permanent jail                                     |
-| Delegators           | Small correlated penalty (e.g. **5%**) — incentivizes careful delegation |
-| Evidence             | Included on-chain; gossiped as `Evidence` messages                       |
+| Validator self-stake | **100% burn** (`DoubleSignSelfBurnBps=10000`) + permanent jail           |
+| Delegators           | **5%** effective delegated burn (`DoubleSignDelegatorBurnBps=500`) via exchange rate |
+| Evidence             | Dual-vote wire on `0x06`; burned wei removed from `0x102` escrow         |
 
 ### 2. Downtime
 

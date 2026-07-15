@@ -268,8 +268,8 @@ Only required when operators enable `--staking` on a network. Public-testnet-v1 
 | **ActiveSet → BFT** | **Done** — epoch boundary rotation when staking on + non-empty ActiveSet | `consensus/activeset.go`, `node/stack.go` |
 | **Nested CALL bond** | **Done** — bond credits immediate CALL value-payer via Transfer hook | `core/vm/precompiles.go`, `executor.go` |
 | **Nested unbond/withdraw actor** | **Documented fail-closed (S4)** — zero-value methods use **tx.origin** only; nested contract stake cannot unbond via intermediate CALL | `core/vm/precompiles.go`, tests |
-| **Slash burn %** | **Deferred (S4)** — economics draft; jail without on-chain burn | [tokenomics](../economics/tokenomics.md), [slashing](../consensus/slashing.md) |
-| **Delegation / commission** | Deferred unless scoped | — |
+| **Slash burn %** | **Done (double-sign provisional)** — self 100% + del 5% then jail; downtime open | [reward-slash design](../superpowers/specs/2026-07-15-0x102-reward-slash-design.md) |
+| **Delegation / commission** | **Done** power + tip/fee split + claim | [delegation](../superpowers/specs/2026-07-15-0x102-delegation-design.md) · [reward-slash](../superpowers/specs/2026-07-15-0x102-reward-slash-design.md) |
 
 ### Acceptance
 

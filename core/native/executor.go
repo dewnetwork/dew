@@ -31,13 +31,21 @@ type Result struct {
 
 // Executor applies DewTx against a StateDB.
 type Executor struct {
-	statedb *state.StateDB
-	feeSink crypto.Address // receives flat fees (coinbase / proposer)
+	statedb        *state.StateDB
+	feeSink        crypto.Address // receives flat fees (coinbase / proposer)
+	stakingEnabled bool
+	stakingCfg     StakingConfig
 }
 
 // NewExecutor builds a native executor. feeSink receives flat fees (typically block proposer).
 func NewExecutor(statedb *state.StateDB, feeSink crypto.Address) *Executor {
-	return &Executor{statedb: statedb, feeSink: feeSink}
+	return &Executor{statedb: statedb, feeSink: feeSink, stakingCfg: DefaultStakingConfig()}
+}
+
+// EnableStaking turns on tip/fee split by self-stake + delegation for feeSink.
+func (e *Executor) EnableStaking(v bool, cfg StakingConfig) {
+	e.stakingEnabled = v
+	e.stakingCfg = cfg
 }
 
 // ApplyDewTx executes a verified DewTx.
@@ -132,7 +140,7 @@ func (e *Executor) ApplyDewTx(tx *types.DewTx) (*Result, error) {
 		e.statedb.AddBalancePrev(*extraAddr, extraAmt)
 	}
 	if fee > 0 {
-		e.statedb.AddBalancePrev(e.feeSink, uint256.NewInt(fee))
+		DistributeProposerIncome(e.statedb, e.stakingCfg, e.feeSink, uint256.NewInt(fee), e.stakingEnabled)
 	}
 	e.statedb.SetNonceJournaled(tx.Sender, tx.Nonce+1)
 	e.statedb.Finalise(true)

@@ -34,7 +34,7 @@ $$
 | Component | Behavior |
 | :--- | :--- |
 | **Base fee** | Protocol field on the header; burned from the sender’s prepay under the executor path |
-| **Priority fee (tip)** | Paid to **block proposer** (`coinbase` / header `Proposer`) |
+| **Priority fee (tip)** | Paid to **block proposer** (`coinbase` / header `Proposer`); with `--staking`, split by self-stake + delegation × commission (delegator share claimable on `0x102`) |
 
 ```mermaid
 flowchart LR
@@ -67,7 +67,7 @@ $$
 \text{DefaultDewTxFeeWei} = \Big\lfloor 21\,000 \times 10^{9} \times \frac{1}{10} \Big\rfloor
 $$
 
-Defined in Go: `params.DefaultDewTxFeeWei`, `params.TargetDewTxFeeWei(baseFee)`. Fee is paid to the block proposer (fee sink).
+Defined in Go: `params.DefaultDewTxFeeWei`, `params.TargetDewTxFeeWei(baseFee)`. Fee is paid to the block proposer (fee sink); with staking on, same pro-rata split as EVM tips.
 
 ## Dew system precompile gas
 

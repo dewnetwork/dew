@@ -12,7 +12,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` flagged / `0x102` flagged); next free `0x103`.
 
-**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. **P1e dewindex sidecar done** 2026-07-14. **Filter API (gap Wave 3) done** 2026-07-15. **P1f ABI registry done** 2026-07-15. **P3c Guestbook reactions/replies done** 2026-07-15 (Foundry/Hardhat + SPA; Path B redeploy operator). **`0x101` lab harness done** 2026-07-15. **`0x102` delegation + commission storage done** 2026-07-15 ([design](../docs/superpowers/specs/2026-07-15-0x102-delegation-design.md)). Residuals: `0x101` **public** `--native-swap` policy; commission **reward split**; slash %; PE Block-STM; optional dirty/incremental SMT (H3).
+**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. **P1e dewindex sidecar done** 2026-07-14. **Filter API (gap Wave 3) done** 2026-07-15. **P1f ABI registry done** 2026-07-15. **P3c Guestbook reactions/replies done** 2026-07-15 (Foundry/Hardhat + SPA; Path B redeploy operator). **`0x101` lab harness done** 2026-07-15. **`0x102` delegation + commission storage done** 2026-07-15 ([design](../docs/superpowers/specs/2026-07-15-0x102-delegation-design.md)). **Tip/fee reward split + double-sign slash burn done** 2026-07-15 ([design](../docs/superpowers/specs/2026-07-15-0x102-reward-slash-design.md)). Residuals: `0x101` **public** `--native-swap` policy; issuance mint; downtime slash; PE Block-STM; optional dirty/incremental SMT (H3).
 
 ## Durable chaindata
 
@@ -41,9 +41,9 @@ Owned by D3c — see [d3-scale.md](../docs/scale/d3-scale.md#d3c--staking-residu
 - [x] Full double-sign evidence verification (dual-vote wire + VerifyDoubleSign) (July 2026)
 - [x] Nested CALL bond credits immediate value-payer (Transfer hook) (July 2026)
 - [x] Wire ActiveSet into live Dew-BFT set rotation each epoch (when staking on) (July 2026)
-- [ ] On-chain slash burn percentages (economics still tentative) — **S4 deferred** with notes in tokenomics/slashing (2026-07-14)
+- [x] On-chain slash burn percentages (double-sign: self 100% + del 5% provisional) — 2026-07-15; downtime still open
 - [x] Zero-value nested unbond/withdraw still use tx origin (EVM precompile has no call stack) — **documented fail-closed + tests** (S4, 2026-07-14); hardfork if contract self-unbond is required
-- [x] Delegation / commission storage + VP (2026-07-15); reward/tip pro-rata still open
+- [x] Delegation / commission storage + VP (2026-07-15); tip/fee pro-rata + claimRewards (2026-07-15)
 
 ## C5 residuals
 

@@ -130,6 +130,10 @@ const (
 	StakeMethodGetDelegatedTotal byte = 0x10
 	// StakeMethodPendingUndelegation — input = [0x11 || validator 20 || delegator 20].
 	StakeMethodPendingUndelegation byte = 0x11
+	// StakeMethodClaimRewards — input = [0x12 || validator 20]. Actor tx.origin.
+	StakeMethodClaimRewards byte = 0x12
+	// StakeMethodPendingRewards — input = [0x13 || validator 20 || delegator 20].
+	StakeMethodPendingRewards byte = 0x13
 )
 
 // nativeTransferPrecompile forwards the precompile's received CALLVALUE to a recipient.
@@ -217,8 +221,8 @@ func (p *stakingPrecompile) RequiredGas(input []byte) uint64 {
 	switch input[0] {
 	case StakeMethodBond, StakeMethodDelegate:
 		return params.StakingPrecompileGasBond
-	case StakeMethodUnbond, StakeMethodWithdraw, StakeMethodUndelegate, StakeMethodWithdrawDelegation:
-		return params.StakingPrecompileGasUnbond
+	case StakeMethodUnbond, StakeMethodWithdraw, StakeMethodUndelegate, StakeMethodWithdrawDelegation, StakeMethodClaimRewards:
+		return params.StakingPrecompileGasClaimRewards
 	case StakeMethodJail:
 		return params.StakingPrecompileGasJail
 	case StakeMethodSetCommission:
@@ -329,6 +333,7 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 
 	case StakeMethodJail:
 		// D3c: method || voteA(114) || voteB(114) — dual signed votes, verified.
+		// Applies provisional double-sign slash burn then jails.
 		const need = 1 + 2*consensus.VoteWireSize
 		if len(input) != need {
 			return nil, fmt.Errorf("staking: jail needs dual-vote evidence (%d bytes, got %d)", need, len(input))
@@ -340,8 +345,8 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 		if err := ev.Verify(); err != nil {
 			return nil, fmt.Errorf("staking: evidence verify: %w", err)
 		}
-		mod.Jail(ev.Offender())
-		return u256Pad(uint256.NewInt(1)), nil
+		burned := mod.SlashAndJail(ev.Offender())
+		return u256Pad(burned), nil
 
 	case StakeMethodIsJailed:
 		addr, err := readAddr(input)
@@ -444,6 +449,33 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 		copy(out[0:32], ethcommon.LeftPadBytes(amt.ToBig().Bytes(), 32))
 		copy(out[32:64], ethcommon.LeftPadBytes(new(big.Int).SetUint64(unlock).Bytes(), 32))
 		return out, nil
+
+	case StakeMethodClaimRewards:
+		// [0x12 || validator 20] — credit matured rewards to tx.origin from module escrow.
+		if len(input) != 1+20 {
+			return nil, fmt.Errorf("staking: claimRewards needs method + validator 20")
+		}
+		var validator crypto.Address
+		copy(validator[:], input[1:21])
+		who := p.actor()
+		amt, err := mod.ClaimRewards(validator, who)
+		if err != nil {
+			return nil, err
+		}
+		modBal := p.statedb.GetBalance(p.self)
+		if modBal.Cmp(amt) < 0 {
+			return nil, fmt.Errorf("staking: module reward escrow insolvent")
+		}
+		p.statedb.SubBalance(p.self, amt)
+		p.statedb.AddBalancePrev(who, amt)
+		return u256Pad(amt), nil
+
+	case StakeMethodPendingRewards:
+		val, del, err := readTwoAddr(input)
+		if err != nil {
+			return nil, err
+		}
+		return u256Pad(mod.PendingRewards(val, del)), nil
 
 	default:
 		return nil, fmt.Errorf("staking: unknown method 0x%02x", input[0])

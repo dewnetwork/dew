@@ -783,3 +783,149 @@ func TestStakingPrecompile_DelegateCommission(t *testing.T) {
 		t.Fatal("expected self-delegate fail")
 	}
 }
+
+func TestStakingPrecompile_TipSplitClaimAndSlashBurn(t *testing.T) {
+	mdb := db.OpenTest(t)
+	statedb := state.New(mdb)
+	val := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	del := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	sender := crypto.MustHexToAddress("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")
+	// Large balances for stake + gas (avoid max-uint256 overflow on tip credit)
+	rich := new(uint256.Int).Exp(uint256.NewInt(10), uint256.NewInt(21)) // 1000 DEW
+	statedb.SetBalance(val, new(uint256.Int).Set(rich))
+	statedb.SetBalance(del, new(uint256.Int).Set(rich))
+	statedb.SetBalance(sender, new(uint256.Int).Set(rich))
+
+	exec := NewExecutor(statedb, BlockContext{
+		Number: 1, Time: 1_000, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
+		Coinbase: val, // proposer = validator
+		ChainID:  big.NewInt(2205),
+	})
+	exec.EnableDewPrecompiles(true)
+	exec.EnableStaking(true)
+	cfg := native.DefaultStakingConfig()
+	cfg.MinSelfStake = big.NewInt(100)
+	exec.SetStakingConfig(cfg)
+	to := stakeAddr()
+
+	// Bond 100 + delegate 100 + commission 10%
+	res, err := exec.ApplyMessage(Message{
+		From: val, To: &to, Value: uint256.NewInt(100),
+		GasLimit: 200_000, GasPrice: big.NewInt(0), Data: []byte{StakeMethodBond},
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("bond: %v %v", err, res.Err)
+	}
+	commIn := append([]byte{StakeMethodSetCommission}, make([]byte, 32)...)
+	uint256.NewInt(1000).WriteToSlice(commIn[1:])
+	res, err = exec.ApplyMessage(Message{
+		From: val, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: commIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("commission: %v %v", err, res.Err)
+	}
+	delIn := append([]byte{StakeMethodDelegate}, val[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(100),
+		GasLimit: 200_000, GasPrice: big.NewInt(0), Data: delIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("delegate: %v %v", err, res.Err)
+	}
+
+	// Distribute tip via same helper the EVM tip path uses (GasBudget Used may be 0 in unit harness).
+	const tip uint64 = 10_000
+	valBefore := statedb.GetBalance(val)
+	native.DistributeProposerIncome(statedb, cfg, val, uint256.NewInt(tip), true)
+	// V = 10000 * 550/1000 = 5500; R = 4500
+	const wantVal, wantDel uint64 = 5500, 4500
+	valGain := new(uint256.Int).Sub(statedb.GetBalance(val), valBefore)
+	if valGain.Uint64() != wantVal {
+		t.Fatalf("val tip share got %s want %d", valGain, wantVal)
+	}
+
+	qPend := append([]byte{StakeMethodPendingRewards}, val[:]...)
+	qPend = append(qPend, del[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 50_000, GasPrice: big.NewInt(0), Data: qPend,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("pending: %v %v", err, res.Err)
+	}
+	gotPend := new(uint256.Int).SetBytes(res.ReturnData).Uint64()
+	if gotPend != wantDel {
+		t.Fatalf("pending %d want %d", gotPend, wantDel)
+	}
+
+	delBefore := statedb.GetBalance(del)
+	claimIn := append([]byte{StakeMethodClaimRewards}, val[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: claimIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("claim: %v %v", err, res.Err)
+	}
+	delGain := new(uint256.Int).Sub(statedb.GetBalance(del), delBefore)
+	if delGain.Uint64() != wantDel {
+		t.Fatalf("claim gain %s want %d", delGain, wantDel)
+	}
+
+	// Double-sign slash burn on val
+	key, err := crypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	offender := crypto.PubkeyToAddress(&key.PublicKey)
+	statedb.SetBalance(offender, new(uint256.Int).Set(rich))
+	res, err = exec.ApplyMessage(Message{
+		From: offender, To: &to, Value: uint256.NewInt(1000),
+		GasLimit: 200_000, GasPrice: big.NewInt(0), Data: []byte{StakeMethodBond},
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("bond offender: %v %v", err, res.Err)
+	}
+	// delegate 1000 to offender
+	del2 := append([]byte{StakeMethodDelegate}, offender[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(1000),
+		GasLimit: 200_000, GasPrice: big.NewInt(0), Data: del2,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("delegate offender: %v %v", err, res.Err)
+	}
+	modBefore := statedb.GetBalance(to)
+	var ha, hb types.Hash
+	ha[0], hb[0] = 0xaa, 0xbb
+	va := &consensus.Vote{Type: consensus.VotePrecommit, Height: 2, Round: 0, BlockHash: ha}
+	vb := &consensus.Vote{Type: consensus.VotePrecommit, Height: 2, Round: 0, BlockHash: hb}
+	if err := consensus.SignVote(va, key); err != nil {
+		t.Fatal(err)
+	}
+	if err := consensus.SignVote(vb, key); err != nil {
+		t.Fatal(err)
+	}
+	wire, err := consensus.EncodeDoubleSignEvidenceWire(va, vb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jailIn := append([]byte{StakeMethodJail}, wire...)
+	res, err = exec.ApplyMessage(Message{
+		From: sender, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: jailIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("jail: %v %v", err, res.Err)
+	}
+	burned := new(uint256.Int).SetBytes(res.ReturnData).Uint64()
+	// self 1000 + del 5% of 1000 = 1050
+	if burned != 1050 {
+		t.Fatalf("burned %d want 1050", burned)
+	}
+	modDrop := new(uint256.Int).Sub(modBefore, statedb.GetBalance(to)).Uint64()
+	if modDrop != 1050 {
+		t.Fatalf("module drop %d", modDrop)
+	}
+}
