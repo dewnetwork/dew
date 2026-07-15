@@ -7,6 +7,40 @@ Software releases use **semver** tags (`vX.Y.Z`) managed by
 The protocol freeze tag **`public-testnet-v1`** is independent of package versions
 (see [Public testnet freeze](./docs/ops/public-testnet.md)).
 
+## [0.6.0](https://github.com/dewnetwork/dew/compare/v0.5.0...v0.6.0) (2026-07-15)
+
+
+### Features
+
+* **guestbook:** P3c reactions and replies ([fb2f20e](https://github.com/dewnetwork/dew/commit/fb2f20e89d703291d60be573fb7a9b89138b8ef8))
+* **native:** 0x101 orderbook module state and math ([95896eb](https://github.com/dewnetwork/dew/commit/95896eb25b7fdb770d9401c5c6a087fd55306d15))
+* **node:** --native-swap flag for 0x101 orderbook ([3f3b93b](https://github.com/dewnetwork/dew/commit/3f3b93bd21d47b3f054a6f9c789adf0b4a4fb4f8))
+* **product:** P1f ABI/source registry via dewindex and explorer ([611275e](https://github.com/dewnetwork/dew/commit/611275e0c3cca04abba7ddde7150860f1eb3ecb8))
+* **rpc:** HTTP Filter API (eth_newFilter and poll methods) ([03e0f71](https://github.com/dewnetwork/dew/commit/03e0f718f07df8c7720ea0bf6fadf00e6714711a))
+* **vm:** mock Token approve and transferFrom for orderbook ([bc60f26](https://github.com/dewnetwork/dew/commit/bc60f263ab162e91cb9066df583b86a49422314f))
+* **vm:** register 0x101 orderbook precompile behind EnableNativeSwap ([5eadd37](https://github.com/dewnetwork/dew/commit/5eadd37def7151baee7ad32752c37dd661181ec8))
+
+
+### Bug Fixes
+
+* **deps:** upgrade to pnpm 11 for npm audit bulk endpoint ([a2fcb94](https://github.com/dewnetwork/dew/commit/a2fcb947c3a8e9f43f09e588c803a0731f8e9568))
+
+
+### Documentation
+
+* 0x101 orderbook flagged status and hardfork notes ([78a5da0](https://github.com/dewnetwork/dew/commit/78a5da093daa610085b07032912c9b594a043e57))
+* **build:** mark Track 1 P1f shipped in phases and roadmap ([9130844](https://github.com/dewnetwork/dew/commit/91308449f8d367fd17cc3374a5b6fb592a39a703))
+* mark 0x101 hardfork lab checklist done via tests ([b330a4b](https://github.com/dewnetwork/dew/commit/b330a4b3f2fd849dd6084ba88da8cc8246a2d3a2))
+* **params:** 0x101 orderbook gas constants and hardfork skeleton ([3b8fd0c](https://github.com/dewnetwork/dew/commit/3b8fd0c9162ef5491f79065b968a65723fab0f55))
+* **plan:** P1f verified source/ABI implementation plan ([9fac913](https://github.com/dewnetwork/dew/commit/9fac913d6e0e3f82d9429a4dde1fc711460f7ac5))
+* **plan:** P3c Guestbook reactions and replies implementation plan ([51cab6d](https://github.com/dewnetwork/dew/commit/51cab6da0eb67e4bffc68314a60b2ef24a5d8436))
+* **plan:** Wave 3 HTTP Filter API implementation plan ([bbd0f2f](https://github.com/dewnetwork/dew/commit/bbd0f2f87d887b87eb8480f2a8df7e19bc57eebc))
+* **spec:** 0x101 native limit orderbook design ([d0408f3](https://github.com/dewnetwork/dew/commit/d0408f3a689dac31e6c2f3129883db772f5e418e))
+* **spec:** P1f verified source/ABI design (indexer + explorer) ([bf53e8c](https://github.com/dewnetwork/dew/commit/bf53e8c5ba8c1c411f2a21ea2549632d97989070))
+* **spec:** P3c Guestbook reactions and replies design ([222edcc](https://github.com/dewnetwork/dew/commit/222edccf1008cad67c33e2bced7b546b29de33c0))
+* **spec:** Wave 3 HTTP Filter API design ([7350cbf](https://github.com/dewnetwork/dew/commit/7350cbf12bb4d4be1a2c36180111a17b6fa9d993))
+* **upgrades:** update deployment notes and versioning for operator deploy on 2026-07-14 ([754ab2b](https://github.com/dewnetwork/dew/commit/754ab2ba6ad7a17bd4aebe24b79bfc7d093c4f3d))
+
 ## [0.5.0](https://github.com/dewnetwork/dew/compare/v0.4.1...v0.5.0) (2026-07-14)
 
 
