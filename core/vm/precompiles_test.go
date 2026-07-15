@@ -129,7 +129,7 @@ func TestStakingPrecompile_DisabledReverts(t *testing.T) {
 	}
 }
 
-// S6 registry: formal slots + fail-closed reserved 0x101.
+// S6 registry: formal slots + flagged 0x101 orderbook (methods gated).
 
 func TestDewPrecompileSlots_Registry(t *testing.T) {
 	slots := DewPrecompileSlots()
@@ -143,7 +143,7 @@ func TestDewPrecompileSlots_Registry(t *testing.T) {
 		live   bool
 	}{
 		{0x100, "native_transfer", SlotActive, true},
-		{0x101, "native_swap", SlotReserved, false},
+		{0x101, "native_swap", SlotFlagged, true},
 		{0x102, "staking", SlotFlagged, true},
 	}
 	for i, w := range want {
@@ -159,7 +159,7 @@ func TestDewPrecompileSlots_Registry(t *testing.T) {
 				t.Fatal("0x100 address mismatch")
 			}
 		case params.PrecompileNativeSwapReservedAddr:
-			if s.Address != ReservedNativeSwapPrecompile {
+			if s.Address != NativeSwapPrecompile {
 				t.Fatal("0x101 address mismatch")
 			}
 		case params.PrecompileStakingAddr:
@@ -172,20 +172,24 @@ func TestDewPrecompileSlots_Registry(t *testing.T) {
 		t.Fatalf("next free vm=0x%x params=0x%x", NextFreeDewPrecompileSlot, params.PrecompileNextFreeAddr)
 	}
 	live := DewPrecompileAddresses()
-	if len(live) != 2 {
-		t.Fatalf("live addresses %d want 2 (no reserved)", len(live))
+	if len(live) != 3 {
+		t.Fatalf("live addresses %d want 3", len(live))
 	}
+	found101 := false
 	for _, a := range live {
-		if a == ReservedNativeSwapPrecompile {
-			t.Fatal("0x101 must not appear in DewPrecompileAddresses")
+		if a == NativeSwapPrecompile {
+			found101 = true
 		}
+	}
+	if !found101 {
+		t.Fatal("0x101 must appear in DewPrecompileAddresses")
 	}
 	if NativeTransferGas != params.NativeTransferPrecompileGas {
 		t.Fatalf("0x100 gas %d != params %d", NativeTransferGas, params.NativeTransferPrecompileGas)
 	}
 }
 
-func TestReservedPrecompile_0x101_NotInLiveMap(t *testing.T) {
+func TestOrderbookPrecompile_FlagOff_Reverts(t *testing.T) {
 	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
 	caller := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
@@ -197,25 +201,25 @@ func TestReservedPrecompile_0x101_NotInLiveMap(t *testing.T) {
 		ChainID:  big.NewInt(2205),
 	})
 	exec.EnableDewPrecompiles(true)
+	// nativeSwapEnabled default false
 
-	var reserved crypto.Address
-	copy(reserved[:], ReservedNativeSwapPrecompile[:])
-	// Fake "swap" calldata must not execute — reserved is empty account.
-	swapish := make([]byte, 64)
+	var swapAddr crypto.Address
+	copy(swapAddr[:], NativeSwapPrecompile[:])
+	// Place buy-ish payload with value — must revert when flag off.
+	data := make([]byte, 86)
+	data[0] = ObMethodPlace
+	data[1] = 0 // buy
 	amount := uint256.NewInt(5000)
 	res, err := exec.ApplyMessage(Message{
-		From: caller, To: &reserved,
+		From: caller, To: &swapAddr,
 		Value: amount, GasLimit: 100_000, GasPrice: big.NewInt(0),
-		Data: swapish,
+		Data: data,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Failed {
-		t.Fatalf("empty-account CALL should succeed (no precompile), err=%v", res.Err)
-	}
-	if statedb.GetBalance(reserved).Cmp(amount) != 0 {
-		t.Fatalf("value should sit at reserved 0x101, got %s", statedb.GetBalance(reserved))
+	if !res.Failed {
+		t.Fatal("expected native swap flag-off to revert")
 	}
 }
 

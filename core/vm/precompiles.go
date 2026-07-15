@@ -22,9 +22,10 @@ import (
 var (
 	// NativeTransferPrecompile is 0x100 — forward CALLVALUE to a recipient (active).
 	NativeTransferPrecompile = ethcommon.BytesToAddress([]byte{0x01, 0x00})
-	// ReservedNativeSwapPrecompile is 0x101 — swap/orderbook **reserved**.
-	// Not registered in the live precompile map under public-testnet-v1 (fail-closed empty account).
-	ReservedNativeSwapPrecompile = ethcommon.BytesToAddress([]byte{0x01, 0x01})
+	// NativeSwapPrecompile is 0x101 — limit orderbook (flagged; methods need EnableNativeSwap).
+	NativeSwapPrecompile = ethcommon.BytesToAddress([]byte{0x01, 0x01})
+	// ReservedNativeSwapPrecompile is a historical alias for NativeSwapPrecompile (0x101).
+	ReservedNativeSwapPrecompile = NativeSwapPrecompile
 	// StakingPrecompile is 0x102 — staking entrypoint (flagged; methods need EnableStaking).
 	StakingPrecompile = ethcommon.BytesToAddress([]byte{0x01, 0x02})
 )
@@ -71,10 +72,10 @@ func DewPrecompileSlots() []DewPrecompileSlot {
 			LowAddr:   params.PrecompileNativeTransferAddr,
 		},
 		{
-			Address:   ReservedNativeSwapPrecompile,
+			Address:   NativeSwapPrecompile,
 			Name:      "native_swap",
-			Status:    SlotReserved,
-			LiveInMap: false,
+			Status:    SlotFlagged,
+			LiveInMap: true,
 			LowAddr:   params.PrecompileNativeSwapReservedAddr,
 		},
 		{
@@ -359,7 +360,7 @@ func u256Pad(v *uint256.Int) []byte {
 }
 
 // DewPrecompileAddresses returns live-map Dew precompile addresses to warm in the
-// access list when enabled. Reserved slots (e.g. 0x101) are intentionally omitted.
+// access list when enabled.
 func DewPrecompileAddresses() []ethcommon.Address {
 	slots := DewPrecompileSlots()
 	out := make([]ethcommon.Address, 0, len(slots))
@@ -372,8 +373,8 @@ func DewPrecompileAddresses() []ethcommon.Address {
 }
 
 // installDewPrecompiles copies the active fork precompiles and adds live Dew system
-// contracts from DewPrecompileSlots (LiveInMap only). Reserved slots stay empty accounts.
-// valueCtx is shared with the BlockContext.Transfer hook for nested bond attribution.
+// contracts from DewPrecompileSlots (LiveInMap only).
+// stakeVal / obVal are shared with the BlockContext.Transfer hook for payable methods.
 func installDewPrecompiles(
 	evm *ethvm.EVM,
 	statedb *state.StateDB,
@@ -381,7 +382,9 @@ func installDewPrecompiles(
 	origin crypto.Address,
 	stakingEnabled bool,
 	stakingCfg native.StakingConfig,
-	valueCtx *stakeValueCtx,
+	nativeSwapEnabled bool,
+	stakeVal *stakeValueCtx,
+	obVal *stakeValueCtx,
 ) {
 	if !enabled {
 		return
@@ -393,12 +396,26 @@ func installDewPrecompiles(
 	for k, v := range base {
 		merged[k] = v
 	}
-	// Register only LiveInMap slots — never ReservedNativeSwapPrecompile (0x101).
 	var selfNative crypto.Address
 	copy(selfNative[:], NativeTransferPrecompile[:])
 	merged[NativeTransferPrecompile] = &nativeTransferPrecompile{
 		statedb: statedb,
 		self:    selfNative,
+	}
+	var selfSwap crypto.Address
+	copy(selfSwap[:], NativeSwapPrecompile[:])
+	blockNum := uint64(0)
+	if evm.Context.BlockNumber != nil {
+		blockNum = evm.Context.BlockNumber.Uint64()
+	}
+	merged[NativeSwapPrecompile] = &orderbookPrecompile{
+		statedb:  statedb,
+		self:     selfSwap,
+		origin:   origin,
+		evm:      evm,
+		valueCtx: obVal,
+		blockNum: blockNum,
+		enabled:  nativeSwapEnabled,
 	}
 	var selfStake crypto.Address
 	copy(selfStake[:], StakingPrecompile[:])
@@ -406,7 +423,7 @@ func installDewPrecompiles(
 		statedb:   statedb,
 		self:      selfStake,
 		origin:    origin,
-		valueCtx:  valueCtx,
+		valueCtx:  stakeVal,
 		blockTime: evm.Context.Time,
 		enabled:   stakingEnabled,
 		cfg:       stakingCfg,
@@ -414,19 +431,28 @@ func installDewPrecompiles(
 	evm.SetPrecompiles(merged)
 }
 
-// wrapStakingTransfer records value transfers into 0x102 for nested CALL bond (D3c).
-func wrapStakingTransfer(valueCtx *stakeValueCtx) func(ethvm.StateDB, ethcommon.Address, ethcommon.Address, *uint256.Int, *ethparams.Rules) {
+// wrapDewPrecompileTransfer records value transfers into 0x102 / 0x101 for payable methods.
+func wrapDewPrecompileTransfer(stakeVal, obVal *stakeValueCtx) func(ethvm.StateDB, ethcommon.Address, ethcommon.Address, *uint256.Int, *ethparams.Rules) {
 	return func(db ethvm.StateDB, from, to ethcommon.Address, amount *uint256.Int, rules *ethparams.Rules) {
 		ethcore.Transfer(db, from, to, amount, rules)
-		if valueCtx == nil || amount == nil || amount.IsZero() {
+		if amount == nil || amount.IsZero() {
 			return
 		}
-		if to != StakingPrecompile {
+		if to == StakingPrecompile && stakeVal != nil {
+			stakeVal.from = fromEthAddr(from)
+			stakeVal.amount = new(uint256.Int).Set(amount)
 			return
 		}
-		valueCtx.from = fromEthAddr(from)
-		valueCtx.amount = new(uint256.Int).Set(amount)
+		if to == NativeSwapPrecompile && obVal != nil {
+			obVal.from = fromEthAddr(from)
+			obVal.amount = new(uint256.Int).Set(amount)
+		}
 	}
+}
+
+// wrapStakingTransfer is kept for older call sites; prefers stake-only recording.
+func wrapStakingTransfer(valueCtx *stakeValueCtx) func(ethvm.StateDB, ethcommon.Address, ethcommon.Address, *uint256.Int, *ethparams.Rules) {
+	return wrapDewPrecompileTransfer(valueCtx, nil)
 }
 
 // EnableDewPrecompiles sets the executor feature flag for 0x100+ precompiles.
@@ -442,6 +468,16 @@ func (e *Executor) EnableStaking(v bool) {
 // StakingEnabled reports whether 0x102 active methods are live.
 func (e *Executor) StakingEnabled() bool {
 	return e.stakingEnabled
+}
+
+// EnableNativeSwap sets the 0x101 orderbook methods flag (requires dew precompiles on).
+func (e *Executor) EnableNativeSwap(v bool) {
+	e.nativeSwapEnabled = v
+}
+
+// NativeSwapEnabled reports whether 0x101 orderbook methods are live.
+func (e *Executor) NativeSwapEnabled() bool {
+	return e.nativeSwapEnabled
 }
 
 // SetStakingConfig sets min stake / epoch / unbonding parameters used by 0x102.

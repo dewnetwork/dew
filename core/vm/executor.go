@@ -82,18 +82,20 @@ type Result struct {
 
 // Executor runs messages sequentially against a Dew StateDB.
 type Executor struct {
-	statedb         *state.StateDB
-	bridge          *Bridge
-	config          *params.ChainConfig
-	block           BlockContext
-	dewPrecompiles  bool // Phase B feature flag for 0x100+ system precompiles
-	stakingEnabled  bool // Phase C4: live 0x102 methods (default off)
-	stakingCfg      native.StakingConfig
+	statedb           *state.StateDB
+	bridge            *Bridge
+	config            *params.ChainConfig
+	block             BlockContext
+	dewPrecompiles    bool // Phase B feature flag for 0x100+ system precompiles
+	stakingEnabled    bool // Phase C4: live 0x102 methods (default off)
+	nativeSwapEnabled bool // 0x101 orderbook methods (default off)
+	stakingCfg        native.StakingConfig
 }
 
 // NewExecutor builds an executor for the given block context.
 // Dew system precompiles default to params.DefaultEnableDewPrecompiles.
 // Staking (0x102 active) defaults to params.DefaultEnableStaking (off until ops opt-in).
+// Native swap (0x101) defaults to params.DefaultEnableNativeSwap (off until ops opt-in).
 func NewExecutor(statedb *state.StateDB, block BlockContext) *Executor {
 	if block.BaseFee == nil {
 		block.BaseFee = big.NewInt(0)
@@ -107,13 +109,14 @@ func NewExecutor(statedb *state.StateDB, block BlockContext) *Executor {
 	// Local import of dew params would shadow eth params — use false default matching package const.
 	// Actual default applied via dewparams in EnableStaking callers / node flags.
 	return &Executor{
-		statedb:        statedb,
-		bridge:         NewBridge(statedb),
-		config:         DefaultChainConfig(block.ChainID),
-		block:          block,
-		dewPrecompiles: true, // matches params.DefaultEnableDewPrecompiles
-		stakingEnabled: false, // matches params.DefaultEnableStaking
-		stakingCfg:     native.DefaultStakingConfig(),
+		statedb:           statedb,
+		bridge:            NewBridge(statedb),
+		config:            DefaultChainConfig(block.ChainID),
+		block:             block,
+		dewPrecompiles:    true,  // matches params.DefaultEnableDewPrecompiles
+		stakingEnabled:    false, // matches params.DefaultEnableStaking
+		nativeSwapEnabled: false, // matches params.DefaultEnableNativeSwap
+		stakingCfg:        native.DefaultStakingConfig(),
 	}
 }
 
@@ -151,9 +154,10 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 	// Random non-nil → merge/shanghai/cancun rules active
 	random := ethcommon.Hash{0x01}
 	stakeVal := &stakeValueCtx{}
+	obVal := &stakeValueCtx{}
 	blockCtx := ethvm.BlockContext{
 		CanTransfer: ethcore.CanTransfer,
-		Transfer:    wrapStakingTransfer(stakeVal),
+		Transfer:    wrapDewPrecompileTransfer(stakeVal, obVal),
 		GetHash:     e.block.GetHashFn,
 		Coinbase:    toEthAddr(e.block.Coinbase),
 		GasLimit:    e.block.GasLimit,
@@ -171,7 +175,7 @@ func (e *Executor) ApplyMessage(msg Message) (*Result, error) {
 		Origin:   toEthAddr(msg.From),
 		GasPrice: gp,
 	})
-	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles, msg.From, e.stakingEnabled, e.stakingCfg, stakeVal)
+	installDewPrecompiles(evm, e.statedb, e.dewPrecompiles, msg.From, e.stakingEnabled, e.stakingCfg, e.nativeSwapEnabled, stakeVal, obVal)
 
 	// Prepare access lists (Berlin+)
 	rules := e.config.Rules(blockCtx.BlockNumber, true, blockCtx.Time)
