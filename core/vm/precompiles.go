@@ -114,6 +114,22 @@ const (
 	StakeMethodWithdraw byte = 0x08
 	// StakeMethodPendingUnbond — input = [0x09 || address 20]. returns amount||unlockAt (64 bytes).
 	StakeMethodPendingUnbond byte = 0x09
+	// StakeMethodDelegate — payable. input = [0x0a || validator 20]. Credits value-payer.
+	StakeMethodDelegate byte = 0x0a
+	// StakeMethodUndelegate — input = [0x0b || validator 20 || amount u256]. Actor tx.origin.
+	StakeMethodUndelegate byte = 0x0b
+	// StakeMethodWithdrawDelegation — input = [0x0c || validator 20]. Actor tx.origin.
+	StakeMethodWithdrawDelegation byte = 0x0c
+	// StakeMethodSetCommission — input = [0x0d || bps u256]. Actor tx.origin = validator.
+	StakeMethodSetCommission byte = 0x0d
+	// StakeMethodGetDelegation — input = [0x0e || validator 20 || delegator 20].
+	StakeMethodGetDelegation byte = 0x0e
+	// StakeMethodGetCommission — input = [0x0f || validator 20].
+	StakeMethodGetCommission byte = 0x0f
+	// StakeMethodGetDelegatedTotal — input = [0x10 || validator 20].
+	StakeMethodGetDelegatedTotal byte = 0x10
+	// StakeMethodPendingUndelegation — input = [0x11 || validator 20 || delegator 20].
+	StakeMethodPendingUndelegation byte = 0x11
 )
 
 // nativeTransferPrecompile forwards the precompile's received CALLVALUE to a recipient.
@@ -199,14 +215,14 @@ func (p *stakingPrecompile) RequiredGas(input []byte) uint64 {
 		return params.StakingPrecompileGasQuery
 	}
 	switch input[0] {
-	case StakeMethodBond:
+	case StakeMethodBond, StakeMethodDelegate:
 		return params.StakingPrecompileGasBond
-	case StakeMethodUnbond:
-		return params.StakingPrecompileGasUnbond
-	case StakeMethodWithdraw:
+	case StakeMethodUnbond, StakeMethodWithdraw, StakeMethodUndelegate, StakeMethodWithdrawDelegation:
 		return params.StakingPrecompileGasUnbond
 	case StakeMethodJail:
 		return params.StakingPrecompileGasJail
+	case StakeMethodSetCommission:
+		return params.StakingPrecompileGasSetCommission
 	default:
 		return params.StakingPrecompileGasQuery
 	}
@@ -338,6 +354,97 @@ func (p *stakingPrecompile) Run(input []byte) ([]byte, error) {
 		}
 		return u256Pad(uint256.NewInt(v)), nil
 
+	case StakeMethodDelegate:
+		// CALLVALUE already at 0x102; credit immediate value-payer.
+		if len(input) != 1+20 {
+			return nil, fmt.Errorf("staking: delegate needs method + validator 20")
+		}
+		var validator crypto.Address
+		copy(validator[:], input[1:21])
+		delegator, amt, err := p.bondCaller()
+		if err != nil {
+			return nil, fmt.Errorf("staking: delegate requires non-zero value")
+		}
+		if err := mod.Delegate(validator, delegator, amt); err != nil {
+			return nil, err
+		}
+		if p.valueCtx != nil {
+			p.valueCtx.amount = uint256.NewInt(0)
+		}
+		return u256Pad(amt), nil
+
+	case StakeMethodUndelegate:
+		if len(input) != 1+20+32 {
+			return nil, fmt.Errorf("staking: undelegate needs validator 20 + amount u256")
+		}
+		var validator crypto.Address
+		copy(validator[:], input[1:21])
+		amount := new(uint256.Int).SetBytes(input[21:53])
+		if err := mod.Undelegate(validator, p.actor(), amount, p.blockTime); err != nil {
+			return nil, err
+		}
+		return u256Pad(amount), nil
+
+	case StakeMethodWithdrawDelegation:
+		if len(input) != 1+20 {
+			return nil, fmt.Errorf("staking: withdrawDelegation needs validator 20")
+		}
+		var validator crypto.Address
+		copy(validator[:], input[1:21])
+		out, err := mod.WithdrawDelegation(validator, p.actor(), p.blockTime)
+		if err != nil {
+			return nil, err
+		}
+		modBal := p.statedb.GetBalance(p.self)
+		if modBal.Cmp(out) < 0 {
+			return nil, fmt.Errorf("staking: module escrow insolvent")
+		}
+		p.statedb.SubBalance(p.self, out)
+		p.statedb.AddBalancePrev(p.actor(), out)
+		return u256Pad(out), nil
+
+	case StakeMethodSetCommission:
+		if len(input) != 1+32 {
+			return nil, fmt.Errorf("staking: setCommission needs bps u256")
+		}
+		bps := new(uint256.Int).SetBytes(input[1:33]).Uint64()
+		if err := mod.SetCommission(p.actor(), bps); err != nil {
+			return nil, err
+		}
+		return u256Pad(uint256.NewInt(bps)), nil
+
+	case StakeMethodGetDelegation:
+		val, del, err := readTwoAddr(input)
+		if err != nil {
+			return nil, err
+		}
+		return u256Pad(mod.Delegation(val, del)), nil
+
+	case StakeMethodGetCommission:
+		addr, err := readAddr(input)
+		if err != nil {
+			return nil, err
+		}
+		return u256Pad(uint256.NewInt(mod.CommissionBps(addr))), nil
+
+	case StakeMethodGetDelegatedTotal:
+		addr, err := readAddr(input)
+		if err != nil {
+			return nil, err
+		}
+		return u256Pad(mod.DelegatedTotal(addr)), nil
+
+	case StakeMethodPendingUndelegation:
+		val, del, err := readTwoAddr(input)
+		if err != nil {
+			return nil, err
+		}
+		amt, unlock := mod.PendingUndelegation(val, del)
+		out := make([]byte, 64)
+		copy(out[0:32], ethcommon.LeftPadBytes(amt.ToBig().Bytes(), 32))
+		copy(out[32:64], ethcommon.LeftPadBytes(new(big.Int).SetUint64(unlock).Bytes(), 32))
+		return out, nil
+
 	default:
 		return nil, fmt.Errorf("staking: unknown method 0x%02x", input[0])
 	}
@@ -350,6 +457,15 @@ func readAddr(input []byte) (crypto.Address, error) {
 	var a crypto.Address
 	copy(a[:], input[1:21])
 	return a, nil
+}
+
+func readTwoAddr(input []byte) (a, b crypto.Address, err error) {
+	if len(input) != 1+40 {
+		return crypto.Address{}, crypto.Address{}, fmt.Errorf("staking: need method + two 20-byte addresses")
+	}
+	copy(a[:], input[1:21])
+	copy(b[:], input[21:41])
+	return a, b, nil
 }
 
 func u256Pad(v *uint256.Int) []byte {

@@ -26,14 +26,27 @@ var StakingModuleAddr = crypto.MustHexToAddress("0x00000000000000000000000000000
 //	keccak256("dew/stake/v1/candi" || uint64)    → candidate address at index
 //	keccak256("dew/stake/v1/unbondAmt" || addr)  → pending unbond amount (escrowed)
 //	keccak256("dew/stake/v1/unbondAt" || addr)   → unlock unix timestamp (seconds)
+//	keccak256("dew/stake/v1/del" || val || del)  → live delegation amount
+//	keccak256("dew/stake/v1/delTot" || val)      → total delegated to validator
+//	keccak256("dew/stake/v1/comm" || val)        → commission bps (0–10000)
+//	keccak256("dew/stake/v1/delUnbondAmt" || val || del) → pending undelegation
+//	keccak256("dew/stake/v1/delUnbondAt" || val || del)  → unlock unix
 const (
-	stakeDomainSelf      = "dew/stake/v1/self"
-	stakeDomainJailed    = "dew/stake/v1/jailed"
-	stakeDomainCand      = "dew/stake/v1/cand"
-	stakeDomainLen       = "dew/stake/v1/candlen"
-	stakeDomainIdx       = "dew/stake/v1/candi"
-	stakeDomainUnbondAmt = "dew/stake/v1/unbondAmt"
-	stakeDomainUnbondAt  = "dew/stake/v1/unbondAt"
+	stakeDomainSelf         = "dew/stake/v1/self"
+	stakeDomainJailed       = "dew/stake/v1/jailed"
+	stakeDomainCand         = "dew/stake/v1/cand"
+	stakeDomainLen          = "dew/stake/v1/candlen"
+	stakeDomainIdx          = "dew/stake/v1/candi"
+	stakeDomainUnbondAmt    = "dew/stake/v1/unbondAmt"
+	stakeDomainUnbondAt     = "dew/stake/v1/unbondAt"
+	stakeDomainDel          = "dew/stake/v1/del"
+	stakeDomainDelTot       = "dew/stake/v1/delTot"
+	stakeDomainComm         = "dew/stake/v1/comm"
+	stakeDomainDelUnbondAmt = "dew/stake/v1/delUnbondAmt"
+	stakeDomainDelUnbondAt  = "dew/stake/v1/delUnbondAt"
+
+	// MaxCommissionBps is 100% in basis points.
+	MaxCommissionBps uint64 = 10_000
 )
 
 // StakingConfig is runtime staking parameters.
@@ -100,6 +113,21 @@ func (m *StakingModule) unbondAmtSlot(addr crypto.Address) types.Hash {
 func (m *StakingModule) unbondAtSlot(addr crypto.Address) types.Hash {
 	return slotHash([]byte(stakeDomainUnbondAt), addr.Bytes())
 }
+func (m *StakingModule) delSlot(val, del crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainDel), val.Bytes(), del.Bytes())
+}
+func (m *StakingModule) delTotSlot(val crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainDelTot), val.Bytes())
+}
+func (m *StakingModule) commSlot(val crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainComm), val.Bytes())
+}
+func (m *StakingModule) delUnbondAmtSlot(val, del crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainDelUnbondAmt), val.Bytes(), del.Bytes())
+}
+func (m *StakingModule) delUnbondAtSlot(val, del crypto.Address) types.Hash {
+	return slotHash([]byte(stakeDomainDelUnbondAt), val.Bytes(), del.Bytes())
+}
 
 func hashToU256(h types.Hash) *uint256.Int {
 	return new(uint256.Int).SetBytes(h.Bytes())
@@ -128,12 +156,34 @@ func (m *StakingModule) IsCandidate(addr crypto.Address) bool {
 	return !m.db.GetState(StakingModuleAddr, m.candSlot(addr)).IsZero()
 }
 
-// VotingPower is self-stake if candidate and not jailed, else 0.
+// Delegation returns live delegated amount from delegator to validator.
+func (m *StakingModule) Delegation(validator, delegator crypto.Address) *uint256.Int {
+	return hashToU256(m.db.GetState(StakingModuleAddr, m.delSlot(validator, delegator)))
+}
+
+// DelegatedTotal returns sum of live delegations to validator.
+func (m *StakingModule) DelegatedTotal(validator crypto.Address) *uint256.Int {
+	return hashToU256(m.db.GetState(StakingModuleAddr, m.delTotSlot(validator)))
+}
+
+// CommissionBps returns commission rate in basis points (0–10000).
+func (m *StakingModule) CommissionBps(validator crypto.Address) uint64 {
+	return hashToU256(m.db.GetState(StakingModuleAddr, m.commSlot(validator))).Uint64()
+}
+
+// PendingUndelegation returns queued undelegation for (validator, delegator).
+func (m *StakingModule) PendingUndelegation(validator, delegator crypto.Address) (amount *uint256.Int, unlockAt uint64) {
+	amount = hashToU256(m.db.GetState(StakingModuleAddr, m.delUnbondAmtSlot(validator, delegator)))
+	unlockAt = hashToU256(m.db.GetState(StakingModuleAddr, m.delUnbondAtSlot(validator, delegator))).Uint64()
+	return amount, unlockAt
+}
+
+// VotingPower is self-stake + delegated total if candidate and not jailed, else 0.
 func (m *StakingModule) VotingPower(addr crypto.Address) *uint256.Int {
 	if m.IsJailed(addr) || !m.IsCandidate(addr) {
 		return uint256.NewInt(0)
 	}
-	return m.SelfStake(addr)
+	return new(uint256.Int).Add(m.SelfStake(addr), m.DelegatedTotal(addr))
 }
 
 // Bond adds amount (already transferred to module as CALLVALUE) to self-stake
@@ -231,6 +281,75 @@ func (m *StakingModule) Jail(addr crypto.Address) {
 	m.db.SetState(StakingModuleAddr, m.candSlot(addr), types.Hash{})
 }
 
+// Delegate credits CALLVALUE amount from delegator to validator's delegated total.
+// Self-delegation is forbidden (use Bond for self-stake).
+func (m *StakingModule) Delegate(validator, delegator crypto.Address, amount *uint256.Int) error {
+	if amount == nil || amount.IsZero() {
+		return fmt.Errorf("staking: zero delegate")
+	}
+	if validator == delegator {
+		return fmt.Errorf("staking: self-delegate forbidden (use bond)")
+	}
+	cur := m.Delegation(validator, delegator)
+	next := new(uint256.Int).Add(cur, amount)
+	m.db.SetState(StakingModuleAddr, m.delSlot(validator, delegator), u256ToHash(next))
+	tot := new(uint256.Int).Add(m.DelegatedTotal(validator), amount)
+	m.db.SetState(StakingModuleAddr, m.delTotSlot(validator), u256ToHash(tot))
+	return nil
+}
+
+// Undelegate reduces live delegation and queues amount until now+UnbondSeconds.
+func (m *StakingModule) Undelegate(validator, delegator crypto.Address, amount *uint256.Int, now uint64) error {
+	if amount == nil || amount.IsZero() {
+		return fmt.Errorf("staking: zero undelegate")
+	}
+	cur := m.Delegation(validator, delegator)
+	if cur.Cmp(amount) < 0 {
+		return fmt.Errorf("staking: insufficient delegation")
+	}
+	next := new(uint256.Int).Sub(cur, amount)
+	m.db.SetState(StakingModuleAddr, m.delSlot(validator, delegator), u256ToHash(next))
+	tot := m.DelegatedTotal(validator)
+	if tot.Cmp(amount) < 0 {
+		return fmt.Errorf("staking: delegated total underflow")
+	}
+	m.db.SetState(StakingModuleAddr, m.delTotSlot(validator), u256ToHash(new(uint256.Int).Sub(tot, amount)))
+
+	period := m.cfg.UnbondSeconds
+	unlock := now + period
+	pending, oldUnlock := m.PendingUndelegation(validator, delegator)
+	pending = new(uint256.Int).Add(pending, amount)
+	if oldUnlock > unlock {
+		unlock = oldUnlock
+	}
+	m.db.SetState(StakingModuleAddr, m.delUnbondAmtSlot(validator, delegator), u256ToHash(pending))
+	m.db.SetState(StakingModuleAddr, m.delUnbondAtSlot(validator, delegator), u256ToHash(uint256.NewInt(unlock)))
+	return nil
+}
+
+// WithdrawDelegation releases matured pending undelegation for (validator, delegator).
+func (m *StakingModule) WithdrawDelegation(validator, delegator crypto.Address, now uint64) (*uint256.Int, error) {
+	pending, unlockAt := m.PendingUndelegation(validator, delegator)
+	if pending == nil || pending.IsZero() {
+		return nil, fmt.Errorf("staking: no pending undelegation")
+	}
+	if now < unlockAt {
+		return nil, fmt.Errorf("staking: undelegation period not elapsed (unlockAt=%d now=%d)", unlockAt, now)
+	}
+	m.db.SetState(StakingModuleAddr, m.delUnbondAmtSlot(validator, delegator), types.Hash{})
+	m.db.SetState(StakingModuleAddr, m.delUnbondAtSlot(validator, delegator), types.Hash{})
+	return pending, nil
+}
+
+// SetCommission stores commission bps for validator (0–MaxCommissionBps).
+func (m *StakingModule) SetCommission(validator crypto.Address, bps uint64) error {
+	if bps > MaxCommissionBps {
+		return fmt.Errorf("staking: commission bps > %d", MaxCommissionBps)
+	}
+	m.db.SetState(StakingModuleAddr, m.commSlot(validator), u256ToHash(uint256.NewInt(bps)))
+	return nil
+}
+
 // Candidate is one staked account entry for ranking.
 type Candidate struct {
 	Address     crypto.Address
@@ -238,9 +357,11 @@ type Candidate struct {
 }
 
 // ActiveSet returns top-K candidates by voting power (deterministic address tie-break).
+// Eligibility requires SelfStake ≥ min (not pure-delegation).
 func (m *StakingModule) ActiveSet() []Candidate {
 	n := hashToU256(m.db.GetState(StakingModuleAddr, m.lenSlot())).Uint64()
 	var list []Candidate
+	min := uint256.MustFromBig(m.cfg.MinSelfStake)
 	for i := uint64(0); i < n; i++ {
 		h := m.db.GetState(StakingModuleAddr, m.idxSlot(i))
 		var addr crypto.Address
@@ -251,12 +372,12 @@ func (m *StakingModule) ActiveSet() []Candidate {
 		if !m.IsCandidate(addr) || m.IsJailed(addr) {
 			continue
 		}
-		vp := m.VotingPower(addr)
-		if vp.IsZero() {
+		self := m.SelfStake(addr)
+		if self.Cmp(min) < 0 {
 			continue
 		}
-		min := uint256.MustFromBig(m.cfg.MinSelfStake)
-		if vp.Cmp(min) < 0 {
+		vp := m.VotingPower(addr)
+		if vp.IsZero() {
 			continue
 		}
 		list = append(list, Candidate{Address: addr, VotingPower: vp})

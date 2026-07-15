@@ -4,18 +4,20 @@ import "math/big"
 
 // Staking parameters — frozen candidates for public-testnet-v1 (Phase C6).
 // Align with docs/consensus/validators.md and docs/ops/public-testnet.md.
-// Residual: delegation/commission; slash burn percentages (S4 deferred).
-// Nested zero-value unbond/withdraw = fail-closed tx.origin (S4 documented).
+// Residual: slash burn percentages (S4 deferred). Delegation + commission storage: D3c 2026-07-15.
+// Nested zero-value unbond/withdraw/undelegate = fail-closed tx.origin (S4 documented).
 
 const (
-	// StakingPrecompileGasBond is gas for bond / self-stake register.
+	// StakingPrecompileGasBond is gas for bond / self-stake register / delegate.
 	StakingPrecompileGasBond uint64 = 50_000
-	// StakingPrecompileGasUnbond is gas for unbond.
+	// StakingPrecompileGasUnbond is gas for unbond / undelegate / withdraw paths.
 	StakingPrecompileGasUnbond uint64 = 40_000
 	// StakingPrecompileGasQuery is gas for view methods.
 	StakingPrecompileGasQuery uint64 = 2_000
 	// StakingPrecompileGasJail is gas for double-sign jail path.
 	StakingPrecompileGasJail uint64 = 30_000
+	// StakingPrecompileGasSetCommission is gas for commission updates.
+	StakingPrecompileGasSetCommission uint64 = 30_000
 
 	// DefaultEpochLengthBlocks matches validators doc (public-testnet-v1).
 	DefaultEpochLengthBlocks uint64 = 86_400

@@ -29,7 +29,7 @@ Not a Phase E. Pick **one track row** (or the ordered plan). Same freeze (`publi
 | :--- | :----- | :---- | :--- |
 | **R — Research lab** | **Done** (lab surface) | H1 PE + H2 BFT + H3 SMT growth | [Track R](#track-r--research-lab) · [research-lab](../ops/research-lab.md) |
 | **1 — Product** | Done (code) | v1–v1.2 + P1e–f + P3c shipped; Path B Guestbook redeploy ops | [Track 1](#track-1--product-surface) |
-| **2 — Protocol (D3c)** | Partial | MVP + S4 actor docs; slash % / delegation open | [Track 2](#track-2--protocol--d3c-staking) |
+| **2 — Protocol (D3c)** | Partial | MVP + S4 + delegation/commission storage; slash % / reward split open | [Track 2](#track-2--protocol--d3c-staking) |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public | [Track 3](#track-3--ops--d3d-path-a) |
 | **4 — Core node** | Partial | Telemetry + lazy hydrate + WS + Filter API done; PE upgrade open | [Track 4](#track-4--core-node) |
 | **5 — Mainnet (D3e)** | Optional | Audit pack only before production claims | [Track 5](#track-5--mainnet-gate-d3e) |
@@ -417,7 +417,7 @@ Open work is listed as **tracks** (one row each) — [Tracks](#tracks-open-work-
 - [x] ActiveSet → BFT epoch rotation when staking on
 - [ ] On-chain slash burn percentages (economics still tentative) — S4 deferred with docs
 - [x] Zero-value nested unbond/withdraw call-stack edge — S4 fail-closed (tx.origin) + tests
-- [ ] Delegation / commission (deferred unless scoped)
+- [x] Delegation / commission storage + power (2026-07-15) — reward split still deferred
 
 ### D3d — Path A multi-host public (optional ops)
 
@@ -494,7 +494,7 @@ Detail: [upgrades Track 1](../product/upgrades.md#track-1--product-surface).
 
 - [x] D3c MVP (unbond, double-sign, ActiveSet rotation, nested bond) — see [D3c](#d3c--staking-residuals-c4)
 - [ ] Slash burn percentages on-chain — **deferred** (economics draft; S4 note 2026-07-14)
-- [ ] Delegation / commission
+- [x] Delegation / commission storage + VP (2026-07-15); reward split deferred
 - [x] Nested unbond/withdraw call-stack edge — **documented fail-closed** (tx.origin; tests 2026-07-14)
 
 ### Track 3 — Ops / D3d Path A
@@ -632,7 +632,7 @@ flowchart LR
 - [x] Nested / zero-value unbond-withdraw actor semantics fixed **or** explicitly documented fail-closed limitation with test coverage of current behavior — **fail-closed tx.origin** + `TestStakingUnbondWithdraw_ActorIsTxOrigin_NestedForwarder` (2026-07-14)
 - [x] Tests for bond / unbond / withdraw / jail paths still pass with staking on — includes `TestStakingPrecompile_BondUnbondWithdraw` + existing jail suite
 - [x] Slash burn **percentages** either: (a) deferred with economics note, or (b) implemented only after numbers approved in docs — **(a) deferred** ([tokenomics](../economics/tokenomics.md), [slashing](../consensus/slashing.md))
-- [x] Delegation / commission **out of scope** for this sequence (leave D3c box open)
+- [x] Delegation / commission **out of scope** for S0–S6 sequence (shipped later 2026-07-15 as D3c residual)
 
 **Packages:** `core/vm/precompiles.go`, `core/native/staking.go`, `params/staking.go`, `docs/execution/precompiles.md` · **Verify:** `go test ./core/vm/ ./core/native/ ./consensus/` · **Scope:** M  
 **Depends on:** S3 (or S2 if telemetry skipped by choice — prefer S3 first for load lab)
@@ -704,7 +704,7 @@ flowchart LR
 | D3e external audit | Mainnet claims only |
 | P1e indexer / P1f ABI registry | Product polish — **done** 2026-07-14/15 |
 | Live `0x101` swap/orderbook | Needs separate design + hardfork or lab-only flag approval |
-| Delegation / commission | Large staking product; after Precompile slots |
+| Delegation / commission | **Shipped** power + commission storage (2026-07-15); reward split deferred |
 | Tokenomics issuance freeze | Mainnet economics |
 
 ### Risks

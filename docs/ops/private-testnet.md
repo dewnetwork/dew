@@ -198,8 +198,9 @@ Lab genesis knobs (see test helper `stakingLabGenesis`): short `epochLength`, `u
 | 3. Epoch rotation | When staking on and height % epochLength == 0, `Node.TryRotateValidatorSet` returns BFT set from ActiveSet (address-sorted; powers match stake). Empty ActiveSet → keep genesis validators |
 | 4. Unbond → withdraw | `0x01` unbond amount; wait `unbondingPeriodSeconds`; `0x08` withdraw. Lab uses period **0** for same-block withdraw |
 | 5. Jail (optional) | `0x06` dual-vote evidence → `0x07` isJailed = 1; offender drops from ActiveSet power |
+| 6. Delegation (optional) | `0x0a` delegate → VP = self+del; `0x0d` setCommission bps; undelegate `0x0b` + `0x0c` after period. Lab: `go test ./node/ -run TestDelegationLab_Scenario` |
 
-**Actor reminder (S4):** unbond/withdraw act on **tx.origin**. Prefer top-level EOA calls. Nested bond still credits the immediate value-payer.
+**Actor reminder (S4):** unbond/withdraw/undelegate act on **tx.origin**. Prefer top-level EOA calls. Nested bond/delegate still credits the immediate value-payer.
 
 **Do not** enable `--staking` on public Path B unless intentionally running a staking lab fork (document separately).
 

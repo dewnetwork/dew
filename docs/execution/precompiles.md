@@ -91,6 +91,14 @@ Enabled when Dew precompiles are on **and** `Executor.EnableStaking(true)` / `No
 | `0x07` isJailed | `[0x07 \|\| addr20]` | 0 | 2_000 | 0/1 |
 | `0x08` withdraw | `[0x08]` | 0 | 40_000 | Claim matured unbond to **tx.origin** (D3c) |
 | `0x09` pendingUnbond | `[0x09 \|\| addr20]` | 0 | 2_000 | `amount` (32) \|\| `unlockAt` unix (32) |
+| `0x0a` delegate | `[0x0a \|\| validator 20]` | amount | 50_000 | Escrow CALLVALUE; credit **value-payer** → validator (no self-delegate) |
+| `0x0b` undelegate | `[0x0b \|\| validator 20 \|\| amount u256]` | 0 | 40_000 | Reduce live del of **tx.origin**; queue per (val, del) |
+| `0x0c` withdrawDelegation | `[0x0c \|\| validator 20]` | 0 | 40_000 | Claim matured undelegation to **tx.origin** |
+| `0x0d` setCommission | `[0x0d \|\| bps u256]` (0–10000) | 0 | 30_000 | Store commission for **tx.origin** (storage only; no reward split v1) |
+| `0x0e` getDelegation | `[0x0e \|\| val 20 \|\| del 20]` | 0 | 2_000 | Live amount |
+| `0x0f` getCommission | `[0x0f \|\| val 20]` | 0 | 2_000 | bps |
+| `0x10` getDelegatedTotal | `[0x10 \|\| val 20]` | 0 | 2_000 | Sum live del |
+| `0x11` pendingUndelegation | `[0x11 \|\| val 20 \|\| del 20]` | 0 | 2_000 | `amount\|\|unlockAt` |
 
 **Jail vote wire (114 bytes each):** `type(1) || height(8 BE) || round(8 BE) || blockHash(32) || signature(65)`. Both votes must verify; same type/height/round/validator; distinct hashes.
 
@@ -98,13 +106,13 @@ Enabled when Dew precompiles are on **and** `Executor.EnableStaking(true)` / `No
 
 | Method | Actor | Nested CALL |
 | :--- | :--- | :--- |
-| `0x00` bond | Immediate value-payer (`Transfer` hook) | **Correct** — contract can self-bond with CALLVALUE |
-| `0x01` unbond / `0x08` withdraw | Always **tx.origin** | **Not** intermediate `msg.sender` — go-ethereum precompile `Run` has no call stack |
+| `0x00` bond / `0x0a` delegate | Immediate value-payer (`Transfer` hook) | **Correct** — contract can bond/delegate with CALLVALUE |
+| `0x01` unbond / `0x08` withdraw / `0x0b` undelegate / `0x0c` withdrawDelegation / `0x0d` setCommission | Always **tx.origin** | **Not** intermediate `msg.sender` — go-ethereum precompile `Run` has no call stack |
 | Queries / jail | Explicit address in input (or evidence) | N/A |
 
 Implication: a contract that nested-bonds to itself **cannot** unbond/withdraw that stake via a nested zero-value CALL under this freeze. Prefer top-level EOA calls for unbond/withdraw, or wait for a hardfork (call-stack or explicit address arg — ABI change). Covered by `TestStakingUnbondWithdraw_ActorIsTxOrigin_NestedForwarder`.
 
-**Rules:** min self-stake `100_000 * 10^18` wei (**public-testnet-v1** defaults; lab tests may lower via config); active set = top `K` (default 100) by voting power among candidates ≥ min and not jailed. **Unbonding** uses block timestamp + genesis `unbondingPeriodSeconds` (default 604_800); funds stay at `0x102` until `withdraw` after unlock. **Slash burn percentages** are **not** applied on-chain yet (economics still draft — [tokenomics](../economics/tokenomics.md), [slashing](../consensus/slashing.md)); jail-only today. **Delegation / commission** out of scope. See [Public testnet freeze](../ops/public-testnet.md) and [D3 scale — D3c](../scale/d3-scale.md).
+**Rules:** min **self-stake** `100_000 * 10^18` wei (**public-testnet-v1** defaults; lab tests may lower via config); active set = top `K` (default 100) by **voting power** (`self + delegated`) among candidates with **SelfStake ≥ min** and not jailed (pure delegation cannot enter). **Unbonding** / undelegation use block timestamp + genesis `unbondingPeriodSeconds` (default 604_800); funds stay at `0x102` until withdraw after unlock. **Commission** is stored (bps) only — reward/tip split **not** implemented (tokenomics draft). **Slash burn percentages** are **not** applied on-chain yet ([tokenomics](../economics/tokenomics.md), [slashing](../consensus/slashing.md)); jail-only today. Design: [0x102 delegation](../superpowers/specs/2026-07-15-0x102-delegation-design.md). See [Public testnet freeze](../ops/public-testnet.md) and [D3 scale — D3c](../scale/d3-scale.md).
 
 Module state: `core/native/staking.go` storage under address `0x102`.
 

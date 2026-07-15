@@ -136,7 +136,7 @@ Only when `--staking` is intentionally enabled. Public-testnet-v1 keeps staking 
 - [x] Nested CALL bond credits value payer (Transfer hook)
 - [ ] On-chain slash burn percentages (economics tentative) — S4 deferred with docs
 - [x] Zero-value nested unbond/withdraw call-stack edge — S4 fail-closed (tx.origin) + tests
-- [ ] Delegation / commission (deferred unless scoped)
+- [x] Delegation / commission storage + voting power (2026-07-15); reward split deferred
 
 Full acceptance: [phases D3c](../build/phases.md#d3c--staking-residuals-c4) · [d3-scale § D3c](../scale/d3-scale.md#d3c--staking-residuals-c4) · [debt C4](../../agents/debt.md#c4-residuals).
 

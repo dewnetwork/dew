@@ -15,19 +15,19 @@ status: stable
 | **Genesis / static validator** | Entry in genesis `initialValidators` | **Live** BFT set today |
 | **Validator candidate** | Self-staked ≥ minimum via `0x102` bond | Module on; flag default **off** |
 | **Active validator (module)** | Top \(K\) by voting power among candidates | `ActiveSet()` readable; **rotated into live BFT** at epoch boundaries when staking on and set non-empty (D3c) |
-| **Delegator** | Bonds DEW to a candidate | **Not implemented** (D3c residual) |
+| **Delegator** | Bonds DEW to a validator via `0x0a` delegate | **Implemented** (D3c, 2026-07-15); gated by `--staking` |
 
 ## Voting power
 
 Today (BFT): voting power from genesis `votingPower` (and equal weights on local `dew init` nets).
 
-Target (module):
+Module (when staking on):
 
 $$
 VP_i = S_{\text{self},i} + \sum S_{\text{delegated},i}
 $$
 
-Quorum and proposer weight use \(VP_i\) once ActiveSet is wired each epoch.
+(if candidate and not jailed; else 0). Quorum and proposer weight use \(VP_i\) once ActiveSet is wired each epoch.
 
 ## Minimum self-stake
 
@@ -59,9 +59,16 @@ flowchart TD
 
 Exact algorithm should be one pure function in `consensus/` with unit tests for stability across nodes.
 
-## Delegation economics
+## Delegation + commission
 
-**Deferred (D3c).** Design target: commission rate + pro-rata share of rewards/tips. See [Tokenomics](../economics/tokenomics.md) (issuance numbers still tentative).
+| Item | Status |
+| :--- | :--- |
+| Delegate / undelegate / withdrawDelegation | **Live** methods `0x0a`–`0x0c` (when staking on) |
+| ActiveSet min | **Self-stake ≥ min** (pure-delegation cannot enter) |
+| Commission rate | **Stored** `0x0d` / `0x0f` as bps 0–10000; **no** reward/tip split in v1 |
+| Design | [0x102 delegation design](../superpowers/specs/2026-07-15-0x102-delegation-design.md) |
+
+Reward pro-rata by commission remains deferred until issuance/tip policy freezes — [Tokenomics](../economics/tokenomics.md).
 
 ## Unbonding
 

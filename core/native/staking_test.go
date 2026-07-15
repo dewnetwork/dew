@@ -137,3 +137,95 @@ func TestStakingModule_UnbondStacksPending(t *testing.T) {
 		t.Fatalf("unlock=%d want 115", unlock)
 	}
 }
+
+func TestStakingModule_DelegationPowerAndActiveSet(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	cfg := DefaultStakingConfig()
+	cfg.MinSelfStake = big.NewInt(1000)
+	cfg.ActiveCap = 2
+	m := NewStakingModule(s, cfg)
+
+	val := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	del := crypto.MustHexToAddress("0x00000000000000000000000000000000000000bb")
+	other := crypto.MustHexToAddress("0x00000000000000000000000000000000000000cc")
+
+	// Pure delegation without self-stake must not enter ActiveSet.
+	if err := m.Delegate(val, del, uint256.NewInt(50_000)); err != nil {
+		t.Fatal(err)
+	}
+	if len(m.ActiveSet()) != 0 {
+		t.Fatal("pure delegation must not enter ActiveSet")
+	}
+	// Not a candidate yet → VP 0 even with del total.
+	if !m.VotingPower(val).IsZero() {
+		t.Fatal("non-candidate VP must be 0")
+	}
+
+	_ = m.Bond(val, uint256.NewInt(1000))
+	if m.VotingPower(val).Uint64() != 51_000 {
+		t.Fatalf("VP want 51000 got %s", m.VotingPower(val))
+	}
+	_ = m.Bond(other, uint256.NewInt(2000))
+	set := m.ActiveSet()
+	if len(set) != 2 || set[0].Address != val {
+		t.Fatalf("rank: got %v", set)
+	}
+	if set[0].VotingPower.Uint64() != 51_000 {
+		t.Fatalf("top power %s", set[0].VotingPower)
+	}
+}
+
+func TestStakingModule_NoSelfDelegate(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	m := NewStakingModule(s, DefaultStakingConfig())
+	a := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	if err := m.Delegate(a, a, uint256.NewInt(1)); err == nil {
+		t.Fatal("expected self-delegate reject")
+	}
+}
+
+func TestStakingModule_UndelegateQueue(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	cfg := DefaultStakingConfig()
+	cfg.UnbondSeconds = 100
+	m := NewStakingModule(s, cfg)
+	val := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	del := crypto.MustHexToAddress("0x00000000000000000000000000000000000000bb")
+	_ = m.Delegate(val, del, uint256.NewInt(100))
+	const now uint64 = 1000
+	if err := m.Undelegate(val, del, uint256.NewInt(40), now); err != nil {
+		t.Fatal(err)
+	}
+	if m.Delegation(val, del).Uint64() != 60 {
+		t.Fatal("live del")
+	}
+	if m.DelegatedTotal(val).Uint64() != 60 {
+		t.Fatal("tot")
+	}
+	amt, unlock := m.PendingUndelegation(val, del)
+	if amt.Uint64() != 40 || unlock != now+100 {
+		t.Fatalf("pending %s %d", amt, unlock)
+	}
+	if _, err := m.WithdrawDelegation(val, del, now+50); err == nil {
+		t.Fatal("early withdraw")
+	}
+	out, err := m.WithdrawDelegation(val, del, now+100)
+	if err != nil || out.Uint64() != 40 {
+		t.Fatalf("withdraw %v %v", out, err)
+	}
+}
+
+func TestStakingModule_SetCommission(t *testing.T) {
+	s := state.New(db.OpenTest(t))
+	m := NewStakingModule(s, DefaultStakingConfig())
+	val := crypto.MustHexToAddress("0x00000000000000000000000000000000000000aa")
+	if err := m.SetCommission(val, 1500); err != nil {
+		t.Fatal(err)
+	}
+	if m.CommissionBps(val) != 1500 {
+		t.Fatal("bps")
+	}
+	if err := m.SetCommission(val, MaxCommissionBps+1); err == nil {
+		t.Fatal("over max")
+	}
+}

@@ -667,3 +667,119 @@ func TestStakingUnbondWithdraw_ActorIsTxOrigin_NestedForwarder(t *testing.T) {
 		t.Fatalf("direct origin unbond: %v %v", err, res.Err)
 	}
 }
+
+func TestStakingPrecompile_DelegateCommission(t *testing.T) {
+	mdb := db.OpenTest(t)
+	statedb := state.New(mdb)
+	val := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	del := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	statedb.SetBalance(val, uint256.NewInt(1_000_000_000_000_000_000))
+	statedb.SetBalance(del, uint256.NewInt(1_000_000_000_000_000_000))
+	const t0 uint64 = 1_000
+	exec := stakingTestExec(t, statedb, t0)
+	to := stakeAddr()
+
+	// Bond min self for validator
+	res, err := exec.ApplyMessage(Message{
+		From: val, To: &to, Value: uint256.NewInt(1000),
+		GasLimit: 200_000, GasPrice: big.NewInt(0), Data: []byte{StakeMethodBond},
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("bond: %v %v", err, res.Err)
+	}
+
+	// Set commission 12.5%
+	commIn := append([]byte{StakeMethodSetCommission}, make([]byte, 32)...)
+	uint256.NewInt(1250).WriteToSlice(commIn[1:])
+	res, err = exec.ApplyMessage(Message{
+		From: val, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: commIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("setCommission: %v %v", err, res.Err)
+	}
+
+	// Delegate 5000 from del → val
+	delIn := append([]byte{StakeMethodDelegate}, val[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(5000),
+		GasLimit: 200_000, GasPrice: big.NewInt(0), Data: delIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("delegate: %v %v", err, res.Err)
+	}
+
+	// VP = 1000 + 5000
+	qVP := append([]byte{StakeMethodGetVotingPower}, val[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 50_000, GasPrice: big.NewInt(0), Data: qVP,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("vp: %v %v", err, res.Err)
+	}
+	if new(uint256.Int).SetBytes(res.ReturnData).Uint64() != 6000 {
+		t.Fatalf("vp %x", res.ReturnData)
+	}
+
+	// GetDelegation
+	qDel := append([]byte{StakeMethodGetDelegation}, val[:]...)
+	qDel = append(qDel, del[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 50_000, GasPrice: big.NewInt(0), Data: qDel,
+	})
+	if err != nil || res.Failed || new(uint256.Int).SetBytes(res.ReturnData).Uint64() != 5000 {
+		t.Fatalf("getDelegation: %v %v %x", err, res.Err, res.ReturnData)
+	}
+
+	// Undelegate 2000 + early withdraw fail + mature
+	undIn := append([]byte{StakeMethodUndelegate}, val[:]...)
+	undIn = append(undIn, make([]byte, 32)...)
+	uint256.NewInt(2000).WriteToSlice(undIn[21:])
+	res, err = exec.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: undIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("undelegate: %v %v", err, res.Err)
+	}
+
+	wIn := append([]byte{StakeMethodWithdrawDelegation}, val[:]...)
+	res, err = exec.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: wIn,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Failed {
+		t.Fatal("expected early withdrawDelegation fail")
+	}
+
+	exec2 := stakingTestExec(t, statedb, t0+100)
+	balBefore := statedb.GetBalance(del).Clone()
+	res, err = exec2.ApplyMessage(Message{
+		From: del, To: &to, Value: uint256.NewInt(0),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: wIn,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("withdrawDelegation: %v %v", err, res.Err)
+	}
+	if statedb.GetBalance(del).Uint64() != balBefore.Uint64()+2000 {
+		t.Fatalf("del balance after withdraw")
+	}
+
+	// Self-delegate forbidden
+	selfDel := append([]byte{StakeMethodDelegate}, val[:]...)
+	res, err = exec2.ApplyMessage(Message{
+		From: val, To: &to, Value: uint256.NewInt(1),
+		GasLimit: 100_000, GasPrice: big.NewInt(0), Data: selfDel,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Failed {
+		t.Fatal("expected self-delegate fail")
+	}
+}
