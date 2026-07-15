@@ -304,9 +304,22 @@ go test ./node/ -count=1 -run TestStakingLab_Scenario -v
 
 Scenario: bond → ActiveSet rank → epoch rotation → unbond/withdraw → optional jail. Ops notes: [private-testnet — Staking lab](./private-testnet.md#staking-lab-s5). Actor rules: [precompiles 0x102](../execution/precompiles.md#0102--staking-entrypoint-phase-c4).
 
+## Orderbook lab (`0x101`, gated)
+
+In-process path with native swap **on** (not public Path B default):
+
+```bash
+go test ./node/ -count=1 -run TestOrderbookLab_Scenario -v
+# Module + precompile unit path:
+go test ./core/native/ ./core/vm/ -count=1 -run Orderbook
+```
+
+Scenario: mock ERC-20 deploy → approve → place sell → partial fill → getOrder → place buy → cancel; fresh node keeps flag off. Ops notes: [private-testnet — Orderbook lab](./private-testnet.md#orderbook-lab-0x101). Methods: [precompiles 0x101](../execution/precompiles.md#0101--native-limit-orderbook). Hardfork: [hf-0x101-orderbook](../protocol/hf-0x101-orderbook.md).
+
 ## Next (Track R lab surface largely filled)
 
 Track R acceptance (PE + BFT + state) is **done** for the research harness. Optional follow-ups:
 
 - Track **4** residual: PE Block-STM only if product load contradicts H1; optional **dirty/incremental SMT** if tip growth becomes ops-painful (H3); log-index O(range) **done** 2026-07-14
-- Deferred: heavier PE fixtures, Path A, live `0x101`, delegation / slash %
+- **0x101** lab harness **done** 2026-07-15 (`TestOrderbookLab_Scenario` + ops recipe); public Path B still flag-off until operator policy
+- Deferred: heavier PE fixtures, Path A, public `--native-swap` enable, delegation / slash %

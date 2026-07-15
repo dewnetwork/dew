@@ -286,6 +286,36 @@ On the explorer, open each tx hash; under auto-mine they often share the same bl
 
 ---
 
+## Recipe — `0x101` orderbook (private lab only)
+
+Native limit orderbook at `0x101` is **flagged** and methods are **off** unless the node runs with `--native-swap`. **Do not** enable on public Path B without an operator policy decision.
+
+**Automated (recommended)**
+
+```bash
+go test ./node/ -count=1 -run TestOrderbookLab_Scenario -v
+go test ./core/native/ ./core/vm/ -count=1 -run Orderbook
+```
+
+**Manual RPC**
+
+```bash
+# Terminal 1 — private node with flag on
+go build -o bin/dew ./cmd/dew
+./bin/dew run --genesis genesis.json --native-swap --http.port 8545
+
+# Terminal 2 — deploy mock token, place sell, fill
+node scripts/devnet-orderbook.mjs http://127.0.0.1:8545
+```
+
+| | |
+| :--- | :--- |
+| Methods | [precompiles — 0x101](../execution/precompiles.md#0101--native-limit-orderbook) |
+| Ops | [private-testnet — Orderbook lab](./private-testnet.md#orderbook-lab-0x101) |
+| Hardfork | [hf-0x101-orderbook](../protocol/hf-0x101-orderbook.md) |
+
+---
+
 ## MetaMask (any recipe)
 
 | Field | Local | Public |

@@ -144,4 +144,4 @@ Enabled when Dew precompiles are on **and** `Executor.EnableNativeSwap(true)` / 
 
 ## Implementation
 
-`core/vm/precompiles.go` clones Cancun precompiles and registers **live-map only** Dew addresses (`0x100`, `0x102`) via `evm.SetPrecompiles` when the flag is enabled. `DewPrecompileAddresses()` / `DewPrecompileSlots()` are the single registry used for access-list warming and docs alignment. Keep reserved (`0x101`) and flag-off addresses out of the map (empty account semantics).
+`core/vm/precompiles.go` clones Cancun precompiles and registers **live-map** Dew addresses (`0x100`, `0x101`, `0x102`) via `evm.SetPrecompiles` when Dew precompiles are enabled. `0x101` / `0x102` methods remain gated (`EnableNativeSwap` / `EnableStaking`). `DewPrecompileAddresses()` / `DewPrecompileSlots()` are the single registry used for access-list warming and docs alignment. Unallocated slots stay out of the map (empty account semantics).

@@ -134,7 +134,43 @@ node scripts/devnet-erc20.mjs http://127.0.0.1:8545
 | Native DewTx | on (`DefaultEnableNativePath`) | `Node.SetNativeEnabled(false)` |
 | Dew precompiles 0x100+ | on | `SetPrecompilesEnabled(false)` |
 | Staking 0x102 live methods | **off** | Keep off until ops opt in; `SetStakingEnabled(true)` / `dew run --staking` |
+| Orderbook 0x101 live methods | **off** | Keep off on public Path B; `SetNativeSwapEnabled(true)` / `dew run --native-swap` |
 | P2P encrypt | **on** | Cleartext only with `AllowCleartext` (dev) |
+
+### Orderbook lab (`0x101`)
+
+**Public-testnet-v1 and Path B keep orderbook methods off** (`params.DefaultEnableNativeSwap = false`). Slot is **flagged** in the live precompile map (binary hardfork); methods still need the flag. See [hf-0x101-orderbook](../protocol/hf-0x101-orderbook.md).
+
+**Enable (private / local only)**
+
+```bash
+go build -o bin/dew ./cmd/dew
+# Private single process (genesis from dew genesis or samples)
+./bin/dew run --genesis genesis.json --native-swap --http.port 8545
+
+# Automated in-process lab (recommended)
+go test ./node/ -count=1 -run TestOrderbookLab_Scenario -v
+
+# Optional RPC smoke against a node with --native-swap (needs ethers at monorepo root)
+# Terminal 1: dew run --genesis genesis.json --native-swap --http.port 8545
+# Terminal 2:
+node scripts/devnet-orderbook.mjs http://127.0.0.1:8545
+```
+
+**Scenario notes** (also automated in `TestOrderbookLab_Scenario`)
+
+| Step | What to observe |
+| :--- | :--- |
+| 1. Deploy mock ERC-20 | `TokenCreationBytecode` (approve + transferFrom) |
+| 2. Approve `0x101` | Maker `approve(0x101, amount)` before sell place |
+| 3. Place sell | `CALL 0x101` method `0x00` side=1; `BestAsk` returns price + orderId |
+| 4. Fill | Taker `0x02` with CALLVALUE ≥ floor quote; base moves to taker |
+| 5. GetOrder | Open base decreases; status stays open until filled/cancelled |
+| 6. Place buy + cancel | Buy locks ceil quote DEW; cancel refunds maker |
+
+**Actor:** place/cancel/fill use **tx.origin**. Prefer top-level EOA calls.
+
+**Do not** enable `--native-swap` on public Path B unless intentional policy (document separately). Unit path: `go test ./core/native/ ./core/vm/ -run Orderbook`.
 
 ### Staking lab (S5)
 
