@@ -27,7 +27,7 @@ All phases land in the **same monorepo** (Go core + Node for **web docs**, explo
 | Track | Status | Theme |
 | :--- | :--- | :--- |
 | **R — Research lab** | **Done** (lab surface) | H1 PE + H2 BFT + H3 SMT ([research-lab](../ops/research-lab.md)) |
-| **1 — Product** | Partial | v1 + P1e–f done; P3c deferred |
+| **1 — Product** | Done (code) | v1 + P1e–f + P3c; Path B Guestbook redeploy ops |
 | **2 — Protocol (D3c)** | Partial | MVP + S4 actor docs; slash % / delegation open |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public |
 | **4 — Core node** | Partial | Mempool telemetry + lazy hydrate done; PE upgrade open |

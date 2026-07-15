@@ -62,7 +62,7 @@ Product-v1 (Track 1 P1a–d / P2a–d / P3a–b) is **already shipped**. Remaini
 
 ## Track 1 — Product surface
 
-Ops / DX web only. Freeze tag and chain ID stay **public-testnet-v1** / **2205**. MVP through product-v1.2 is **shipped**; P1e–f shipped; remaining optional polish is P3c.
+Ops / DX web only. Freeze tag and chain ID stay **public-testnet-v1** / **2205**. MVP through product-v1.2 is **shipped**; P1e–f + P3c code shipped (Path B Guestbook redeploy is operator).
 
 ### 1.1 Block explorer (`explorer/`)
 
@@ -100,7 +100,7 @@ Backend (`faucet/` + `dewfaucet`) stays policy source of truth — see [Faucet](
 | :--- | :--- | :--- |
 | **P3a — Author filter** | Client-side filter by address substring; “Mine” when wallet connected | **Shipped** (product-v1) |
 | **P3b — Share link** | Query param `?author=…` pre-filters feed; Share copies URL | **Shipped** (product-v1.1) |
-| **P3c — Reactions / replies** | New contract methods — **re-deploy** + SPA; not freeze wire | Deferred unless demo demand |
+| **P3c — Reactions / replies** | `react` toggle + `reply(parentId)` + SPA chips/threads — **re-deploy** | Optional | **Shipped** (2026-07-15); Path B needs operator redeploy |
 
 See [Guestbook](./guestbook.md).
 
@@ -119,7 +119,7 @@ See [Guestbook](./guestbook.md).
 
 - [x] P1e — indexer / full history / volume (`dewindex` + explorer) — 2026-07-14; internal txs deferred  
 - [x] P1f — ABI/source registry (`dewindex` GET/POST + explorer Contract tab) — 2026-07-15; solc bytecode match deferred  
-- [ ] P3c — Guestbook reactions / replies  
+- [x] P3c — Guestbook reactions / replies — 2026-07-15 (redeploy Path B separately)
 - [x] Optional: pin live GHCR so `web3_clientVersion` matches release tag (host console) — operator deploy 2026-07-14 (`v0.5.0`)
 
 ---

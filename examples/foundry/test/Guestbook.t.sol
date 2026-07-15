@@ -18,10 +18,11 @@ contract GuestbookTest is Test {
         assertEq(id, 0);
         assertEq(book.totalEntries(), 1);
 
-        (address author, uint64 ts, string memory msg_) = book.getEntry(0);
+        (address author, uint64 ts, string memory msg_, uint256 parent) = book.getEntry(0);
         assertEq(author, alice);
         assertGt(uint256(ts), 0);
         assertEq(msg_, "hello dew");
+        assertEq(parent, book.PARENT_NONE());
     }
 
     function test_rejectEmpty() public {
@@ -46,9 +47,41 @@ contract GuestbookTest is Test {
         vm.prank(bob);
         book.sign("from bob");
         assertEq(book.totalEntries(), 2);
-        (address a,,) = book.getEntry(0);
-        (address b,,) = book.getEntry(1);
+        (address a,,,) = book.getEntry(0);
+        (address b,,,) = book.getEntry(1);
         assertEq(a, alice);
         assertEq(b, bob);
+    }
+
+    function test_replyAndReactToggle() public {
+        vm.prank(alice);
+        uint256 root = book.sign("root");
+        address bob = address(0xB0B);
+        vm.prank(bob);
+        uint256 child = book.reply(root, "reply msg");
+        (,,, uint256 parent) = book.getEntry(child);
+        assertEq(parent, root);
+
+        vm.prank(bob);
+        book.react(root, 0);
+        assertEq(book.reactionCount(root, 0), 1);
+        assertTrue(book.hasReacted(root, bob, 0));
+
+        vm.prank(bob);
+        book.react(root, 0); // toggle off
+        assertEq(book.reactionCount(root, 0), 0);
+        assertFalse(book.hasReacted(root, bob, 0));
+    }
+
+    function test_reactInvalidKind() public {
+        vm.prank(alice);
+        book.sign("x");
+        vm.expectRevert(bytes("kind"));
+        book.react(0, 4);
+    }
+
+    function test_replyBadParent() public {
+        vm.expectRevert(bytes("parent"));
+        book.reply(0, "nope");
     }
 }

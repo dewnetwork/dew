@@ -28,7 +28,7 @@ Not a Phase E. Pick **one track row** (or the ordered plan). Same freeze (`publi
 | Track | Status | Theme | Detail |
 | :--- | :----- | :---- | :--- |
 | **R — Research lab** | **Done** (lab surface) | H1 PE + H2 BFT + H3 SMT growth | [Track R](#track-r--research-lab) · [research-lab](../ops/research-lab.md) |
-| **1 — Product** | Partial | v1–v1.2 + P1e–f done; P3c deferred | [Track 1](#track-1--product-surface) |
+| **1 — Product** | Done (code) | v1–v1.2 + P1e–f + P3c shipped; Path B Guestbook redeploy ops | [Track 1](#track-1--product-surface) |
 | **2 — Protocol (D3c)** | Partial | MVP + S4 actor docs; slash % / delegation open | [Track 2](#track-2--protocol--d3c-staking) |
 | **3 — Ops (D3d)** | Optional | Path A multi-host public | [Track 3](#track-3--ops--d3d-path-a) |
 | **4 — Core node** | Partial | Telemetry + lazy hydrate + WS + Filter API done; PE upgrade open | [Track 4](#track-4--core-node) |
@@ -469,7 +469,7 @@ Open work after the Phase D foundation. **One track per row** in the [summary ta
 
 | | |
 | :--- | :--- |
-| **Status** | Partial — product-v1…v1.2 + P1e–f **done**; P3c optional |
+| **Status** | Done (code) — product-v1…v1.2 + P1e–f + P3c; Path B Guestbook redeploy optional ops |
 | **Goals** | Explorer / faucet / Guestbook DX (RPC/UI only) |
 | **Packages** | `explorer/`, `faucet-web/`, `examples/guestbook-web/`, `indexer/` |
 
@@ -478,7 +478,7 @@ Open work after the Phase D foundation. **One track per row** in the [summary ta
 - [x] Product-v1 through v1.2 (explorer P1a–d, faucet P2a–d, Guestbook P3a–b)
 - [x] P1e — indexer / full history / volume (`dewindex`) — 2026-07-14; internal txs still deferred
 - [x] P1f — ABI/source registry (`dewindex` + explorer Contract tab) — 2026-07-15
-- [ ] P3c — Guestbook reactions / replies
+- [x] P3c — Guestbook reactions / replies — 2026-07-15
 
 Detail: [upgrades Track 1](../product/upgrades.md#track-1--product-surface).
 

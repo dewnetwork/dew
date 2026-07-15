@@ -1,11 +1,16 @@
 import { Contract, JsonRpcProvider, isAddress } from "ethers";
-import { GUESTBOOK_ABI } from "./config";
+import { GUESTBOOK_ABI, PARENT_NONE, REACTION_KINDS } from "./config";
 
 export type GuestbookEntry = {
   id: number;
   author: string;
   timestamp: number;
   message: string;
+  /** Decimal string of uint256 parentId; root uses PARENT_NONE. */
+  parentId: string;
+  isRoot: boolean;
+  reactions: number[];
+  myReactions: boolean[];
 };
 
 export async function fetchChainId(rpcUrl: string): Promise<number> {
@@ -18,35 +23,75 @@ export async function fetchEntries(
   rpcUrl: string,
   guestbook: string,
   chainId: number,
-): Promise<{ total: number; entries: GuestbookEntry[] }> {
+  account?: string | null,
+): Promise<{ total: number; entries: GuestbookEntry[]; parentNone: string }> {
   if (!isAddress(guestbook)) {
     throw new Error("Invalid Guestbook address");
   }
   const provider = new JsonRpcProvider(rpcUrl, chainId);
   const book = new Contract(guestbook, GUESTBOOK_ABI, provider);
+
+  let parentNone = PARENT_NONE;
+  try {
+    parentNone = (await book.PARENT_NONE()).toString();
+  } catch {
+    throw new Error(
+      "Guestbook contract is not P3c (missing PARENT_NONE). Redeploy Guestbook and set PUBLIC_GUESTBOOK.",
+    );
+  }
+
   const totalBn = await book.totalEntries();
   const total = Number(totalBn);
   if (!Number.isFinite(total) || total < 0) {
     throw new Error("Invalid totalEntries");
   }
   if (total === 0) {
-    return { total: 0, entries: [] };
+    return { total: 0, entries: [], parentNone };
   }
 
   // Newest first; cap reads for very large books (demo-scale).
   const max = Math.min(total, 200);
   const start = total - max;
   const entries: GuestbookEntry[] = [];
+  const who = account && isAddress(account) ? account : null;
+
   for (let id = total - 1; id >= start; id--) {
-    const [author, ts, message] = await book.getEntry(id);
+    let author: string;
+    let ts: bigint | number;
+    let message: string;
+    let parentIdBn: bigint;
+    try {
+      [author, ts, message, parentIdBn] = await book.getEntry(id);
+    } catch {
+      throw new Error(
+        "Guestbook getEntry failed — contract is not P3c (redeploy required).",
+      );
+    }
+    const parentId = parentIdBn.toString();
+    const reactions: number[] = [];
+    const myReactions: boolean[] = [];
+    for (const { kind } of REACTION_KINDS) {
+      const c = await book.reactionCount(id, kind);
+      reactions.push(Number(c));
+      if (who) {
+        const mine = await book.hasReacted(id, who, kind);
+        myReactions.push(Boolean(mine));
+      } else {
+        myReactions.push(false);
+      }
+    }
     entries.push({
       id,
       author,
       timestamp: Number(ts),
       message,
+      parentId,
+      isRoot: parentId === parentNone,
+      reactions,
+      myReactions,
     });
   }
-  return { total, entries };
+  return { total, entries, parentNone };
 }
 
 /**

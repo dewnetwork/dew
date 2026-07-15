@@ -15,7 +15,7 @@ The **Guestbook** is the flagship public demo for **public-testnet-v1**: append-
 | Solidity | [examples/foundry](../../examples/foundry/src/Guestbook.sol) · [examples/hardhat](../../examples/hardhat/contracts/Guestbook.sol) |
 | SPA | [examples/guestbook-web](../../examples/guestbook-web/) |
 | Live URL (path B) | `https://guestbook-dew.fadosoft.com` |
-| Canonical contract (path B) | `0x83bB4E539BE46503481E66094b01b854990BF84a` |
+| Canonical contract (path B) | `0x83bB4E539BE46503481E66094b01b854990BF84a` (pre-P3c until operator redeploys) |
 | Wire / genesis impact | **None** — ordinary EVM contract + static UI |
 | Chain ID | `2205` |
 
@@ -54,7 +54,7 @@ The SPA **Burst ×2** control submits two `sign()` calls with explicit consecuti
 
 ## Product-v1 feed filter
 
-Client-side only (no new contract methods):
+Client-side only (no new contract methods for filter):
 
 | Control | Behavior |
 | :--- | :--- |
@@ -62,7 +62,18 @@ Client-side only (no new contract methods):
 | **Mine** | When wallet connected, show only entries from the connected address |
 | **Share / `?author=`** | Filter syncs to URL query; Share copies link; open with `?author=0x…` pre-fills |
 
-Backlog (reactions): [upgrades.md](./upgrades.md).
+## P3c — Reactions & replies
+
+Requires a **redeployed** Guestbook (ABI break on `getEntry` / `Signed`). Pre-P3c addresses fail SPA load with a clear “redeploy required” error.
+
+| Feature | On-chain | SPA |
+| :--- | :--- | :--- |
+| Root post | `sign(message)` | Existing compose + Burst ×2 (root only) |
+| Reply | `reply(parentId, message)` | Reply under entry |
+| Reactions | `react(entryId, kind)` toggle kinds **0..3** | 👍 ❤️ 🔥 🎉 chips + counts |
+| Read | `getEntry` → `(author, ts, message, parentId)`; `reactionCount` / `hasReacted` | Thread indent for replies |
+
+Root `parentId` = `PARENT_NONE` (`type(uint256).max`). Path B: redeploy, set `PUBLIC_GUESTBOOK`, rebuild SPA.
 
 ## Explorer deep-links
 

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   DEFAULT_CHAIN_ID,
   DEFAULT_EXPLORER,
   DEFAULT_GUESTBOOK,
   DEFAULT_RPC_URL,
   MAX_MESSAGE_BYTES,
+  REACTION_KINDS,
 } from "./config";
 import {
   explorerAddressUrl,
@@ -21,6 +22,8 @@ import {
   connectWallet,
   ensureChain,
   hasInjectedProvider,
+  reactGuestbook,
+  replyGuestbook,
   signGuestbook,
   type BurstResult,
 } from "./wallet";
@@ -53,6 +56,9 @@ export default function App() {
     }
   });
   const [mineOnly, setMineOnly] = useState(false);
+  const [replyOpenId, setReplyOpenId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [acting, setActing] = useState(false);
 
   /** Keep ?author= in the URL for shareable filters (P3b). */
   useEffect(() => {
@@ -78,6 +84,7 @@ export default function App() {
         rpcUrl.trim(),
         guestbook.trim(),
         chainId,
+        account,
       );
       setTotal(t);
       setEntries(list);
@@ -89,7 +96,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [rpcUrl, guestbook, chainId]);
+  }, [rpcUrl, guestbook, chainId, account]);
 
   useEffect(() => {
     void load();
@@ -187,7 +194,7 @@ export default function App() {
   const walletOk = hasInjectedProvider();
 
   const filterNeedle = authorFilter.trim().toLowerCase();
-  const filteredEntries = entries.filter((e) => {
+  const entryMatches = (e: GuestbookEntry) => {
     if (mineOnly && account) {
       if (e.author.toLowerCase() !== account.toLowerCase()) return false;
     }
@@ -196,7 +203,159 @@ export default function App() {
       e.author.toLowerCase().includes(filterNeedle) ||
       e.message.toLowerCase().includes(filterNeedle)
     );
+  };
+  const filteredEntries = entries.filter(entryMatches);
+
+  // Roots newest-first; include root if it matches or any child matches.
+  const roots = entries.filter((e) => e.isRoot);
+  const childrenOf = (id: number) =>
+    entries
+      .filter((e) => !e.isRoot && e.parentId === String(id))
+      .slice()
+      .sort((a, b) => a.id - b.id);
+
+  const visibleRoots = roots.filter((r) => {
+    if (entryMatches(r)) return true;
+    return childrenOf(r.id).some(entryMatches);
   });
+
+  const onReact = async (entryId: number, kind: number) => {
+    setSignError(null);
+    setActing(true);
+    try {
+      await ensureAccount();
+      const hash = await reactGuestbook(
+        guestbook.trim(),
+        entryId,
+        kind,
+        chainId,
+        rpcUrl.trim(),
+        explorer.trim(),
+      );
+      setLastTx(hash);
+      setLastBurst(null);
+      await load();
+    } catch (e) {
+      setSignError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const onReply = async (parentId: number) => {
+    setSignError(null);
+    setActing(true);
+    try {
+      await ensureAccount();
+      const hash = await replyGuestbook(
+        guestbook.trim(),
+        parentId,
+        replyText,
+        chainId,
+        rpcUrl.trim(),
+        explorer.trim(),
+      );
+      setLastTx(hash);
+      setLastBurst(null);
+      setReplyText("");
+      setReplyOpenId(null);
+      await load();
+    } catch (e) {
+      setSignError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const renderEntryCard = (e: GuestbookEntry, isReply: boolean) => (
+    <li
+      key={e.id}
+      className={`rounded-xl border border-line bg-panel-raised/90 p-4 shadow-lg ${
+        isReply ? "ml-4 border-l-2 border-l-cyan/40 sm:ml-6" : ""
+      }`}
+    >
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+        <span className="font-mono text-cyan">
+          #{e.id}
+          {isReply ? " · reply" : ""}
+        </span>
+        <time dateTime={new Date(e.timestamp * 1000).toISOString()}>
+          {formatTs(e.timestamp)}
+        </time>
+      </div>
+      <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-frost">{e.message}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+        <SafeExplorerLink
+          className="font-mono text-mist underline-offset-2 hover:text-cyan hover:underline"
+          href={explorerAddressUrl(explorer, e.author)}
+          title={e.author}
+        >
+          {shortAddr(e.author)}
+        </SafeExplorerLink>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {REACTION_KINDS.map(({ kind, emoji, label }) => (
+          <button
+            key={kind}
+            type="button"
+            title={label}
+            disabled={acting}
+            onClick={() => void onReact(e.id, kind)}
+            className={`rounded-full border px-2 py-0.5 text-xs transition disabled:opacity-50 ${
+              e.myReactions[kind]
+                ? "border-cyan bg-cyan/15 text-frost"
+                : "border-line-strong text-muted hover:border-cyan hover:text-frost"
+            }`}
+          >
+            {emoji} {e.reactions[kind] || 0}
+          </button>
+        ))}
+        {!isReply ? (
+          <button
+            type="button"
+            disabled={acting}
+            onClick={() => {
+              setReplyOpenId((cur) => (cur === e.id ? null : e.id));
+              setReplyText("");
+            }}
+            className="ml-1 rounded-lg border border-line-strong px-2 py-0.5 text-xs text-frost transition hover:border-cyan hover:text-cyan disabled:opacity-50"
+          >
+            Reply
+          </button>
+        ) : null}
+      </div>
+      {replyOpenId === e.id ? (
+        <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
+          <textarea
+            className="min-h-16 w-full rounded-lg border border-line bg-ink-soft px-3 py-2 text-sm text-frost outline-none focus:border-cyan"
+            placeholder="Write a reply…"
+            value={replyText}
+            onChange={(ev) => setReplyText(ev.target.value)}
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={acting || !replyText.trim()}
+              onClick={() => void onReply(e.id)}
+              className="rounded-lg bg-teal px-3 py-1.5 text-xs font-semibold text-frost disabled:opacity-50"
+            >
+              {acting ? "Confirm…" : "Post reply"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setReplyOpenId(null);
+                setReplyText("");
+              }}
+              className="rounded-lg border border-line-strong px-3 py-1.5 text-xs text-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </li>
+  );
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-8 px-4 py-10 sm:px-6">
@@ -426,8 +585,12 @@ export default function App() {
           <div className="flex items-baseline justify-between gap-2 sm:block">
             <h2 className="font-display text-lg font-semibold text-frost">Messages</h2>
             <p className="text-xs text-muted">
-              Newest first · showing {filteredEntries.length}
-              {filteredEntries.length !== entries.length ? ` / ${entries.length}` : ""} · max 200
+              Newest roots first · {visibleRoots.length} thread
+              {visibleRoots.length !== 1 ? "s" : ""}
+              {filteredEntries.length !== entries.length
+                ? ` · ${filteredEntries.length}/${entries.length} match filter`
+                : ""}{" "}
+              · max 200 · reactions + replies (P3c)
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -481,7 +644,7 @@ export default function App() {
           </p>
         )}
 
-        {!loading && !error && entries.length > 0 && filteredEntries.length === 0 && (
+        {!loading && !error && entries.length > 0 && visibleRoots.length === 0 && (
           <p className="rounded-xl border border-line bg-panel/50 px-4 py-8 text-center text-sm text-muted">
             No messages match this filter.
             {(mineOnly || filterNeedle) && (
@@ -500,30 +663,13 @@ export default function App() {
         )}
 
         <ul className="flex flex-col gap-3">
-          {filteredEntries.map((e) => (
-            <li
-              key={e.id}
-              className="rounded-xl border border-line bg-panel-raised/90 p-4 shadow-lg"
-            >
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
-                <span className="font-mono text-cyan">#{e.id}</span>
-                <time dateTime={new Date(e.timestamp * 1000).toISOString()}>
-                  {formatTs(e.timestamp)}
-                </time>
-              </div>
-              <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-frost">
-                {e.message}
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                <SafeExplorerLink
-                  className="font-mono text-mist underline-offset-2 hover:text-cyan hover:underline"
-                  href={explorerAddressUrl(explorer, e.author)}
-                  title={e.author}
-                >
-                  {shortAddr(e.author)}
-                </SafeExplorerLink>
-              </div>
-            </li>
+          {visibleRoots.map((root) => (
+            <Fragment key={root.id}>
+              {renderEntryCard(root, false)}
+              {childrenOf(root.id)
+                .filter((c) => entryMatches(c) || entryMatches(root))
+                .map((child) => renderEntryCard(child, true))}
+            </Fragment>
           ))}
         </ul>
       </section>

@@ -165,3 +165,63 @@ export async function burstSignGuestbook(
     sameBlock: b1 != null && b2 != null && b1 === b2,
   };
 }
+
+/** Toggle a reaction kind (0..3) on an entry. */
+export async function reactGuestbook(
+  guestbook: string,
+  entryId: number,
+  kind: number,
+  chainId: number,
+  rpcUrl: string,
+  explorerUrl: string,
+): Promise<string> {
+  if (!isAddress(guestbook)) {
+    throw new Error("Invalid Guestbook address");
+  }
+  if (kind < 0 || kind > 3) {
+    throw new Error("Invalid reaction kind");
+  }
+  await ensureChain(chainId, rpcUrl, explorerUrl);
+  if (!window.ethereum) {
+    throw new Error("No wallet found");
+  }
+  const provider = new BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  const book = new Contract(guestbook, GUESTBOOK_ABI, signer);
+  const tx = await book.react(entryId, kind);
+  const receipt = await tx.wait();
+  const hash = receipt?.hash ?? tx.hash;
+  if (!hash) {
+    throw new Error("Transaction sent but no hash returned");
+  }
+  return hash as string;
+}
+
+/** Reply to an existing entry. */
+export async function replyGuestbook(
+  guestbook: string,
+  parentId: number,
+  message: string,
+  chainId: number,
+  rpcUrl: string,
+  explorerUrl: string,
+): Promise<string> {
+  const trimmed = assertMessage(message);
+  if (!isAddress(guestbook)) {
+    throw new Error("Invalid Guestbook address");
+  }
+  await ensureChain(chainId, rpcUrl, explorerUrl);
+  if (!window.ethereum) {
+    throw new Error("No wallet found");
+  }
+  const provider = new BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  const book = new Contract(guestbook, GUESTBOOK_ABI, signer);
+  const tx = await book.reply(parentId, trimmed);
+  const receipt = await tx.wait();
+  const hash = receipt?.hash ?? tx.hash;
+  if (!hash) {
+    throw new Error("Transaction sent but no hash returned");
+  }
+  return hash as string;
+}

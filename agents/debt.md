@@ -12,7 +12,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`.
 
-**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. **P1e dewindex sidecar done** 2026-07-14. **Filter API (gap Wave 3) done** 2026-07-15. **P1f ABI registry done** 2026-07-15 (`dewindex` contracts + explorer Contract tab; badge “ABI registered”, not solc match). Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3), product P3c.
+**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. **P1e dewindex sidecar done** 2026-07-14. **Filter API (gap Wave 3) done** 2026-07-15. **P1f ABI registry done** 2026-07-15. **P3c Guestbook reactions/replies done** 2026-07-15 (Foundry/Hardhat + SPA; Path B redeploy operator). Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3).
 
 ## Durable chaindata
 
@@ -86,7 +86,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [x] Optional (host console only, not SSH from monorepo agents): pin GHCR to a release that includes ldflags inject + recreate stack so live `web3_clientVersion` matches the tag — operator deploy 2026-07-14 (`v0.5.0`)
 - [x] P1e indexer history / volume (`dewindex` + explorer) — 2026-07-14
 - [x] P1f ABI/source registry (`dewindex` + explorer) — 2026-07-15
-- [ ] P3c reactions (deferred)
+- [x] P3c reactions / replies (Guestbook redeploy) — 2026-07-15
 
 ## Docs
 
