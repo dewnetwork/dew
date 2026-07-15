@@ -61,6 +61,7 @@ func cmdRun(args []string) error {
 	httpPort := fs.Int("http.port", 8545, "JSON-RPC HTTP port")
 	httpEnabled := fs.Bool("http", true, "enable JSON-RPC HTTP")
 	staking := fs.Bool("staking", false, "enable live 0x102 staking methods (C4)")
+	nativeSwap := fs.Bool("native-swap", false, "enable live 0x101 orderbook methods")
 	p2pListen := fs.String("p2p.listen", "", "if set, start P2P host (e.g. 0.0.0.0:30303)")
 	p2pKeyHex := fs.String("p2p.key", "", "32-byte hex private key for P2P identity (required with --p2p.listen)")
 	p2pBoot := fs.String("p2p.bootnodes", "", "comma-separated host:port peers to dial")
@@ -101,6 +102,9 @@ func cmdRun(args []string) error {
 	*dataDir = dir
 	if *staking {
 		n.SetStakingEnabled(true)
+	}
+	if *nativeSwap {
+		n.SetNativeSwapEnabled(true)
 	}
 
 	if *validator {
@@ -179,7 +183,7 @@ func cmdRun(args []string) error {
 		defer func() { _ = p2pHost.Close() }()
 	}
 
-	fmt.Printf("Dew node started chainId=%s head=%d staking=%v\n", n.ChainID().String(), n.BlockNumber(), n.StakingEnabled())
+	fmt.Printf("Dew node started chainId=%s head=%d staking=%v nativeSwap=%v\n", n.ChainID().String(), n.BlockNumber(), n.StakingEnabled(), n.NativeSwapEnabled())
 	if p2pHost != nil {
 		fmt.Printf("  p2p:         listen=%s encrypt=%v peers=%d\n", p2pHost.ListenAddr(), p2pHost.EncryptEnabled(), len(p2pHost.Store().Active()))
 	}
@@ -358,7 +362,7 @@ func printUsage() {
 Usage:
   dew init [--out genesis.json]
   dew devnet [--http.addr 127.0.0.1] [--http.port 8545] [--no-p2p] [--bft.heights 1]
-  dew run [--genesis genesis.json] [--datadir /var/lib/dew] [--http.addr 127.0.0.1] [--http.port 8545] [--staking]
+  dew run [--genesis genesis.json] [--datadir /var/lib/dew] [--http.addr 127.0.0.1] [--http.port 8545] [--staking] [--native-swap]
           [--validator] [--validator.key HEX] [--no-auto-mine]
           [--p2p.listen host:port] [--p2p.key HEX] [--p2p.bootnodes a:port,b:port]
           [--p2p.encrypt] [--p2p.allow-cleartext]

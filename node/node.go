@@ -48,6 +48,7 @@ type Node struct {
 	enableNative      bool
 	enablePrecompiles bool
 	enableStaking     bool // Phase C4: live 0x102 (default off)
+	enableNativeSwap  bool // 0x101 orderbook methods (default off)
 	peStats           vm.ExecutionStats
 
 	// Phase C1: unified mempool admission (EVM + DewTx)
@@ -159,6 +160,20 @@ func (n *Node) StakingEnabled() bool {
 	return n.enableStaking
 }
 
+// SetNativeSwapEnabled toggles live orderbook methods on 0x101.
+func (n *Node) SetNativeSwapEnabled(v bool) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.enableNativeSwap = v
+}
+
+// NativeSwapEnabled reports whether 0x101 orderbook methods are live.
+func (n *Node) NativeSwapEnabled() bool {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.enableNativeSwap
+}
+
 // stakingConfigFromGenesis maps genesis consensus fields onto the native module config.
 func (n *Node) stakingConfigFromGenesis() native.StakingConfig {
 	cfg := native.DefaultStakingConfig()
@@ -187,6 +202,7 @@ func (n *Node) stakingConfigFromGenesis() native.StakingConfig {
 func (n *Node) configureExecutor(exec *vm.Executor) {
 	exec.EnableDewPrecompiles(n.enablePrecompiles)
 	exec.EnableStaking(n.enableStaking)
+	exec.EnableNativeSwap(n.enableNativeSwap)
 	exec.SetStakingConfig(n.stakingConfigFromGenesis())
 }
 

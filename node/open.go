@@ -160,6 +160,7 @@ func newEmptyNode(g *config.Genesis, database db.Database, statedb *state.StateD
 		enableNative:      params.DefaultEnableNativePath,
 		enablePrecompiles: params.DefaultEnableDewPrecompiles,
 		enableStaking:     params.DefaultEnableStaking,
+		enableNativeSwap:  params.DefaultEnableNativeSwap,
 		pool:              mempool.New(mempool.DefaultConfig()),
 		autoMine:          true,
 	}
