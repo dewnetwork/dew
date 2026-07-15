@@ -147,6 +147,75 @@ func TestExecutor_DeployERC20_Transfer_Events(t *testing.T) {
 	}
 }
 
+func TestExecutor_ApproveTransferFrom(t *testing.T) {
+	mdb := db.OpenTest(t)
+	statedb := state.New(mdb)
+	owner := crypto.MustHexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	spender := crypto.MustHexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	to := crypto.MustHexToAddress("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")
+	fund := uint256.MustFromBig(new(big.Int).Exp(big.NewInt(10), big.NewInt(30), nil))
+	statedb.SetBalance(owner, fund)
+	statedb.SetBalance(spender, new(uint256.Int).Set(fund))
+
+	exec := NewExecutor(statedb, BlockContext{
+		Number: 1, Time: 1, GasLimit: 30_000_000, BaseFee: big.NewInt(0),
+		Coinbase: crypto.MustHexToAddress("0x00000000000000000000000000000000000000c0"),
+		ChainID:  big.NewInt(2205),
+	})
+	parsed, err := abi.JSON(strings.NewReader(TokenABI))
+	if err != nil {
+		t.Fatal(err)
+	}
+	bin, _ := hex.DecodeString(TokenCreationBytecode)
+	supply := big.NewInt(10_000)
+	ctor, _ := parsed.Pack("", supply)
+	dep, err := exec.ApplyMessage(Message{
+		From: owner, GasLimit: 3_000_000, GasPrice: big.NewInt(0),
+		Data: append(append([]byte{}, bin...), ctor...),
+	})
+	if err != nil || dep.Failed {
+		t.Fatalf("deploy: %v %+v", err, dep)
+	}
+	token := *dep.ContractAddress
+
+	approveData, err := parsed.Pack("approve", ethcommon.BytesToAddress(spender[:]), big.NewInt(500))
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := exec.ApplyMessage(Message{
+		From: owner, To: &token, GasLimit: 100_000, GasPrice: big.NewInt(0), Data: approveData,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("approve: %v %v", err, res.Err)
+	}
+
+	tfData, err := parsed.Pack(
+		"transferFrom",
+		ethcommon.BytesToAddress(owner[:]),
+		ethcommon.BytesToAddress(to[:]),
+		big.NewInt(200),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err = exec.ApplyMessage(Message{
+		From: spender, To: &token, GasLimit: 150_000, GasPrice: big.NewInt(0), Data: tfData,
+	})
+	if err != nil || res.Failed {
+		t.Fatalf("transferFrom: %v %v ret=%x", err, res.Err, res.ReturnData)
+	}
+	balData, _ := parsed.Pack("balanceOf", ethcommon.BytesToAddress(to[:]))
+	balRes, err := exec.ApplyMessage(Message{
+		From: owner, To: &token, GasLimit: 50_000, GasPrice: big.NewInt(0), Data: balData,
+	})
+	if err != nil || balRes.Failed {
+		t.Fatal(err)
+	}
+	if new(big.Int).SetBytes(balRes.ReturnData).Cmp(big.NewInt(200)) != 0 {
+		t.Fatalf("to bal %x", balRes.ReturnData)
+	}
+}
+
 func TestExecutor_FailedTx_RevertsState(t *testing.T) {
 	mdb := db.OpenTest(t)
 	statedb := state.New(mdb)
