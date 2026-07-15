@@ -17,12 +17,13 @@ import (
 
 // API binds Ethereum JSON-RPC methods to a Node backend.
 type API struct {
-	n *node.Node
+	n       *node.Node
+	filters *filterStore
 }
 
 // NewAPI creates the eth/net/web3 method set.
 func NewAPI(n *node.Node) *API {
-	return &API{n: n}
+	return &API{n: n, filters: newFilterStore()}
 }
 
 // Handlers returns all Phase A required method handlers plus Phase B dew_* extensions.
@@ -55,8 +56,14 @@ func (a *API) Handlers() map[string]Handler {
 		"eth_gasPrice":             a.ethGasPrice,
 		"eth_maxPriorityFeePerGas": a.ethMaxPriorityFeePerGas,
 		"eth_feeHistory":           a.ethFeeHistory,
-		// logs
-		"eth_getLogs": a.ethGetLogs,
+		// logs + HTTP filter poll (Wave 3)
+		"eth_getLogs":                     a.ethGetLogs,
+		"eth_newFilter":                   a.ethNewFilter,
+		"eth_newBlockFilter":              a.ethNewBlockFilter,
+		"eth_newPendingTransactionFilter": a.ethNewPendingTransactionFilter,
+		"eth_getFilterChanges":            a.ethGetFilterChanges,
+		"eth_getFilterLogs":               a.ethGetFilterLogs,
+		"eth_uninstallFilter":             a.ethUninstallFilter,
 		// subscriptions: HTTP returns clear error; real path is WebSocket (ws.go)
 		"eth_subscribe":   a.ethSubscribeHTTP,
 		"eth_unsubscribe": a.ethUnsubscribeHTTP,

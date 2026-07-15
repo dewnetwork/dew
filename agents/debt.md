@@ -12,7 +12,7 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`.
 
-**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. **P1e dewindex sidecar done** 2026-07-14. Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3), product P1f / P3c, optional Filter API (gap plan Wave 3).
+**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. **P1e dewindex sidecar done** 2026-07-14. **Filter API (gap Wave 3) done** 2026-07-15 (`eth_newFilter` / block / pending stub / changes / logs / uninstall). Residuals: live `0x101` orderbook (needs design + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3), product P1f / P3c.
 
 ## Durable chaindata
 

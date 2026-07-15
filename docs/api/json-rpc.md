@@ -89,7 +89,9 @@ Oversized body/batch → JSON-RPC error `-32600`. Tx admission also enforces mem
 | Method | Notes |
 | :--- | :--- |
 | `eth_getLogs` | Address/topic filters; durable O(range) via secondary log index |
-| `eth_newFilter` / `eth_getFilterChanges` | Optional Phase A stretch (still HTTP poll style) |
+| `eth_newFilter` / `eth_getFilterChanges` / `eth_getFilterLogs` / `eth_uninstallFilter` | **Implemented** (HTTP poll); max **128** filters; **5m** idle TTL; cursor-by-height |
+| `eth_newBlockFilter` | **Implemented** — changes are block hashes since last poll |
+| `eth_newPendingTransactionFilter` | **Implemented** — changes always empty until mempool stream |
 | `eth_subscribe` (WS) | **Implemented:** `newHeads`, `logs` (optional address/topics filter) |
 | `eth_unsubscribe` (WS) | **Implemented** |
 

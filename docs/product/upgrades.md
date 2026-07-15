@@ -165,6 +165,7 @@ Detail: [phases D3d](../build/phases.md#d3d--path-a-multi-host-public-optional-o
 - [x] Lazy hydrate / log index at large tip — tip-only Open + on-demand reads (2026-07-14)
 - [x] Secondary log-index keys for O(range) `eth_getLogs` (2026-07-14)
 - [x] WebSocket + `eth_subscribe` (`newHeads`, `logs`) on HTTP upgrade (2026-07-14)
+- [x] HTTP Filter API (`eth_newFilter` / block / pending stub / changes / logs / uninstall) — max 128, 5m TTL (2026-07-15)
 - [ ] PE upgrade toward full Block-STM / lower conflict cost (serial-equivalent)
 - [ ] Tokenomics issuance numbers frozen only if mainnet economics are claimed — otherwise [tokenomics.md](../economics/tokenomics.md) stays draft
 

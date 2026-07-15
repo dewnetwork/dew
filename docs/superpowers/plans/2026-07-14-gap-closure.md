@@ -185,15 +185,17 @@ go test ./rpc/ ./node/ -count=1
 
 #### Task 3.1 — In-memory filter store
 
-**Files:** `rpc/filter.go`, `rpc/api.go`, tests
+**Status:** **Done** 2026-07-15 — [spec](../specs/2026-07-15-filter-api-design.md) · [plan](./2026-07-15-filter-api.md)
 
-- [ ] Implement `eth_newFilter`, `eth_newBlockFilter`, `eth_newPendingTransactionFilter` (pending optional / stub), `eth_getFilterChanges`, `eth_getFilterLogs`, `eth_uninstallFilter`.
-- [ ] TTL + max filters (abuse); document.
-- [ ] Commit only if a consumer needs it; else **skip** and leave docs as “optional stretch”.
+**Files:** `rpc/filter.go`, `rpc/filter_test.go`, `rpc/api.go`, docs
+
+- [x] Implement `eth_newFilter`, `eth_newBlockFilter`, `eth_newPendingTransactionFilter` (pending changes always empty), `eth_getFilterChanges`, `eth_getFilterLogs`, `eth_uninstallFilter`.
+- [x] TTL 5m + max 128 filters; document in [json-rpc.md](../../api/json-rpc.md).
+- [x] Cursor-by-height; reuse `FilterLogs` + `formatIndexedLog`.
 
 **Dependencies:** Wave 2 preferred (share filter matching code with log subs)  
 **Estimated scope:** Medium  
-**Decision:** Default **skip** under Goal A unless Hardhat/ethers poll path requires it.
+**Decision:** Shipped 2026-07-15 (Goal A optional stretch).
 
 ---
 
