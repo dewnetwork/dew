@@ -34,7 +34,8 @@ const (
 
 	// Precompile addresses (20-byte low slots in EVM space).
 	// Full registry: docs/protocol/addresses.md + core/vm.DewPrecompileSlots (S6).
-	// 0x100 = native transfer (active); 0x101 = reserved swap/book (not live);
+	// 0x100 = native transfer (active);
+	// 0x101 = orderbook (flagged when precompiles on; methods need EnableNativeSwap);
 	// 0x102 = staking entrypoint (flagged; methods default off).
 	PrecompileNativeTransferAddr     = 0x100
 	PrecompileNativeSwapReservedAddr = 0x101
