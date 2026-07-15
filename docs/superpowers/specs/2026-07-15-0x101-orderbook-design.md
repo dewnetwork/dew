@@ -1,9 +1,9 @@
 # `0x101` Native limit orderbook — design
 
-**Status:** Approved design (2026-07-15) · **Not implemented** · **Not live** under `public-testnet-v1`  
-**Track:** Protocol (precompile) + future hardfork  
-**Slot:** `0x101` · name `native_swap` (registry) · today **Reserved** / `LiveInMap: false`  
-**Parents:** [addresses — precompile slots](../../protocol/addresses.md#precompile-slots-evm-space) · [precompiles.md § 0x101](../../execution/precompiles.md) · [agents/debt.md](../../../agents/debt.md)
+**Status:** Approved design (2026-07-15) · **Implemented, gated** (`EnableNativeSwap` default off) · **Not public-live** under path B until operator enables `--native-swap`  
+**Track:** Protocol (precompile) + hardfork registration  
+**Slot:** `0x101` · name `native_swap` (registry) · **Flagged** / `LiveInMap: true`  
+**Parents:** [addresses — precompile slots](../../protocol/addresses.md#precompile-slots-evm-space) · [precompiles.md § 0x101](../../execution/precompiles.md) · [hardfork](../../protocol/hf-0x101-orderbook.md) · [agents/debt.md](../../../agents/debt.md)
 
 ## Problem
 
@@ -179,7 +179,7 @@ Final numbers freeze in hardfork doc + `params/`. Must be fixed `RequiredGas` or
 - [x] Method table + order fields  
 - [x] Activation / freeze rules  
 - [x] Explicit non-goals  
-- [ ] Implementation + hardfork (separate plans)
+- [x] Implementation + hardfork ([plan](../plans/2026-07-15-0x101-orderbook.md), [hf doc](../../protocol/hf-0x101-orderbook.md))
 
 ## Open points for implementation plan (not blockers for this design)
 

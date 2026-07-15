@@ -10,9 +10,9 @@ Phase mapping: items owned by an active phase live in [docs/build/phases.md](../
 
 **Product & scale upgrades** — full backlog in [docs/product/upgrades.md](../docs/product/upgrades.md). Track 1 product-v1 through v1.2 + live path B rebuild **done** (2026-07-13); **P1e indexer shipped** 2026-07-14; deferred: P1f / P3c / internal txs. Research-friendly default rows: Track **R** + Track **4**; Track **5** only before mainnet claims.
 
-**Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` reserved / `0x102` flagged); next free `0x103`.
+**Plan S0–S6 complete (Checkpoint C)** — [phases.md § Recommended sequence](../docs/build/phases.md#recommended-sequence--research-lab--precompile-slots). Precompile slots registry formalized: `vm.DewPrecompileSlots()` + [addresses.md](../docs/protocol/addresses.md#precompile-slots-evm-space) (`0x100` active / `0x101` flagged / `0x102` flagged); next free `0x103`.
 
-**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. **P1e dewindex sidecar done** 2026-07-14. **Filter API (gap Wave 3) done** 2026-07-15. **P1f ABI registry done** 2026-07-15. **P3c Guestbook reactions/replies done** 2026-07-15 (Foundry/Hardhat + SPA; Path B redeploy operator). Residuals: live `0x101` orderbook (**design** [0x101-orderbook-design](../docs/superpowers/specs/2026-07-15-0x101-orderbook-design.md) 2026-07-15; still needs implementation + hardfork), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3).
+**Track R lab surface complete** — H1 PE + H2 multiproc BFT + H3 SMT growth (2026-07-14, [research-lab.md](../docs/ops/research-lab.md)). **Track 4 lazy hydrate + log index + WS eth_subscribe done** 2026-07-14. **P1e dewindex sidecar done** 2026-07-14. **Filter API (gap Wave 3) done** 2026-07-15. **P1f ABI registry done** 2026-07-15. **P3c Guestbook reactions/replies done** 2026-07-15 (Foundry/Hardhat + SPA; Path B redeploy operator). Residuals: `0x101` orderbook **implemented, gated** (`EnableNativeSwap` default off; [hf-0x101-orderbook](../docs/protocol/hf-0x101-orderbook.md); public flag policy still open), delegation, slash %, PE Block-STM, optional dirty/incremental SMT (H3).
 
 ## Durable chaindata
 
@@ -72,7 +72,7 @@ Owned by D3 — see [d3-scale.md](../docs/scale/d3-scale.md) (D3a / D3b).
 - [ ] Optional: dirty / incremental SMT commit — H3 shows IntermediateRoot walks full durable state; only if tip growth becomes ops-painful (not freeze-required).
 - [ ] External security audit of consensus + VM bridge + crypto — required before mainnet (see `docs/security/phase-b-audit.md` and security principles stage table).
 - [ ] Tokenomics issuance / inflation numbers still draft (not part of wire freeze).
-- [ ] Live `0x101` native swap / orderbook — **reserved only**; design locked 2026-07-15 ([spec](../docs/superpowers/specs/2026-07-15-0x101-orderbook-design.md)); needs implementation + hardfork doc before activation under public-testnet-v1.
+- [x] Live `0x101` native swap / orderbook — **implemented, gated** 2026-07-15 ([spec](../docs/superpowers/specs/2026-07-15-0x101-orderbook-design.md), [plan](../docs/superpowers/plans/2026-07-15-0x101-orderbook.md), [hardfork](../docs/protocol/hf-0x101-orderbook.md)); `EnableNativeSwap` / `--native-swap` default **off**; public path B keep flag off until operator policy.
 
 ## Product surface (product-v1)
 

@@ -38,7 +38,7 @@ Constants: `params/orderbook.go`.
 
 ## Activation checklist
 
-1. [ ] Implementation merged; unit + precompile tests green.
-2. [ ] Docs: addresses + precompiles status **flagged**.
-3. [ ] Private lab: `--native-swap` place/cancel/fill demo.
+1. [x] Implementation landed on branch; unit + precompile tests green.
+2. [x] Docs: addresses + precompiles status **flagged**.
+3. [ ] Private lab: `--native-swap` place/cancel/fill demo (operator).
 4. [ ] Public: operator binary upgrade coordination; keep `--native-swap` off unless intentionally enabling.

@@ -72,7 +72,7 @@ MetaMask: custom network RPC = JSON-RPC URL above; block explorer URL = explorer
 | DewTx domain | `DewTx:v1` | `params.DewTxDomainTag` |
 | DewTx flat fee / floor | `2.1e12` wei | `DefaultDewTxFeeWei` / `MinDewTxFeeWei` |
 | Precompile `0x100` | native transfer, 3_000 gas | `params.PrecompileNativeTransferAddr` / `vm.NativeTransferPrecompile` |
-| Precompile `0x101` | **reserved** (swap/book) — not live | `params.PrecompileNativeSwapReservedAddr` / `vm.ReservedNativeSwapPrecompile` |
+| Precompile `0x101` | **flagged** orderbook — methods off unless `--native-swap` | `params.PrecompileNativeSwapReservedAddr` / `vm.NativeSwapPrecompile` · [hf-0x101-orderbook](../protocol/hf-0x101-orderbook.md) |
 | Precompile `0x102` | staking entrypoint (flagged) | method gas in `params/staking.go` |
 | Precompile next free | `0x103` | `params.PrecompileNextFreeAddr` — new live module = hardfork |
 | Min gas price (mempool) | 1 gwei | `mempool.DefaultConfig` |

@@ -53,4 +53,6 @@ const (
 	PublicTestnetPrecompilesOn = DefaultEnableDewPrecompiles
 	// PublicTestnetStakingOn — staking methods remain opt-in (default off).
 	PublicTestnetStakingOn = DefaultEnableStaking
+	// PublicTestnetNativeSwapOn — orderbook methods remain opt-in (default off).
+	PublicTestnetNativeSwapOn = DefaultEnableNativeSwap
 )

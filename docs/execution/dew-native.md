@@ -50,7 +50,7 @@ dew_sendRawTransaction
 | Secondary credit | DewTx payload `0x01` | **Active** — requires AccessList |
 | Native transfer (EVM) | precompile `0x100` | **Active** — CALLVALUE forward |
 | Staking | precompile `0x102` | **Active** (flag off by default) — residuals in D3c |
-| DEX / orderbook | precompile `0x101` | Reserved |
+| DEX / orderbook | precompile `0x101` | **Flagged** (default off; `--native-swap`) |
 
 Each new module needs: input encoding, auth model, fee, and state keys documented before enablement.
 

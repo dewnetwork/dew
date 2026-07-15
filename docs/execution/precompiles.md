@@ -37,11 +37,11 @@ Formal registry (addresses, status, live-map flags): `vm.DewPrecompileSlots()` �
 | Address | Name | Gas | Status | Live map |
 | :--- | :--- | ---: | :--- | :--- |
 | `0x100` | Native transfer | 3_000 fixed | **Active** — forward CALLVALUE to recipient | Yes |
-| `0x101` | Native swap / book | — (none live) | **Reserved** — not implemented under public-testnet-v1 | **No** |
+| `0x101` | Native swap / orderbook | method-based | **Flagged** — place/cancel/fill when native-swap on | Yes |
 | `0x102` | Staking entrypoint | method-based | **Flagged** — bond/unbond/queries/jail when staking on | Yes |
 | `0x103+` | (unallocated) | — | Free — next assignable is `0x103` | — |
 
-**Status meanings:** *Active* = full methods when Dew precompiles on · *Reserved* = address held, empty account (CALL does not run native code) · *Flagged* = in the live map but methods gated (`EnableStaking`).
+**Status meanings:** *Active* = full methods when Dew precompiles on · *Reserved* = address held, empty account (CALL does not run native code) · *Flagged* = in the live map but methods gated (`EnableStaking` / `EnableNativeSwap`).
 
 ### `0x100` — Native transfer
 
@@ -68,7 +68,7 @@ For operators and demos, treat the live/flagged Dew slots as **system contracts*
 | Address | Label | Default public-testnet-v1 |
 | :--- | :--- | :--- |
 | `0x100` | Native transfer | On (with Dew precompiles) |
-| `0x101` | Reserved | Not a contract implementation |
+| `0x101` | Orderbook | Methods **off** unless `--native-swap` |
 | `0x102` | Staking | Methods **off** unless `--staking` |
 
 Explorer/RPC may list these as known system addresses without an indexer (optional badge). Full slot policy: [Addresses](../protocol/addresses.md#precompile-slots-evm-space).
@@ -108,9 +108,31 @@ Implication: a contract that nested-bonds to itself **cannot** unbond/withdraw t
 
 Module state: `core/native/staking.go` storage under address `0x102`.
 
-### `0x101` — Reserved (swap / orderbook)
+### `0x101` — Native limit orderbook
 
-**Not** registered in the live precompile map. CALL to `0x101` behaves like a normal empty account (value sits at the address; no swap logic). Activating a live implementation requires a hardfork doc under freeze `public-testnet-v1` — see [allocation rules](../protocol/addresses.md#allocation-rules).
+Enabled when Dew precompiles are on **and** `Executor.EnableNativeSwap(true)` / `Node.SetNativeSwapEnabled(true)` / `dew run --native-swap`. Default **off** (`params.DefaultEnableNativeSwap = false`).
+
+**Hardfork:** registering this slot (reserved empty → flagged precompile) is a consensus-visible change. See [hf-0x101-orderbook.md](../protocol/hf-0x101-orderbook.md). Design: [0x101 orderbook](../superpowers/specs/2026-07-15-0x101-orderbook-design.md).
+
+**Model (v1):** single quote = native DEW; base = any ERC-20 address per order. Limit only; **fill by `orderId`** (no auto best-price walk). Max **64** open orders per maker. Actor = **tx.origin** for place/cancel/fill.
+
+**Byte layout** (fail-closed; not full Solidity ABI):
+
+| Method | Byte | Input | Value | Gas | Effect |
+| :--- | :--- | :--- | :--- | --: | :--- |
+| Place | `0x00` | `side u8` (0=buy,1=sell) \|\| `baseToken 20` \|\| `priceX18 u256` \|\| `baseAmount u256` | **Buy:** exact `quoteLock` ceil; **Sell:** 0 | 50_000 | Escrow + return `orderId` |
+| Cancel | `0x01` | `orderId u256` | 0 | 30_000 | Refund maker (DEW and/or ERC-20) |
+| Fill | `0x02` | `orderId u256` \|\| `baseAmount u256` | **Hit sell:** ≥ floor quote; **Hit buy:** 0 | 80_000 | Partial/full fill; return `baseFilled`\|\|`quotePaid` |
+| GetOrder | `0x03` | `orderId u256` | 0 | 3_000 | Packed order (9×32) or empty |
+| BestBid | `0x04` | `baseToken 20` | 0 | 3_000 | `price`\|\|`orderId` (zeros if none) |
+| BestAsk | `0x05` | `baseToken 20` | 0 | 3_000 | same |
+| GetEscrow | `0x06` | `maker 20` \|\| `baseToken 20` | 0 | 3_000 | `baseBal`\|\|`quoteBal` |
+
+**Price:** `priceX18` = quote wei per 1e18 base. **Fills:** `quote = floor(base * priceX18 / 1e18)`. **Buy place lock:** `ceil(base * priceX18 / 1e18)`.
+
+**ERC-20:** sell place / buy fill pull base via nested `transferFrom` (maker/taker must `approve` `0x101`). No `CreditBase` in v1. Mock lab token includes `approve`/`transferFrom` (`TokenCreationBytecode`).
+
+**Flag off:** methods revert (`native swap: not enabled`). Module state: `core/native/orderbook.go` under address `0x101`. Gas: `params/orderbook.go`.
 
 ### Design rules for custom precompiles
 

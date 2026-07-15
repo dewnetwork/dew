@@ -54,7 +54,7 @@ Fixed **low addresses** inside EVM space, callable like contracts but implemente
 | Address | Name | Status | Live map | Gas |
 | :--- | :--- | :--- | :--- | :--- |
 | `0x100` | Native transfer | **Active** when Dew precompiles on | Yes | 3_000 fixed (`params.NativeTransferPrecompileGas`) |
-| `0x101` | Native swap / orderbook | **Reserved** | **No** (empty account / fail-closed) | None (TBD only if activated later) |
+| `0x101` | Native swap / orderbook | **Flagged** — methods need native-swap on (default **off**) | Yes | Method-based (`params/orderbook.go`) |
 | `0x102` | Staking entrypoint | **Flagged** — methods need staking on (default **off**) | Yes | Method-based (`params/staking.go`) |
 | `0x103+` | Unallocated | Free for future assignment | — | — |
 
@@ -66,9 +66,9 @@ Custom Dew precompiles must not be required for basic ERC-20 deploy/transfer.
 
 1. **Assign the next free low address** (`0x103`, then `0x104`, …). Do not skip arbitrarily without documenting why.
 2. **Never reuse a retired slot** for a different module — retire permanently or leave as empty forever.
-3. **Reserved → active** (e.g. shipping a live `0x101` swap) requires a **hardfork doc** under freeze `public-testnet-v1`; prefer config flags only for method gating on already-live addresses (as with `0x102` staking).
+3. **Reserved → flagged/active** (e.g. shipping live `0x101` orderbook) requires a **hardfork doc** under freeze `public-testnet-v1`; prefer config flags only for method gating on already-live addresses (as with `0x102` staking / `0x101` native-swap). See [hf-0x101-orderbook.md](hf-0x101-orderbook.md).
 4. **Gas schedules** exist only for **active / flagged-live** methods. Reserved slots must not invent a live gas table until activation.
-5. **Feature flags** may disable the whole Dew map (`EnableDewPrecompiles`) or gate methods (`EnableStaking`); they do not free a slot for reuse by another module.
+5. **Feature flags** may disable the whole Dew map (`EnableDewPrecompiles`) or gate methods (`EnableStaking`, `EnableNativeSwap`); they do not free a slot for reuse by another module.
 
 Cross-link: freeze table in [Public testnet](../ops/public-testnet.md#freeze-table).
 
