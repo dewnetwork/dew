@@ -25,4 +25,6 @@ export const qk = {
     ["addressTxs", base, addr.toLowerCase()] as const,
   addressTransfers: (addr: string, base = config.indexerUrl) =>
     ["addressTransfers", base, addr.toLowerCase()] as const,
+  contractMeta: (addr: string, base = config.indexerUrl) =>
+    ["contractMeta", base, addr.toLowerCase()] as const,
 };

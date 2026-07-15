@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
+	"unicode/utf8"
 
 	_ "modernc.org/sqlite"
 )
@@ -81,7 +83,72 @@ CREATE TABLE IF NOT EXISTS transfers (
 CREATE INDEX IF NOT EXISTS idx_xfers_from ON transfers(from_addr, block_number DESC);
 CREATE INDEX IF NOT EXISTS idx_xfers_to ON transfers(to_addr, block_number DESC);
 CREATE INDEX IF NOT EXISTS idx_xfers_token ON transfers(token, block_number DESC);
+CREATE TABLE IF NOT EXISTS contracts (
+  address    TEXT PRIMARY KEY,
+  name       TEXT,
+  abi_json   TEXT NOT NULL,
+  source     TEXT,
+  compiler   TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 `)
+	return err
+}
+
+// ContractRecord is a registered contract ABI (+ optional source).
+type ContractRecord struct {
+	Address   string
+	Name      string
+	ABIJSON   string
+	Source    string
+	Compiler  string
+	CreatedAt int64
+	UpdatedAt int64
+}
+
+// GetContract returns a registered contract by address (lowercase key).
+func (s *Store) GetContract(addr string) (ContractRecord, bool, error) {
+	a := normalizeAddr(addr)
+	var r ContractRecord
+	err := s.db.QueryRow(`
+SELECT address, COALESCE(name,''), abi_json, COALESCE(source,''), COALESCE(compiler,''), created_at, updated_at
+FROM contracts WHERE address = ?`, a).Scan(
+		&r.Address, &r.Name, &r.ABIJSON, &r.Source, &r.Compiler, &r.CreatedAt, &r.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return ContractRecord{}, false, nil
+	}
+	if err != nil {
+		return ContractRecord{}, false, err
+	}
+	return r, true, nil
+}
+
+// UpsertContract inserts or replaces ABI/source for an address (preserves created_at).
+func (s *Store) UpsertContract(r ContractRecord) error {
+	a := normalizeAddr(r.Address)
+	if a == "" {
+		return fmt.Errorf("empty address")
+	}
+	if utf8.RuneCountInString(r.Name) > 128 {
+		return fmt.Errorf("name too long")
+	}
+	if utf8.RuneCountInString(r.Compiler) > 64 {
+		return fmt.Errorf("compiler too long")
+	}
+	now := time.Now().Unix()
+	_, err := s.db.Exec(`
+INSERT INTO contracts(address, name, abi_json, source, compiler, created_at, updated_at)
+VALUES(?,?,?,?,?,?,?)
+ON CONFLICT(address) DO UPDATE SET
+  name=excluded.name,
+  abi_json=excluded.abi_json,
+  source=excluded.source,
+  compiler=excluded.compiler,
+  updated_at=excluded.updated_at`,
+		a, r.Name, r.ABIJSON, r.Source, r.Compiler, now, now,
+	)
 	return err
 }
 

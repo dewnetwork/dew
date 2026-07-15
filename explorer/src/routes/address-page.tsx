@@ -1,15 +1,19 @@
 import { Link, useParams } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState, type FormEvent } from "react";
 import {
   useAddress,
   useAddressTransfers,
   useAddressTxs,
+  useContractMeta,
   useErc20Meta,
   useKnownTokenBalances,
 } from "@/hooks/use-chain";
 import { formatDew, hexToBigInt, hexToNumber, isHexAddress } from "@/lib/format";
 import { formatTokenAmount } from "@/lib/erc20";
 import { config } from "@/lib/config";
-import { indexerEnabled } from "@/lib/indexer";
+import { indexerEnabled, registerContract } from "@/lib/indexer";
+import { qk } from "@/lib/query-keys";
 import { Identicon } from "@/components/identicon";
 import {
   AddressLink,
@@ -83,6 +87,8 @@ function AddressBody({
   const hasIndexer = indexerEnabled();
   const histTxs = useAddressTxs(addr);
   const histXfer = useAddressTransfers(addr);
+  const contractMeta = useContractMeta(addr, isContract);
+  const registered = contractMeta.data;
 
   return (
     <div>
@@ -101,6 +107,14 @@ function AddressBody({
                 {token ? (
                   <span className="rounded-full border border-[var(--ex-status-final-border)] bg-[var(--ex-status-final-bg)] px-2.5 py-0.5 text-xs text-cyan">
                     Token{token.symbol ? ` · ${token.symbol}` : ""}
+                  </span>
+                ) : null}
+                {registered ? (
+                  <span
+                    className="rounded-full border border-[var(--ex-status-final-border)] bg-[var(--ex-status-final-bg)] px-2.5 py-0.5 text-xs text-cyan"
+                    title="ABI submitted to indexer — not solc bytecode match"
+                  >
+                    ABI registered
                   </span>
                 ) : null}
               </span>
@@ -399,16 +413,189 @@ function AddressBody({
 
         {isContract ? (
           <Tabs.Content value="contract">
-            <FieldList>
-              <DataField label="Bytecode">
-                <pre className="mono surface-md max-h-96 overflow-auto whitespace-pre-wrap break-all border border-[var(--color-line)] bg-ink-soft p-3 text-xs text-frost">
-                  {code}
-                </pre>
-              </DataField>
-            </FieldList>
+            <ContractTab
+              addr={addr}
+              code={code}
+              hasIndexer={hasIndexer}
+              metaLoading={contractMeta.isLoading}
+              metaError={contractMeta.isError ? String(contractMeta.error) : null}
+              meta={registered ?? null}
+            />
           </Tabs.Content>
         ) : null}
       </Tabs.Root>
+    </div>
+  );
+}
+
+function ContractTab({
+  addr,
+  code,
+  hasIndexer,
+  metaLoading,
+  metaError,
+  meta,
+}: {
+  addr: string;
+  code: string;
+  hasIndexer: boolean;
+  metaLoading: boolean;
+  metaError: string | null;
+  meta: {
+    name?: string;
+    abi: unknown[];
+    source?: string;
+    compiler?: string;
+    status: string;
+  } | null;
+}) {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [compiler, setCompiler] = useState("");
+  const [abiText, setAbiText] = useState("[]");
+  const [source, setSource] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [okMsg, setOkMsg] = useState<string | null>(null);
+
+  async function onRegister(e: FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    setOkMsg(null);
+    let abi: unknown[];
+    try {
+      const parsed = JSON.parse(abiText) as unknown;
+      if (!Array.isArray(parsed)) {
+        setFormError("ABI must be a JSON array");
+        return;
+      }
+      abi = parsed;
+    } catch {
+      setFormError("ABI is not valid JSON");
+      return;
+    }
+    setBusy(true);
+    try {
+      await registerContract(addr, {
+        name: name.trim() || undefined,
+        compiler: compiler.trim() || undefined,
+        abi,
+        source: source.trim() || undefined,
+      });
+      await qc.invalidateQueries({ queryKey: qk.contractMeta(addr) });
+      setOkMsg("ABI registered");
+    } catch (err) {
+      setFormError(String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {!hasIndexer ? (
+        <p className="text-sm text-muted">
+          Set <span className="mono">PUBLIC_INDEXER_URL</span> to load or register ABI/source
+          (P1f). Bytecode below is from JSON-RPC only.
+        </p>
+      ) : null}
+
+      {hasIndexer && metaLoading ? <LoadingBlock label="Loading contract registry…" /> : null}
+      {hasIndexer && metaError ? (
+        <EmptyState title="Registry unavailable" detail={metaError} />
+      ) : null}
+
+      {meta ? (
+        <FieldList>
+          <DataField label="Registry">
+            <span className="text-sm text-cyan">ABI registered</span>
+            <span className="mt-1 block text-xs text-muted">
+              Not a solc bytecode match — submitted metadata only.
+            </span>
+          </DataField>
+          {meta.name ? <DataField label="Name">{meta.name}</DataField> : null}
+          {meta.compiler ? (
+            <DataField label="Compiler">
+              <span className="mono text-sm">{meta.compiler}</span>
+            </DataField>
+          ) : null}
+          <DataField label="ABI">
+            <pre className="mono surface-md max-h-72 overflow-auto whitespace-pre-wrap break-all border border-[var(--color-line)] bg-ink-soft p-3 text-xs text-frost">
+              {JSON.stringify(meta.abi, null, 2)}
+            </pre>
+          </DataField>
+          {meta.source ? (
+            <DataField label="Source">
+              <pre className="mono surface-md max-h-96 overflow-auto whitespace-pre-wrap break-all border border-[var(--color-line)] bg-ink-soft p-3 text-xs text-frost">
+                {meta.source}
+              </pre>
+            </DataField>
+          ) : null}
+        </FieldList>
+      ) : null}
+
+      {hasIndexer && !metaLoading && !meta ? (
+        <form onSubmit={onRegister} className="flex flex-col gap-3">
+          <p className="text-sm text-slate">
+            Register ABI (and optional source) for this address. Badge shows{" "}
+            <strong className="text-frost">ABI registered</strong> — not verified-by-compiler.
+          </p>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Name (optional)
+            <input
+              className="mono rounded border border-[var(--color-line)] bg-ink-soft px-3 py-2 text-sm text-frost"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={128}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Compiler (optional)
+            <input
+              className="mono rounded border border-[var(--color-line)] bg-ink-soft px-3 py-2 text-sm text-frost"
+              value={compiler}
+              onChange={(e) => setCompiler(e.target.value)}
+              placeholder="solc 0.8.24"
+              maxLength={64}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            ABI JSON array (required)
+            <textarea
+              className="mono min-h-[8rem] rounded border border-[var(--color-line)] bg-ink-soft px-3 py-2 text-xs text-frost"
+              value={abiText}
+              onChange={(e) => setAbiText(e.target.value)}
+              spellCheck={false}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Source (optional)
+            <textarea
+              className="mono min-h-[6rem] rounded border border-[var(--color-line)] bg-ink-soft px-3 py-2 text-xs text-frost"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              spellCheck={false}
+            />
+          </label>
+          {formError ? <p className="text-sm text-rose-400">{formError}</p> : null}
+          {okMsg ? <p className="text-sm text-cyan">{okMsg}</p> : null}
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-fit rounded border border-[var(--color-line)] bg-ink-soft px-4 py-2 text-sm text-frost hover:border-cyan disabled:opacity-50"
+          >
+            {busy ? "Submitting…" : "Register ABI"}
+          </button>
+        </form>
+      ) : null}
+
+      <FieldList>
+        <DataField label="Bytecode">
+          <pre className="mono surface-md max-h-96 overflow-auto whitespace-pre-wrap break-all border border-[var(--color-line)] bg-ink-soft p-3 text-xs text-frost">
+            {code}
+          </pre>
+        </DataField>
+      </FieldList>
     </div>
   );
 }

@@ -38,7 +38,7 @@ The explorer **must not** hold validator keys, faucet keys, or admin signing mat
 | `/` | Stats + latest blocks + latest txs (poll while tab visible) |
 | `/block/{n\|hash}` | Header fields + tx list |
 | `/tx/{hash}` | Status, fees, gas, input, logs, **token transfers** (product-v1) |
-| `/address/{addr}` | Balance, nonce, code / EOA vs contract; **ERC-20 metadata** when `eth_call` succeeds (product-v1) |
+| `/address/{addr}` | Balance, nonce, code / EOA vs contract; **ERC-20 metadata** when `eth_call` succeeds (product-v1); **ABI registered** + source when indexer P1f meta exists |
 
 Search resolves address / tx hash / block number (and block hash when applicable). **Recent searches** chips (localStorage). Failed, pending, and not-found states are distinct.
 
@@ -51,6 +51,7 @@ Search resolves address / tx hash / block number (and block hash when applicable
 | Token transfers tab | Decode ERC-20 `Transfer` / `Approval` logs from receipt |
 | Recent search | Up to 8 queries in `localStorage` (`dew-explorer-ui`) |
 | Known-token balances | `PUBLIC_KNOWN_TOKENS` (`SYMBOL:0xaddr` list) → `balanceOf` tab on address page |
+| ABI / source (P1f) | With `PUBLIC_INDEXER_URL`: Contract tab shows **ABI registered** badge, ABI JSON, optional source; form to register when missing. Not solc-verified. |
 
 Env: `PUBLIC_KNOWN_TOKENS` optional. Path B live mock basket (bake into explorer image):
 

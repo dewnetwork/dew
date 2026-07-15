@@ -94,6 +94,53 @@ export async function fetchAddressTransfers(
   return body.transfers ?? [];
 }
 
+/** P1f: registered contract ABI / source (not bytecode-verified). */
+export type ContractMeta = {
+  address: string;
+  name?: string;
+  abi: unknown[];
+  source?: string;
+  compiler?: string;
+  status: "registered";
+  createdAt: number;
+  updatedAt: number;
+};
+
+export async function fetchContractMeta(addr: string): Promise<ContractMeta | null> {
+  const b = base();
+  if (!b) return null;
+  const res = await fetch(`${b}/v1/contract/${encodeURIComponent(addr)}`);
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`indexer HTTP ${res.status}`);
+  }
+  return (await res.json()) as ContractMeta;
+}
+
+export async function registerContract(
+  addr: string,
+  body: { name?: string; abi: unknown[]; source?: string; compiler?: string },
+): Promise<ContractMeta> {
+  const b = base();
+  if (!b) throw new Error("indexer not configured");
+  const res = await fetch(`${b}/v1/contract/${encodeURIComponent(addr)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const j = (await res.json()) as { error?: string };
+      if (j.error) detail = j.error;
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
+  return (await res.json()) as ContractMeta;
+}
+
 /** Map indexer daily volume → chart series. */
 export async function fetchIndexerVolumeHistory(): Promise<DayTxPoint[]> {
   const body = await getJSON<{ points: IndexerVolumePoint[] }>(

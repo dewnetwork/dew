@@ -17,12 +17,13 @@ import {
   type RpcBlock,
   type RpcTx,
 } from "@/lib/rpc";
-import { hexToNumber, isHexHash } from "@/lib/format";
+import { hexToNumber, isHexAddress, isHexHash } from "@/lib/format";
 import { fetchNetworkStats } from "@/lib/network-stats";
 import { fetchErc20Meta, fetchKnownTokenBalances } from "@/lib/erc20";
 import {
   fetchAddressTransfers,
   fetchAddressTxs,
+  fetchContractMeta,
   fetchIndexerStatus,
   fetchIndexerVolumeHistory,
   indexerEnabled,
@@ -187,6 +188,17 @@ export function useAddressTransfers(addr: string) {
     queryFn: () => fetchAddressTransfers(addr, 50, 0),
     enabled: indexerEnabled() && Boolean(addr),
     staleTime: 10_000,
+    retry: 1,
+  });
+}
+
+/** P1f: registered ABI/source from indexer (not solc-verified). */
+export function useContractMeta(addr: string, isContract: boolean) {
+  return useQuery({
+    queryKey: qk.contractMeta(addr),
+    queryFn: () => fetchContractMeta(addr),
+    enabled: indexerEnabled() && isContract && isHexAddress(addr),
+    staleTime: 30_000,
     retry: 1,
   });
 }

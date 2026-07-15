@@ -27,6 +27,8 @@ type Config struct {
 	PollInterval time.Duration
 	// MaxBlocksPerTick limits how many blocks to index per loop (backpressure).
 	MaxBlocksPerTick int
+	// VerifyToken optional shared secret for POST /v1/contract (empty = open).
+	VerifyToken string
 }
 
 // DefaultConfig returns Path B–friendly defaults.

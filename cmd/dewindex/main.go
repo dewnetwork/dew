@@ -31,6 +31,7 @@ func main() {
 	start := flag.Uint64("start-block", 0, "first block when DB is empty")
 	poll := flag.Duration("poll", time.Second, "tip poll interval after catch-up")
 	batch := flag.Int("batch", 64, "max blocks per poll tick")
+	verifyToken := flag.String("verify-token", envOr("INDEXER_VERIFY_TOKEN", ""), "optional token for POST /v1/contract (empty = open)")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 
@@ -46,6 +47,7 @@ func main() {
 		StartBlock:       *start,
 		PollInterval:     *poll,
 		MaxBlocksPerTick: *batch,
+		VerifyToken:      *verifyToken,
 	}
 
 	ix, err := indexer.New(cfg)

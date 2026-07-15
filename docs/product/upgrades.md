@@ -62,7 +62,7 @@ Product-v1 (Track 1 P1a–d / P2a–d / P3a–b) is **already shipped**. Remaini
 
 ## Track 1 — Product surface
 
-Ops / DX web only. Freeze tag and chain ID stay **public-testnet-v1** / **2205**. MVP through product-v1.2 is **shipped**; remaining slices (P1e–f, P3c) are optional polish.
+Ops / DX web only. Freeze tag and chain ID stay **public-testnet-v1** / **2205**. MVP through product-v1.2 is **shipped**; P1e–f shipped; remaining optional polish is P3c.
 
 ### 1.1 Block explorer (`explorer/`)
 
@@ -73,7 +73,7 @@ Ops / DX web only. Freeze tag and chain ID stay **public-testnet-v1** / **2205**
 | **P1c — Search UX** | Recent searches chips; keep address / tx / block resolution | No | **Shipped** (product-v1) |
 | **P1d — Token balance tab** | Optional known-token list + `balanceOf` for an address (`PUBLIC_KNOWN_TOKENS`) | No | **Shipped** (product-v1.1) |
 | **P1e — Full history / volume** | Optional `dewindex` SQLite sidecar + `PUBLIC_INDEXER_URL` | Yes | **Shipped** (2026-07-14); internal txs still out of scope |
-| **P1f — Verified source / ABI** | Source upload or IPFS — product phase after indexer | Optional | Deferred |
+| **P1f — Verified source / ABI** | Register ABI (+ optional source) via `dewindex` + explorer Contract tab | Optional indexer | **Shipped** (2026-07-15); badge = ABI registered (not solc match) |
 
 Acceptance (P1a–c):
 
@@ -118,7 +118,7 @@ See [Guestbook](./guestbook.md).
 ### Deferred product slices (post product-v1)
 
 - [x] P1e — indexer / full history / volume (`dewindex` + explorer) — 2026-07-14; internal txs deferred  
-- [ ] P1f — verified source / ABI  
+- [x] P1f — ABI/source registry (`dewindex` GET/POST + explorer Contract tab) — 2026-07-15; solc bytecode match deferred  
 - [ ] P3c — Guestbook reactions / replies  
 - [x] Optional: pin live GHCR so `web3_clientVersion` matches release tag (host console) — operator deploy 2026-07-14 (`v0.5.0`)
 

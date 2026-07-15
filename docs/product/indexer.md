@@ -39,8 +39,27 @@ PUBLIC_INDEXER_URL=http://127.0.0.1:8550 pnpm --dir explorer dev
 | `GET /v1/address/{addr}/txs?limit&offset` | Txs where address is from/to |
 | `GET /v1/address/{addr}/transfers?limit&offset` | ERC-20 `Transfer` logs |
 | `GET /v1/stats/volume?from&to` | Daily tx counts (UTC) over block range |
+| `GET /v1/contract/{addr}` | P1f registered ABI/source (`status: registered`) or 404 |
+| `POST /v1/contract/{addr}` | Upsert ABI (+ optional name/source/compiler); see below |
 
-CORS: open `GET` / `OPTIONS` for browser explorer.
+CORS: open `GET` / `POST` / `OPTIONS` for browser explorer (`Content-Type`, `Authorization`, `X-Dew-Verify-Token`).
+
+### Contract ABI registry (P1f)
+
+Off-chain metadata only — **not** solc bytecode match. Explorer badge: **ABI registered**.
+
+| Rule | Value |
+| :--- | :--- |
+| Body limit | 512 KiB |
+| Rate limit | 10 POST / 10 min / IP (after purge) |
+| Auth | Open by default; if `INDEXER_VERIFY_TOKEN` / `--verify-token` set, require `Authorization: Bearer …` or `X-Dew-Verify-Token` |
+| ABI | JSON **array** required; last-write-wins upsert |
+
+```bash
+curl -s -X POST http://127.0.0.1:8550/v1/contract/0x… \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Token","abi":[{"type":"function","name":"symbol","inputs":[],"outputs":[{"type":"string"}]}],"compiler":"solc 0.8.24"}'
+```
 
 ## Explorer
 
