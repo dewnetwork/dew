@@ -1,0 +1,3 @@
+# Single-package root (docs tooling). pnpm 11 requires explicit allowBuilds for postinstall scripts.
+allowBuilds:
+  esbuild: true
