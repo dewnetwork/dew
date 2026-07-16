@@ -103,7 +103,7 @@ jobs:
 
       # Version from root package.json "packageManager" (do not also set version:).
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node
         uses: actions/setup-node@v4
