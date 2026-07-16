@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 COPY examples/guestbook-web/ ./
 
 ARG PUBLIC_RPC_URL=https://rpc-dew.fadosoft.com
-ARG PUBLIC_GUESTBOOK=0x83bB4E539BE46503481E66094b01b854990BF84a
+ARG PUBLIC_GUESTBOOK=0xE9699494Cc8fA6438c1B0c3c6D3dDF64C6cEfc02
 ARG PUBLIC_EXPLORER_URL=https://explorer-dew.fadosoft.com
 ARG PUBLIC_CHAIN_ID=2205
 

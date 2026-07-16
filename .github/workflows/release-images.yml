@@ -74,7 +74,7 @@ jobs:
             dockerfile: deploy/guestbook/Dockerfile
             build_args: |
               PUBLIC_RPC_URL=https://rpc-dew.fadosoft.com
-              PUBLIC_GUESTBOOK=0x83bB4E539BE46503481E66094b01b854990BF84a
+              PUBLIC_GUESTBOOK=0xE9699494Cc8fA6438c1B0c3c6D3dDF64C6cEfc02
               PUBLIC_EXPLORER_URL=https://explorer-dew.fadosoft.com
               PUBLIC_CHAIN_ID=2205
     steps:
