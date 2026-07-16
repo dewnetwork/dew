@@ -7,6 +7,21 @@ Software releases use **semver** tags (`vX.Y.Z`) managed by
 The protocol freeze tag **`public-testnet-v1`** is independent of package versions
 (see [Public testnet freeze](./docs/ops/public-testnet.md)).
 
+## [0.7.0](https://github.com/dewnetwork/dew/compare/v0.6.0...v0.7.0) (2026-07-16)
+
+
+### Features
+
+* **lab:** 0x101 orderbook private lab harness ([42e2fab](https://github.com/dewnetwork/dew/commit/42e2fab119ceca816e9a598c195f9d1423be1364))
+* **staking:** 0x102 delegation and commission storage ([0dc01c9](https://github.com/dewnetwork/dew/commit/0dc01c9632bc9c2e34f0261d20333e0ed582ac02))
+* **staking:** tip/fee split by commission and double-sign slash burn ([191a5fa](https://github.com/dewnetwork/dew/commit/191a5fa724e28ef9e810c85f039c529fe550044f))
+
+
+### Bug Fixes
+
+* **guestbook:** update PUBLIC_GUESTBOOK address across multiple files ([bcb0353](https://github.com/dewnetwork/dew/commit/bcb0353f8b17426d98467443e04b96cbdf81b998))
+* **guestbook:** update PUBLIC_GUESTBOOK address in docker-compose ([6226e10](https://github.com/dewnetwork/dew/commit/6226e108a6c0947169c6d24e448916d10a63dd32))
+
 ## [0.6.0](https://github.com/dewnetwork/dew/compare/v0.5.0...v0.6.0) (2026-07-15)
 
 
