@@ -1,16 +1,14 @@
 module github.com/dewnetwork/dew
 
-go 1.25.0
-
-// Pin a patched toolchain so CI/govulncheck use stdlib fixes (go1.25.2+).
-// setup-go still needs go-version 1.25.x / check-latest — see security.yml.
-toolchain go1.25.12
+go 1.26.0
 
 require (
 	github.com/cockroachdb/pebble v1.1.5
 	github.com/ethereum/go-ethereum v1.17.4
+	github.com/gorilla/websocket v1.5.3
 	github.com/holiman/uint256 v1.3.2
-	golang.org/x/term v0.45.0
+	golang.org/x/term v0.47.0
+	modernc.org/sqlite v1.34.5
 )
 
 require (
@@ -45,7 +43,6 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
@@ -74,12 +71,11 @@ require (
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	modernc.org/libc v1.55.3 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
-	modernc.org/sqlite v1.34.5 // indirect
 )
